@@ -1,7 +1,12 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Navbar, Nav, Container } from 'react-bootstrap';
-import { Database, Gear, PlusCircle, ClockCounterClockwise } from 'phosphor-react';
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Navbar, Nav, Container } from "react-bootstrap";
+import {
+  Database,
+  Gear,
+  PlusCircle,
+  ClockCounterClockwise,
+} from "phosphor-react";
 
 interface NavigationProps {}
 
@@ -9,7 +14,7 @@ const Navigation: React.FC<NavigationProps> = () => {
   const location = useLocation();
 
   const isActive = (path: string): string => {
-    return location.pathname === path ? 'active' : '';
+    return location.pathname === path ? "active" : "";
   };
 
   return (
@@ -24,30 +29,25 @@ const Navigation: React.FC<NavigationProps> = () => {
 
         <Navbar.Collapse id="main-navbar">
           <Nav className="me-auto">
-            <Nav.Link 
-              as={Link} 
-              to="/configs" 
-              className={`d-flex align-items-center ${isActive('/configs')}`}
+            <Nav.Link
+              as={Link}
+              to="/configs"
+              className={`d-flex align-items-center ${isActive("/configs")}`}
             >
               <Gear size={20} className="me-1" weight="duotone" />
               <span>Configurations</span>
             </Nav.Link>
 
-            <Nav.Link 
-              as={Link} 
-              to="/configs/new" 
-              className={`d-flex align-items-center ${isActive('/configs/new')}`}
+            <Nav.Link
+              as={Link}
+              to="/operations"
+              className={`d-flex align-items-center ${isActive("/operations")}`}
             >
-              <PlusCircle size={20} className="me-1" weight="duotone" />
-              <span>New Config</span>
-            </Nav.Link>
-
-            <Nav.Link 
-              as={Link} 
-              to="/operations" 
-              className={`d-flex align-items-center ${isActive('/operations')}`}
-            >
-              <ClockCounterClockwise size={20} className="me-1" weight="duotone" />
+              <ClockCounterClockwise
+                size={20}
+                className="me-1"
+                weight="duotone"
+              />
               <span>Operations</span>
             </Nav.Link>
           </Nav>
