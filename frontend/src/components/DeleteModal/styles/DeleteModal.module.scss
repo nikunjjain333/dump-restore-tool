@@ -1,0 +1,13 @@
+.modalHeader {
+  background-color: var(--bs-danger-bg-subtle);
+  color: var(--bs-danger);
+  
+  .modal-title {
+    display: flex;
+    align-items: center;
+  }
+}
+
+.modalFooter {
+  justify-content: space-between;
+}
