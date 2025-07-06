@@ -19,6 +19,7 @@ export interface DatabaseConfig {
   database: string;
   dump_path: string;
   restore_path?: string;
+  filename?: string;  // Default filename for dumps
   additional_params?: Record<string, any>;
   created_at?: string;
   updated_at?: string;
@@ -46,7 +47,7 @@ interface DatabaseContextType {
   saveConfig: (config: Omit<DatabaseConfig, 'id'> & { id?: number }) => Promise<DatabaseConfig>;
   deleteConfig: (id: number) => Promise<void>;
   fetchOperations: (configId?: number) => Promise<void>;
-  executeDump: (configId: number) => Promise<OperationLog>;
+  executeDump: (configId: number, filename?: string) => Promise<OperationLog>;
   executeRestore: (configId: number, filePath: string) => Promise<OperationLog>;
 }
 
@@ -136,11 +137,11 @@ export const DatabaseProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  const executeDump = useCallback(async (configId: number) => {
+  const executeDump = useCallback(async (configId: number, filename?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.post(API_ENDPOINTS.DUMP(configId));
+      const response = await axios.post(API_ENDPOINTS.DUMP(configId), { filename });
       const operation = response.data;
       setOperations(prev => [operation, ...prev]);
       return operation;

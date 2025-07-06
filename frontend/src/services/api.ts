@@ -63,8 +63,8 @@ export const getOperations = (configId?: number): Promise<OperationLog[]> => {
   return api.get(url).then((res) => res.data);
 };
 
-export const executeDump = (configId: number): Promise<OperationLog> => 
-  api.post(`/operations/dump/${configId}`).then((res) => res.data);
+export const executeDump = (configId: number, filename?: string): Promise<OperationLog> => 
+  api.post(`/operations/dump/${configId}`, { filename }).then((res) => res.data);
 
 export const executeRestore = (configId: number, filePath: string): Promise<OperationLog> => 
   api.post(`/operations/restore/${configId}`, { filePath }).then((res) => res.data);

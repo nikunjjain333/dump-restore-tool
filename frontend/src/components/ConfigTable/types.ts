@@ -1,7 +1,7 @@
-import { Config } from '../../types';
+import { DatabaseConfig } from '../../context/DatabaseContext';
 
 export interface ConfigTableProps {
-  configs: Config[];
+  configs: DatabaseConfig[];
   operationStatus: Record<number, 'idle' | 'loading' | 'success' | 'error'>;
   onDump: (id: number) => void;
   onRestore: (id: number) => void;

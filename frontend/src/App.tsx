@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Container } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.scss';
@@ -13,46 +13,49 @@ import ConfigForm from './pages/ConfigForm';
 import Operations from './pages/Operations';
 
 // State Management
-import { DatabaseProvider as StoreDatabaseProvider, useDatabaseDispatch, fetchConfigs, fetchOperations } from './store';
-import { DatabaseProvider as ContextDatabaseProvider } from './context/DatabaseContext';
+import { DatabaseProvider, useDatabase } from './context/DatabaseContext';
 
 // This component initializes data when the app loads
 const AppInitializer: FC<{ children: React.ReactNode }> = ({ children }) => {
-  const dispatch = useDatabaseDispatch();
-  const location = useLocation();
+  const { fetchConfigs, fetchOperations } = useDatabase();
 
   useEffect(() => {
     const initializeData = async () => {
-      await fetchConfigs(dispatch);
-      await fetchOperations(dispatch);
+      try {
+        // Run these in parallel since they don't depend on each other
+        await Promise.all([
+          fetchConfigs(),
+          fetchOperations()
+        ]);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+      }
     };
     
     initializeData();
-  }, [dispatch]);
+  }, [fetchConfigs, fetchOperations]);
 
   return <>{children}</>;
 };
 
 const App: FC = () => {
   return (
-    <StoreDatabaseProvider>
-      <ContextDatabaseProvider>
-        <AppInitializer>
-          <div className="app">
-            <Navigation />
-            <Container className="mt-4">
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/configs" element={<ConfigList />} />
-                <Route path="/configs/new" element={<ConfigForm />} />
-                <Route path="/configs/:id" element={<ConfigForm />} />
-                <Route path="/operations" element={<Operations />} />
-              </Routes>
-            </Container>
-          </div>
-        </AppInitializer>
-      </ContextDatabaseProvider>
-    </StoreDatabaseProvider>
+    <DatabaseProvider>
+      <AppInitializer>
+        <div className="app">
+          <Navigation />
+          <Container className="mt-4">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/configs" element={<ConfigList />} />
+              <Route path="/configs/new" element={<ConfigForm />} />
+              <Route path="/configs/:id" element={<ConfigForm />} />
+              <Route path="/operations" element={<Operations />} />
+            </Routes>
+          </Container>
+        </div>
+      </AppInitializer>
+    </DatabaseProvider>
   );
 };
 

@@ -9,7 +9,6 @@ const { TextEncoder, TextDecoder } = require('util');
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 import { configure } from '@testing-library/react';
-import { server } from './mocks/server';
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -262,13 +261,6 @@ jest.mock('react-router-dom', () => ({
 export { mockNavigate };
 
 // Setup and teardown
-beforeAll(() => {
-  // Start the mock service worker
-  if (typeof server !== 'undefined') {
-    server.listen({ onUnhandledRequest: 'error' });
-  }
-});
-
 beforeEach(() => {
   // Clear all mocks before each test
   jest.clearAllMocks();
@@ -276,21 +268,9 @@ beforeEach(() => {
   // Clear localStorage and sessionStorage
   localStorage.clear();
   sessionStorage.clear();
-  
-  // Reset the mock service worker handlers if it exists
-  if (typeof server !== 'undefined') {
-    server.resetHandlers();
-  }
 });
 
 afterEach(() => {
   // Restore the original console methods
   global.console = originalConsole;
-});
-
-afterAll(() => {
-  // Clean up the mock service worker
-  if (typeof server !== 'undefined') {
-    server.close();
-  }
 });

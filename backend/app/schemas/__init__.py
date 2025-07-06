@@ -22,6 +22,7 @@ class DatabaseConfigBase(BaseModel):
     database: str
     dump_path: str
     restore_path: Optional[str] = None
+    filename: Optional[str] = None  # Default filename for dumps
     additional_params: Optional[Dict[str, Any]] = None
 
 class DatabaseConfigCreate(DatabaseConfigBase):
@@ -46,3 +47,7 @@ class OperationLog(OperationLogBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# New schema for dump operation with filename
+class DumpRequest(BaseModel):
+    filename: Optional[str] = None

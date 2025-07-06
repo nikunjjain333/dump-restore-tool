@@ -2,7 +2,7 @@ import React from 'react';
 import { Table } from 'react-bootstrap';
 import { HardDrives } from 'phosphor-react';
 import { ActionButtons } from '../ActionButtons';
-import { Config } from '../../types';
+import { DatabaseConfig } from '../../context/DatabaseContext';
 import { ConfigTableProps } from './types';
 import styles from './styles/ConfigTable.module.scss';
 
@@ -64,7 +64,7 @@ export const ConfigTable: React.FC<ConfigTableProps> = ({
               <td>
                 <ActionButtons
                   config={config}
-                  operationStatus={operationStatus[config.id] || 'idle'}
+                  operationStatus={operationStatus[config.id || 0] || 'idle'}
                   onDump={onDump}
                   onRestore={onRestore}
                   onViewOperations={onViewOperations}

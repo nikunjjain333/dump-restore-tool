@@ -16,6 +16,7 @@ class DatabaseConfig(Base):
     database = Column(String)
     dump_path = Column(String)
     restore_path = Column(String, nullable=True)
+    filename = Column(String, nullable=True)  # Default filename for dumps
     additional_params = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

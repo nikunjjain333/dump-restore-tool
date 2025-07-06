@@ -1,7 +1,7 @@
 // Setup file for Jest
 // This file runs before each test file is executed
 import '@testing-library/jest-dom';
-import { server } from './src/mocks/server';
+import { resetApiMocks } from './src/mocks/api';
 
 // Mock the window.matchMedia function used by various components
 Object.defineProperty(window, 'matchMedia', {
@@ -41,6 +41,53 @@ window.IntersectionObserver = IntersectionObserver;
 
 // Mock the fetch API
 global.fetch = jest.fn();
+
+// Mock axios
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    patch: jest.fn(),
+    create: jest.fn(() => ({
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      delete: jest.fn(),
+      patch: jest.fn(),
+      interceptors: {
+        request: { use: jest.fn(), eject: jest.fn() },
+        response: { use: jest.fn(), eject: jest.fn() }
+      },
+      defaults: {
+        headers: {
+          common: {},
+          get: {},
+          post: {},
+          put: {},
+          delete: {},
+          patch: {}
+        }
+      }
+    })),
+    interceptors: {
+      request: { use: jest.fn(), eject: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn() }
+    },
+    defaults: {
+      headers: {
+        common: {},
+        get: {},
+        post: {},
+        put: {},
+        delete: {},
+        patch: {}
+      }
+    }
+  }
+}));
 
 // Mock the localStorage API
 const localStorageMock = (() => {
@@ -163,13 +210,6 @@ jest.mock('react-router-dom', () => ({
 export { mockNavigate };
 
 // Setup and teardown
-beforeAll(() => {
-  // Start the mock service worker
-  if (typeof server !== 'undefined') {
-    server.listen({ onUnhandledRequest: 'error' });
-  }
-});
-
 beforeEach(() => {
   // Clear all mocks before each test
   jest.clearAllMocks();
@@ -178,20 +218,11 @@ beforeEach(() => {
   localStorage.clear();
   sessionStorage.clear();
   
-  // Reset the mock service worker handlers if it exists
-  if (typeof server !== 'undefined') {
-    server.resetHandlers();
-  }
+  // Reset API mocks
+  resetApiMocks();
 });
 
 afterEach(() => {
   // Restore the original console methods
   global.console = originalConsole;
-});
-
-afterAll(() => {
-  // Clean up the mock service worker
-  if (typeof server !== 'undefined') {
-    server.close();
-  }
 });

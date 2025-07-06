@@ -10,7 +10,8 @@ import {
   Card, 
   Form,
   Row,
-  Col
+  Col,
+  Dropdown
 } from 'react-bootstrap';
 import { 
   ArrowClockwise, 
@@ -20,9 +21,12 @@ import {
   Play,
   ClockCounterClockwise,
   Funnel,
-  X
+  X,
+  Database,
+  CaretDown
 } from 'phosphor-react';
 import { useDatabase, type OperationLog, type DatabaseConfig } from '../context/DatabaseContext';
+import DumpModal from '../components/DumpModal';
 
 // Add JSX namespace for React 18
 import * as ReactJSX from 'react';
@@ -48,6 +52,10 @@ const Operations: React.FC = () => {
   const [operationType, setOperationType] = useState<'all' | OperationType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | StatusType>('all');
   const [isExecuting, setIsExecuting] = useState<{[key: string]: boolean}>({});
+  
+  // Dump modal state
+  const [showDumpModal, setShowDumpModal] = useState(false);
+  const [selectedConfigForDump, setSelectedConfigForDump] = useState<DatabaseConfig | null>(null);
   
   // Get URL params for pre-selecting config and operation
   useEffect(() => {
@@ -93,25 +101,31 @@ const Operations: React.FC = () => {
   
   // Handle operation execution
   const handleExecuteOperation = async (configId: number, type: OperationType) => {
-    try {
-      setIsExecuting(prev => ({ ...prev, [configId]: true }));
-      
-      if (type === 'dump') {
-        await executeDump(configId);
-      } else {
+    if (type === 'dump') {
+      // Show dump modal for dump operations
+      const config = configs.find(c => c.id === configId);
+      if (config) {
+        setSelectedConfigForDump(config);
+        setShowDumpModal(true);
+      }
+    } else {
+      // Handle restore operations directly
+      try {
+        setIsExecuting(prev => ({ ...prev, [configId]: true }));
+        
         const config = configs.find(c => c.id === configId);
         if (config) {
           await executeRestore(configId, config.dump_path);
         }
+        
+        // Refresh operations after execution
+        await fetchOperations(selectedConfig === 'all' ? undefined : selectedConfig);
+      } catch (err) {
+        console.error(`Error executing ${type}:`, err);
+        setError(`Failed to execute ${type} operation`);
+      } finally {
+        setIsExecuting(prev => ({ ...prev, [configId]: false }));
       }
-      
-      // Refresh operations after execution
-      await fetchOperations(selectedConfig === 'all' ? undefined : selectedConfig);
-    } catch (err) {
-      console.error(`Error executing ${type}:`, err);
-      setError(`Failed to execute ${type} operation`);
-    } finally {
-      setIsExecuting(prev => ({ ...prev, [configId]: false }));
     }
   };
   
@@ -152,6 +166,26 @@ const Operations: React.FC = () => {
     }
   };
   
+  // Handle dump execution from modal
+  const handleDumpExecute = async (filename?: string) => {
+    if (!selectedConfigForDump) return;
+    
+    try {
+      setIsExecuting(prev => ({ ...prev, [selectedConfigForDump.id!]: true }));
+      
+      await executeDump(selectedConfigForDump.id!, filename);
+      
+      // Refresh operations after execution
+      await fetchOperations(selectedConfig === 'all' ? undefined : selectedConfig);
+    } catch (err) {
+      console.error('Error executing dump:', err);
+      setError('Failed to execute dump operation');
+      throw err; // Re-throw to let the modal handle the error
+    } finally {
+      setIsExecuting(prev => ({ ...prev, [selectedConfigForDump.id!]: false }));
+    }
+  };
+
   // Get status icon
   const getStatusIcon = (status: string): React.ReactElement => {
     const iconProps = { size: 20, className: 'me-2' };
@@ -191,14 +225,38 @@ const Operations: React.FC = () => {
     <Container className="my-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Operations</h2>
-        <Button 
-          variant="outline-secondary" 
-          size="sm" 
-          onClick={() => window.location.reload()}
-        >
-          <ArrowClockwise size={16} className="me-1" />
-          Refresh
-        </Button>
+        <div className="d-flex gap-2">
+          {configs.length > 0 && (
+            <Dropdown>
+              <Dropdown.Toggle variant="primary" size="sm">
+                <Database size={16} className="me-1" />
+                Create Dump
+                <CaretDown size={12} className="ms-1" />
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                {configs.map(config => (
+                  <Dropdown.Item 
+                    key={config.id}
+                    onClick={() => {
+                      setSelectedConfigForDump(config);
+                      setShowDumpModal(true);
+                    }}
+                  >
+                    {config.name}
+                  </Dropdown.Item>
+                ))}
+              </Dropdown.Menu>
+            </Dropdown>
+          )}
+          <Button 
+            variant="outline-secondary" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+          >
+            <ArrowClockwise size={16} className="me-1" />
+            Refresh
+          </Button>
+        </div>
       </div>
       
       <Card className="mb-4">
@@ -343,6 +401,20 @@ const Operations: React.FC = () => {
           )}
         </Card.Body>
       </Card>
+      
+      {/* Dump Modal */}
+      {selectedConfigForDump && (
+        <DumpModal
+          show={showDumpModal}
+          onHide={() => {
+            setShowDumpModal(false);
+            setSelectedConfigForDump(null);
+          }}
+          onExecute={handleDumpExecute}
+          configName={selectedConfigForDump.name}
+          loading={isExecuting[selectedConfigForDump.id!]}
+        />
+      )}
     </Container>
   );
 };

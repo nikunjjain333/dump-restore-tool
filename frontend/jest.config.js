@@ -25,9 +25,6 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   
-  // Setup files to run before each test file in the suite is executed
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next/'],
   
@@ -61,7 +58,7 @@ module.exports = {
   
   // A map from regular expressions to paths to transformers
   transformIgnorePatterns: [
-    '/node_modules/',
+    '/node_modules/(?!(axios)/)',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
   

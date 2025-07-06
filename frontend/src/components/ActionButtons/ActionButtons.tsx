@@ -42,16 +42,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
               </>
             )}
           </Button>
-          
-          <Button
-            variant="outline-secondary"
-            size="sm"
-            className="me-2"
-            onClick={(e) => handleClick(e, () => onViewOperations(config.id))}
-          >
-            <ListChecks size={16} className="me-1" />
-            View Operations
-          </Button>
         </>
       ) : (
         <Button

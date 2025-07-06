@@ -20,6 +20,7 @@ const ConfigForm: React.FC = () => {
     database: '',
     dump_path: '',
     restore_path: '',
+    filename: '',
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -42,6 +43,7 @@ const ConfigForm: React.FC = () => {
             database: config.database,
             dump_path: config.dump_path,
             restore_path: config.restore_path || '',
+            filename: config.filename || '',
           });
         } catch (err) {
           console.error('Error loading config:', err);
@@ -337,6 +339,24 @@ const ConfigForm: React.FC = () => {
                 </Form.Control.Feedback>
               )}
             </Form.Group>
+            
+            {formData.operation === 'dump' && (
+              <Form.Group className="mb-3">
+                <Form.Label>Default Dump Filename (Optional)</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="filename"
+                  value={formData.filename}
+                  onChange={handleChange}
+                  placeholder="e.g., my_database_backup"
+                  disabled={isSubmitting}
+                />
+                <Form.Text className="text-muted">
+                  Default filename for database dumps. Leave empty to use auto-generated names with timestamps.
+                  The .dump extension will be added automatically.
+                </Form.Text>
+              </Form.Group>
+            )}
             
             {formData.operation === 'restore' && (
               <Form.Group className="mb-4">

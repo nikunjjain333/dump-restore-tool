@@ -1,7 +1,7 @@
-import { Config } from '../../types';
+import { DatabaseConfig } from '../../context/DatabaseContext';
 
 export interface ActionButtonsProps {
-  config: Pick<Config, 'id' | 'operation'>;
+  config: Pick<DatabaseConfig, 'id' | 'operation'>;
   operationStatus: 'idle' | 'loading' | 'success' | 'error';
   onDump: (id: number) => void;
   onRestore: (id: number) => void;
