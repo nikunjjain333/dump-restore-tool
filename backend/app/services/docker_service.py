@@ -1,4 +1,5 @@
 import docker
+from docker.errors import DockerException
 import subprocess
 import os
 import platform
@@ -7,6 +8,48 @@ from typing import Dict, Any
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+def get_docker_status() -> Dict[str, Any]:
+    """
+    Get current Docker daemon status
+    """
+    try:
+        # Try to connect to Docker daemon using configured host
+        client = docker.from_env(environment={'DOCKER_HOST': settings.DOCKER_HOST})
+        client.ping()
+        
+        # Get additional Docker info
+        info = client.info()
+        version = client.version()
+        
+        return {
+            "success": True,
+            "message": "Docker daemon is running",
+            "status": "running",
+            "info": {
+                "containers": info.get('Containers', 0),
+                "images": info.get('Images', 0),
+                "version": version.get('Version', 'Unknown'),
+                "os": info.get('OperatingSystem', 'Unknown'),
+                "architecture": info.get('Architecture', 'Unknown')
+            }
+        }
+    except DockerException as e:
+        logger.error(f"Docker connection failed: {e}")
+        return {
+            "success": False,
+            "message": "Docker daemon is not accessible",
+            "status": "not_accessible",
+            "error": str(e)
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error checking Docker status: {e}")
+        return {
+            "success": False,
+            "message": f"Error checking Docker status: {str(e)}",
+            "status": "error",
+            "error": str(e)
+        }
 
 def start_docker_daemon() -> Dict[str, Any]:
     """
@@ -22,7 +65,7 @@ def start_docker_daemon() -> Dict[str, Any]:
             "message": "Docker daemon is accessible and running",
             "status": "running"
         }
-    except docker.errors.DockerException as e:
+    except DockerException as e:
         logger.error(f"Docker connection failed: {e}")
         
         # Check if we're running in a container
@@ -81,10 +124,72 @@ def start_docker_daemon() -> Dict[str, Any]:
                 "status": "not_installed"
             }
 
+def stop_docker_daemon() -> Dict[str, Any]:
+    """
+    Stop Docker daemon (for local development only)
+    """
+    try:
+        # Check if we're running in a container
+        if os.path.exists('/.dockerenv'):
+            return {
+                "success": False,
+                "message": "Cannot stop Docker daemon from within a container. Please stop Docker Desktop manually on the host.",
+                "status": "not_allowed"
+            }
+        
+        system = platform.system().lower()
+        
+        if system == "windows":
+            # Windows
+            subprocess.run(['net', 'stop', 'docker'], check=True)
+        elif system == "darwin":
+            # macOS - Try to quit Docker Desktop
+            try:
+                subprocess.run(['osascript', '-e', 'quit app "Docker"'], check=True)
+            except subprocess.CalledProcessError:
+                # Alternative method
+                try:
+                    subprocess.run(['launchctl', 'unload', '/Library/LaunchDaemons/com.docker.docker.plist'], check=True)
+                except subprocess.CalledProcessError:
+                    return {
+                        "success": False,
+                        "message": "Failed to stop Docker Desktop. Please stop it manually.",
+                        "status": "error"
+                    }
+        else:
+            # Linux
+            subprocess.run(['sudo', 'systemctl', 'stop', 'docker'], check=True)
+        
+        return {
+            "success": True,
+            "message": "Docker daemon stopped successfully",
+            "status": "stopped"
+        }
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Failed to stop Docker daemon: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to stop Docker daemon: {str(e)}",
+            "status": "error"
+        }
+    except FileNotFoundError:
+        return {
+            "success": False,
+            "message": "Docker is not installed or not in PATH",
+            "status": "not_installed"
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error stopping Docker: {e}")
+        return {
+            "success": False,
+            "message": f"Error stopping Docker: {str(e)}",
+            "status": "error"
+        }
+
 def get_docker_client():
     """Get Docker client instance"""
     try:
         return docker.from_env(environment={'DOCKER_HOST': settings.DOCKER_HOST})
-    except docker.errors.DockerException as e:
+    except DockerException as e:
         logger.error(f"Failed to connect to Docker: {e}")
         raise Exception("Docker daemon is not running") 

@@ -10,10 +10,20 @@ const apiClient = axios.create({
 });
 
 // TypeScript interfaces
+export interface DockerInfo {
+  containers: number;
+  images: number;
+  version: string;
+  os: string;
+  architecture: string;
+}
+
 export interface DockerResponse {
   success: boolean;
   message: string;
   status: string;
+  info?: DockerInfo;
+  error?: string;
 }
 
 export interface Config {
@@ -53,8 +63,12 @@ export interface OperationResponse {
 
 export const api = {
   // Docker
+  getDockerStatus: (): Promise<AxiosResponse<DockerResponse>> => 
+    apiClient.get<DockerResponse>('/docker/status'),
   startDocker: (): Promise<AxiosResponse<DockerResponse>> => 
     apiClient.post<DockerResponse>('/docker/start'),
+  stopDocker: (): Promise<AxiosResponse<DockerResponse>> => 
+    apiClient.post<DockerResponse>('/docker/stop'),
 
   // Configs
   getConfigs: (): Promise<AxiosResponse<Config[]>> => 

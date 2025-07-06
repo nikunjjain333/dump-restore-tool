@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import toast, { Toaster } from 'react-hot-toast';
 import './MainPage.scss';
 import DockerButton from '../components/DockerButton';
 import DatabaseTypeSelector from '../components/DatabaseTypeSelector';
@@ -41,11 +42,14 @@ const MainPage: React.FC = () => {
       setSavedConfigs(response.data);
     } catch (error) {
       console.error('Failed to load configs:', error);
+      toast.error('Failed to load saved configurations');
     }
   };
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+    const loadingToast = toast.loading(`Starting ${data.operation} process...`);
+    
     try {
       const configData: ConfigCreate = {
         name: data.configName,
@@ -64,6 +68,7 @@ const MainPage: React.FC = () => {
 
       // Save config
       await api.createConfig(configData);
+      toast.success('Configuration saved successfully!');
 
       // Start process
       const processData: DumpRequest | RestoreRequest = {
@@ -74,16 +79,22 @@ const MainPage: React.FC = () => {
       };
 
       if (data.operation === 'dump') {
-        await api.startDump(processData as DumpRequest);
+        const result = await api.startDump(processData as DumpRequest);
+        toast.dismiss(loadingToast);
+        toast.success(`✅ ${result.data.message}`);
       } else {
-        await api.startRestore(processData as RestoreRequest);
+        const result = await api.startRestore(processData as RestoreRequest);
+        toast.dismiss(loadingToast);
+        toast.success(`✅ ${result.data.message}`);
       }
 
-      alert(`${data.operation} process started successfully!`);
       loadSavedConfigs();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to start process:', error);
-      alert('Failed to start process. Please check the console for details.');
+      toast.dismiss(loadingToast);
+      
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to start process';
+      toast.error(`❌ ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -98,10 +109,44 @@ const MainPage: React.FC = () => {
     Object.entries(config.params).forEach(([key, value]) => {
       setValue(key, value);
     });
+    toast.success(`Configuration "${config.name}" loaded!`);
   };
 
   return (
     <div className="main-page">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+            borderRadius: '8px',
+            padding: '12px 16px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 9999,
+          },
+          success: {
+            iconTheme: {
+              primary: '#10b981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ef4444',
+              secondary: '#fff',
+            },
+          },
+          loading: {
+            iconTheme: {
+              primary: '#3b82f6',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
+      
       <div className="container">
         <form onSubmit={handleSubmit(onSubmit)} className="main-form">
           <div className="form-section">
