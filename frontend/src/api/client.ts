@@ -61,6 +61,38 @@ export interface OperationResponse {
   path?: string;
 }
 
+export interface DockerComposeConfig {
+  id: number;
+  name: string;
+  path: string;
+  service_name?: string;
+  flags?: Record<string, any>;
+  description?: string;
+  is_active: boolean;
+}
+
+export interface DockerComposeConfigCreate {
+  name: string;
+  path: string;
+  service_name?: string;
+  flags?: Record<string, any>;
+  description?: string;
+}
+
+export interface DockerComposeOperationRequest {
+  config_id: number;
+  service_name?: string;
+  flags?: Record<string, any>;
+  operation: string;
+}
+
+export interface DockerComposeOperationResponse {
+  success: boolean;
+  message: string;
+  output?: string;
+  services?: Record<string, any>[];
+}
+
 export const api = {
   // Docker
   getDockerStatus: (): Promise<AxiosResponse<DockerResponse>> => 
@@ -83,6 +115,22 @@ export const api = {
   // Restore
   startRestore: (data: RestoreRequest): Promise<AxiosResponse<OperationResponse>> => 
     apiClient.post<OperationResponse>('/restore', data),
+
+  // Docker Compose
+  getDockerComposeConfigs: (): Promise<AxiosResponse<DockerComposeConfig[]>> => 
+    apiClient.get<DockerComposeConfig[]>('/docker-compose/'),
+  getDockerComposeConfig: (id: number): Promise<AxiosResponse<DockerComposeConfig>> => 
+    apiClient.get<DockerComposeConfig>(`/docker-compose/${id}`),
+  createDockerComposeConfig: (config: DockerComposeConfigCreate): Promise<AxiosResponse<DockerComposeConfig>> => 
+    apiClient.post<DockerComposeConfig>('/docker-compose/', config),
+  updateDockerComposeConfig: (id: number, config: Partial<DockerComposeConfigCreate>): Promise<AxiosResponse<DockerComposeConfig>> => 
+    apiClient.put<DockerComposeConfig>(`/docker-compose/${id}`, config),
+  deleteDockerComposeConfig: (id: number): Promise<AxiosResponse<{success: boolean, message: string}>> => 
+    apiClient.delete(`/docker-compose/${id}`),
+  operateDockerCompose: (id: number, operation: DockerComposeOperationRequest): Promise<AxiosResponse<DockerComposeOperationResponse>> => 
+    apiClient.post<DockerComposeOperationResponse>(`/docker-compose/${id}/operate`, operation),
+  getDockerComposeServices: (id: number): Promise<AxiosResponse<{success: boolean, services?: Record<string, any>[], message?: string}>> => 
+    apiClient.get(`/docker-compose/${id}/services`),
 };
 
 export default apiClient; 

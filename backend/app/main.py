@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import configs, dump, restore, docker
+from app.api import configs, dump, restore, docker, docker_compose
 from app.core.db import engine, Base
 from sqlalchemy import text
 import logging
@@ -89,3 +89,4 @@ app.include_router(configs.router, prefix="/configs", tags=["configs"])
 app.include_router(dump.router, prefix="/dump", tags=["dump"])
 app.include_router(restore.router, prefix="/restore", tags=["restore"])
 app.include_router(docker.router, prefix="/docker", tags=["docker"])
+app.include_router(docker_compose.router, prefix="/docker-compose", tags=["docker-compose"])

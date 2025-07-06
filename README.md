@@ -5,6 +5,7 @@ A comprehensive tool for database dump and restore operations with a modern web 
 ## Features
 
 - **Docker Integration**: Start Docker daemon from the UI
+- **Docker Compose Management**: Add, manage, and operate Docker Compose configurations
 - **Multiple Database Support**: PostgreSQL, MySQL, MongoDB, Redis, SQLite
 - **Dump & Restore Operations**: Separate logic for each operation
 - **Configuration Management**: Save and reuse configurations
@@ -149,6 +150,73 @@ POST /docker/start
   "success": true,
   "message": "Docker daemon started successfully",
   "status": "started"
+}
+```
+
+#### Docker Compose Operations
+
+**List Docker Compose Configurations**
+```http
+GET /docker-compose/
+```
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "My App Stack",
+    "path": "/path/to/docker-compose.yml",
+    "service_name": "web",
+    "flags": {
+      "detach": true,
+      "build": false
+    },
+    "description": "Production web application stack",
+    "is_active": true
+  }
+]
+```
+
+**Create Docker Compose Configuration**
+```http
+POST /docker-compose/
+```
+**Request Body:**
+```json
+{
+  "name": "My App Stack",
+  "path": "/path/to/docker-compose.yml",
+  "service_name": "web",
+  "flags": {
+    "detach": true,
+    "build": false
+  },
+  "description": "Production web application stack"
+}
+```
+
+**Perform Docker Compose Operation**
+```http
+POST /docker-compose/{config_id}/operate
+```
+**Request Body:**
+```json
+{
+  "config_id": 1,
+  "operation": "up",
+  "service_name": "web",
+  "flags": {
+    "detach": true,
+    "build": true
+  }
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Docker Compose up completed successfully",
+  "output": "Starting myapp_web_1 ... done"
 }
 ```
 

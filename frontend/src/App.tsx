@@ -1,10 +1,11 @@
 import React from 'react';
-import { Home, Plus, Database } from 'lucide-react';
+import { Home, Plus, Database, Container } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import './styles/App.scss';
 import HomePage from './pages/HomePage';
 import AddConfigurationPage from './pages/AddConfigurationPage';
 import ConfigurationsPage from './pages/ConfigurationsPage';
+import DockerComposePage from './pages/DockerComposePage';
 
 const Navigation: React.FC = () => {
   const location = useLocation();
@@ -32,6 +33,13 @@ const Navigation: React.FC = () => {
         <Database className="nav-icon" />
         Configurations
       </NavLink>
+      <NavLink 
+        to="/docker-compose" 
+        className={`nav-link ${location.pathname === '/docker-compose' ? 'active' : ''}`}
+      >
+        <Container className="nav-icon" />
+        Docker Compose
+      </NavLink>
     </nav>
   );
 };
@@ -44,7 +52,7 @@ const App: React.FC = () => {
           <div className="header-content">
             <div className="logo-section">
               <Database className="logo-icon" />
-              <h1>Database Dump & Restore Tool</h1>
+              <h1>DB Dump & Restore Tool</h1>
             </div>
             <Navigation />
           </div>
@@ -54,6 +62,7 @@ const App: React.FC = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/add-configuration" element={<AddConfigurationPage />} />
             <Route path="/configurations" element={<ConfigurationsPage />} />
+            <Route path="/docker-compose" element={<DockerComposePage />} />
           </Routes>
         </main>
       </div>
