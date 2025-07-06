@@ -61,7 +61,10 @@
         }
         
         .info-icon {
-          color: var(--text-accent);
+          background: var(--gradient-primary);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
           font-size: 1.25rem;
           flex-shrink: 0;
         }

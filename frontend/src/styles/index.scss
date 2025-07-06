@@ -11,8 +11,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
-  color: #333;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
@@ -21,55 +21,7 @@ code {
     monospace;
 }
 
-// Button styles
-.btn {
-  display: inline-block;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  
-  &.btn-primary {
-    background-color: #007bff;
-    color: white;
-    
-    &:hover:not(:disabled) {
-      background-color: #0056b3;
-    }
-  }
-  
-  &.btn-secondary {
-    background-color: #6c757d;
-    color: white;
-    
-    &:hover:not(:disabled) {
-      background-color: #545b62;
-    }
-  }
-  
-  &.btn-success {
-    background-color: #28a745;
-    color: white;
-    
-    &:hover:not(:disabled) {
-      background-color: #1e7e34;
-    }
-  }
-  
-  &.btn-lg {
-    padding: 15px 30px;
-    font-size: 16px;
-  }
-}
+// Button styles are now handled in App.scss with dark theme
 
 // Form styles
 .form-field {
@@ -79,25 +31,31 @@ code {
     display: block;
     margin-bottom: 5px;
     font-weight: 500;
-    color: #333;
+    color: var(--text-primary);
   }
   
   input, select, textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    background: var(--bg-input);
+    border: 1px solid var(--border-primary);
     border-radius: 5px;
     font-size: 14px;
+    color: var(--text-primary);
     transition: border-color 0.3s ease;
     
     &:focus {
       outline: none;
-      border-color: #007bff;
-      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+      border-color: var(--border-accent);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
     }
     
     &.error {
       border-color: #dc3545;
+    }
+    
+    &::placeholder {
+      color: var(--text-muted);
     }
   }
   

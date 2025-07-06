@@ -25,7 +25,10 @@
     }
     
     h1 {
-      color: var(--text-primary);
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       font-size: 2rem;
       font-weight: 700;
       margin: 0;
@@ -189,11 +192,11 @@
           justify-content: center;
           width: 3rem;
           height: 3rem;
-          background: var(--bg-tertiary);
+          background: var(--gradient-primary);
           border-radius: var(--radius-md);
           
           .config-icon {
-            color: var(--text-accent);
+            color: var(--text-primary);
             font-size: 1.5rem;
           }
         }

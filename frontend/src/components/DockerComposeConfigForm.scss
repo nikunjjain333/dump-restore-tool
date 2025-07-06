@@ -1,26 +1,30 @@
 .docker-compose-config-form {
-  background: #ffffff;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-lg);
   max-width: 600px;
   margin: 0 auto;
 
   h3 {
     margin: 0 0 24px 0;
-    color: #2c3e50;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     font-size: 1.5rem;
     font-weight: 600;
     text-align: center;
   }
 
   .error-message {
-    background: #fee;
-    color: #c53030;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
     padding: 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     margin-bottom: 20px;
-    border: 1px solid #feb2b2;
+    border: 1px solid rgba(239, 68, 68, 0.3);
     font-size: 0.9rem;
   }
 
@@ -30,7 +34,7 @@
     label {
       display: block;
       margin-bottom: 8px;
-      color: #4a5568;
+      color: var(--text-primary);
       font-weight: 500;
       font-size: 0.9rem;
     }
@@ -38,26 +42,28 @@
     input, textarea {
       width: 100%;
       padding: 12px;
-      border: 2px solid #e2e8f0;
-      border-radius: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-md);
       font-size: 0.9rem;
+      color: var(--text-primary);
       transition: border-color 0.2s ease;
       box-sizing: border-box;
 
       &:focus {
         outline: none;
-        border-color: #4299e1;
-        box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        border-color: var(--border-accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
       }
 
       &:disabled {
-        background-color: #f7fafc;
-        color: #a0aec0;
+        background-color: var(--bg-secondary);
+        color: var(--text-muted);
         cursor: not-allowed;
       }
 
       &::placeholder {
-        color: #a0aec0;
+        color: var(--text-muted);
       }
     }
 
@@ -67,7 +73,7 @@
     }
 
     .error {
-      color: #e53e3e;
+      color: #ef4444;
       font-size: 0.8rem;
       margin-top: 4px;
       display: block;
@@ -85,11 +91,11 @@
       align-items: center;
       cursor: pointer;
       padding: 8px;
-      border-radius: 6px;
+      border-radius: var(--radius-md);
       transition: background-color 0.2s ease;
 
       &:hover {
-        background-color: #f7fafc;
+        background-color: var(--bg-secondary);
       }
 
       input[type="checkbox"] {
@@ -105,7 +111,7 @@
       }
 
       span {
-        color: #4a5568;
+        color: var(--text-primary);
         font-size: 0.9rem;
         line-height: 1.4;
       }
@@ -118,12 +124,12 @@
     justify-content: flex-end;
     margin-top: 24px;
     padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid var(--border-primary);
 
     .btn {
       padding: 12px 24px;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       font-size: 0.9rem;
       font-weight: 500;
       cursor: pointer;
@@ -140,8 +146,8 @@
         color: white;
 
         &:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
         }
 
         &:active:not(:disabled) {
@@ -150,11 +156,13 @@
       }
 
       &.btn-secondary {
-        background: #e2e8f0;
-        color: #4a5568;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-secondary);
 
         &:hover:not(:disabled) {
-          background: #cbd5e0;
+          background: var(--bg-tertiary);
+          border-color: var(--border-accent);
         }
       }
     }

@@ -120,7 +120,7 @@ const DockerButton: React.FC<DockerButtonProps> = ({
           type="button"
           onClick={handleCheckStatus}
           disabled={isCheckingStatus}
-          className="btn btn-secondary"
+          className="btn btn--primary"
         >
           {isCheckingStatus ? (
             <>

@@ -9,10 +9,9 @@
 
     h1 {
       margin: 0 0 12px 0;
-      color: #2d3748;
       font-size: 2.5rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--gradient-primary);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -80,7 +79,7 @@
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 
       &.btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--gradient-primary);
         color: white;
 
         &:hover {

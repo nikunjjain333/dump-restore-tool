@@ -3,7 +3,10 @@
     margin-bottom: 1.5rem;
     
     h3 {
-      color: var(--text-primary);
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       font-size: 1.25rem;
       font-weight: 600;
       margin: 0 0 0.5rem 0;
@@ -34,7 +37,10 @@
     }
     
     h3 {
-      color: var(--text-primary);
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       font-size: 1.25rem;
       font-weight: 600;
       margin: 0 0 0.5rem 0;
@@ -68,35 +74,36 @@
     position: relative;
     overflow: hidden;
     
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: var(--gradient-primary);
-      opacity: 0;
-      transition: opacity 0.2s ease-in-out;
-    }
-    
-    &:hover {
-      border-color: var(--border-accent);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-      
-      &::before {
-        opacity: 1;
+          &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient-primary);
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
       }
       
-      .config-icon-wrapper {
-        background: var(--gradient-primary);
+      &:hover {
+        border-color: var(--border-accent);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
         
-        .config-icon {
-          color: var(--text-primary);
+        &::before {
+          opacity: 1;
+        }
+        
+        .config-icon-wrapper {
+          background: var(--gradient-primary);
+          transform: scale(1.05);
+          
+          .config-icon {
+            color: var(--text-primary);
+          }
         }
       }
-    }
     
     .card-header {
       display: flex;
@@ -110,13 +117,13 @@
         justify-content: center;
         width: 3rem;
         height: 3rem;
-        background: var(--bg-tertiary);
+        background: var(--gradient-primary);
         border-radius: var(--radius-md);
         transition: all 0.2s ease-in-out;
         flex-shrink: 0;
         
         .config-icon {
-          color: var(--text-accent);
+          color: var(--text-primary);
           font-size: 1.5rem;
           transition: all 0.2s ease-in-out;
         }
