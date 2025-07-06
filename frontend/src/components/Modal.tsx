@@ -7,6 +7,7 @@ interface ModalProps {
   title: string;
   message: string;
   type?: 'success' | 'error' | 'info' | 'warning';
+  contentType?: 'text' | 'logs' | 'preformatted';
   showCloseButton?: boolean;
   autoClose?: boolean;
   autoCloseDelay?: number;
@@ -21,6 +22,7 @@ const Modal: React.FC<ModalProps> = ({
   title,
   message,
   type = 'info',
+  contentType = 'text',
   showCloseButton = true,
   autoClose = false,
   autoCloseDelay = 3000,
@@ -67,7 +69,7 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-content ${contentType === 'logs' ? 'modal-content-logs' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className={`modal-header modal-${type}`}>
           <div className="modal-icon">{getIcon()}</div>
           <h3 className="modal-title">{title}</h3>
@@ -78,7 +80,11 @@ const Modal: React.FC<ModalProps> = ({
           )}
         </div>
         <div className="modal-body">
-          <p className="modal-message">{message}</p>
+          {contentType === 'logs' || contentType === 'preformatted' ? (
+            <pre className="modal-message modal-logs">{message}</pre>
+          ) : (
+            <p className="modal-message">{message}</p>
+          )}
         </div>
         <div className="modal-footer">
           {onConfirm ? (

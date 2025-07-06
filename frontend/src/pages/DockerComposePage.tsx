@@ -55,6 +55,7 @@ const DockerComposePage: React.FC<DockerComposePageProps> = ({
         type: 'success'
       });
       setShowForm(false);
+      handleRefresh(); // Refresh the config list
     } catch (err: any) {
       console.error('Error creating Docker Compose config:', err);
       setModal({
@@ -72,9 +73,10 @@ const DockerComposePage: React.FC<DockerComposePageProps> = ({
     setShowForm(false);
   };
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const handleRefresh = () => {
-    // This will trigger a refresh of the config list
-    // The list component handles its own refresh
+    setRefreshKey(prev => prev + 1);
   };
 
   return (
@@ -114,7 +116,7 @@ const DockerComposePage: React.FC<DockerComposePageProps> = ({
       )}
 
       <div className="list-section">
-        <DockerComposeConfigList onRefresh={handleRefresh} />
+        <DockerComposeConfigList onRefresh={handleRefresh} refreshKey={refreshKey} />
       </div>
     </div>
   );

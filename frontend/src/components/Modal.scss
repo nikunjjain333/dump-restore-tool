@@ -24,6 +24,12 @@
   overflow: hidden;
   animation: slideIn 0.3s ease;
   position: relative;
+
+  &.modal-content-logs {
+    max-width: 800px;
+    width: 95%;
+    max-height: 90vh;
+  }
 }
 
 .modal-header {
@@ -102,6 +108,39 @@
     line-height: 1.6;
     word-break: break-word;
     white-space: pre-wrap;
+
+    &.modal-logs {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre;
+      color: var(--text-primary);
+      
+      // Scrollbar styling for logs
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: var(--bg-tertiary);
+        border-radius: 4px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--border-accent);
+        border-radius: 4px;
+        
+        &:hover {
+          background: var(--text-muted);
+        }
+      }
+    }
   }
 }
 
