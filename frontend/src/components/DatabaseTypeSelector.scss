@@ -1,89 +1,106 @@
 .database-type-selector {
-  .field-label {
+  .selector-label {
     display: block;
-    color: var(--text-secondary);
-    font-weight: 500;
     font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
   }
-  
-  .option-icon {
-    color: var(--text-accent);
-    font-size: 1.25rem;
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
   }
-  
-  .select__control {
-    min-height: 3rem;
+
+  .option-card {
+    position: relative;
+    cursor: pointer;
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
     transition: all 0.2s ease-in-out;
+    overflow: hidden;
     
     &:hover {
       border-color: var(--border-accent);
-    }
-  }
-  
-  .select__control--is-focused {
-    border-color: var(--border-accent);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-  
-  .select__menu {
-    z-index: 1000;
-  }
-  
-  .select__option {
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    
-    &:hover {
-      background-color: var(--bg-tertiary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
     }
     
-    &--is-focused {
-      background-color: var(--bg-tertiary);
+    &.selected {
+      border-color: var(--border-accent);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%);
+      box-shadow: var(--shadow-lg);
+      
+      .option-content {
+        .option-icon {
+          background: var(--gradient-primary);
+          color: var(--text-primary);
+        }
+        
+        .option-label {
+          color: var(--text-accent);
+          font-weight: 600;
+        }
+      }
     }
     
-    &--is-selected {
-      background-color: var(--primary-blue);
-      color: var(--text-primary);
+    .option-input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
     }
-  }
-  
-  .select__single-value {
-    font-weight: 500;
-  }
-  
-  .select__placeholder {
-    color: var(--text-muted);
-  }
-  
-  .select__indicator-separator {
-    background-color: var(--border-secondary);
-  }
-  
-  .select__indicator {
-    color: var(--text-muted);
     
-    &:hover {
-      color: var(--text-accent);
+    .option-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 1.5rem 1rem;
+      gap: 0.75rem;
+      
+      .option-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 3rem;
+        height: 3rem;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-lg);
+        color: var(--text-accent);
+        font-size: 1.5rem;
+        transition: all 0.2s ease-in-out;
+      }
+      
+      .option-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        transition: all 0.2s ease-in-out;
+      }
     }
   }
-  
-  .field-error {
-    color: #ef4444;
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
+
+  .error-message {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-  }
-  
-  &.error {
-    .select__control {
-      border-color: #ef4444;
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: var(--radius-md);
+    color: #ef4444;
+    font-size: 0.875rem;
+    
+    .error-icon {
+      font-size: 1rem;
     }
   }
 } 

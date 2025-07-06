@@ -1,5 +1,5 @@
 import React from 'react';
-import { FolderOpen, FileText } from 'lucide-react';
+import { FolderOpen } from 'lucide-react';
 import './PathInput.scss';
 
 interface PathInputProps {
@@ -10,31 +10,30 @@ interface PathInputProps {
 }
 
 const PathInput: React.FC<PathInputProps> = ({ label, name, register, errors }) => {
-  const getIcon = () => {
-    if (label.toLowerCase().includes('path')) {
-      return <FolderOpen className="input-icon" />;
-    }
-    return <FileText className="input-icon" />;
-  };
-
   return (
     <div className="path-input">
-      <label htmlFor={name} className="field-label">{label}</label>
+      <label className="field-label">
+        <FolderOpen className="field-icon" />
+        {label}
+        <span className="required">*</span>
+      </label>
       <div className="input-wrapper">
-        {getIcon()}
         <input
           type="text"
-          id={name}
-          placeholder={`Enter ${label.toLowerCase()}...`}
           {...register(name, { 
-            required: `${label} is required`
+            required: `${label} is required`,
+            pattern: {
+              value: /^[\/\w\-\.]+$/,
+              message: 'Please enter a valid path'
+            }
           })}
-          className={`input ${errors[name] ? 'error' : ''}`}
+          className={`field-input ${errors[name] ? 'error' : ''}`}
+          placeholder={`Enter ${label.toLowerCase()}...`}
         />
       </div>
       {errors[name] && (
         <div className="field-error">
-          <span>⚠️</span>
+          <span className="error-icon">⚠</span>
           {errors[name].message}
         </div>
       )}

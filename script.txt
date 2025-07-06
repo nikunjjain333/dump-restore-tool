@@ -142,3 +142,17 @@ use these dependencies for the project
     }
   }
 
+-----------------------------------------------
+
+
+
+
+
+i want to add some more feature related to docker like 
+On ui there shoulde a input field that take path, name input field to define that config 
+and then a button something like add docker compose configuration its just example take yourself with better naming convention 
+that will add configuration and that configuration is alled in the db which we can also see all the added config on list page, 
+each list item should have that config along with up and down icon button that performs docker componse up for the file present on that path 
+that is provided additional field would be to accept the flag and service name and some more fuctionality that is reated to docker compose up 
+
+implement both backend and UI 
