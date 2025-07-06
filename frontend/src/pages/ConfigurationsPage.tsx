@@ -18,6 +18,7 @@ import {
 import './ConfigurationsPage.scss';
 import { api, Config } from '../api/client';
 import SavedConfigsList from '../components/SavedConfigsList';
+import Modal from '../components/Modal';
 
 const ConfigurationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +28,18 @@ const ConfigurationsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterOperation, setFilterOperation] = useState('all');
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info' | 'warning';
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   useEffect(() => {
     loadConfigurations();
@@ -78,17 +91,33 @@ const ConfigurationsPage: React.FC = () => {
   };
 
   const handleConfigDelete = async (configId: number) => {
-    if (window.confirm('Are you sure you want to delete this configuration?')) {
-      try {
-        // Note: This would require a delete endpoint in the API
-        // await api.deleteConfig(configId);
-        setConfigs(prev => prev.filter(config => config.id !== configId));
-        toast.success('Configuration deleted successfully');
-      } catch (error) {
-        console.error('Failed to delete configuration:', error);
-        toast.error('Failed to delete configuration');
+    setModal({
+      isOpen: true,
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this configuration? This action cannot be undone.',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          // Note: This would require a delete endpoint in the API
+          // await api.deleteConfig(configId);
+          setConfigs(prev => prev.filter(config => config.id !== configId));
+          setModal({
+            isOpen: true,
+            title: 'Success',
+            message: 'Configuration deleted successfully',
+            type: 'success'
+          });
+        } catch (error) {
+          console.error('Failed to delete configuration:', error);
+          setModal({
+            isOpen: true,
+            title: 'Error',
+            message: 'Failed to delete configuration',
+            type: 'error'
+          });
+        }
       }
-    }
+    });
   };
 
   const getDatabaseIcon = (dbType: string) => {
@@ -112,6 +141,18 @@ const ConfigurationsPage: React.FC = () => {
 
   return (
     <div className="configurations-page">
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        onConfirm={modal.onConfirm}
+        confirmText="Delete"
+        cancelText="Cancel"
+        autoClose={modal.type === 'success'}
+        autoCloseDelay={3000}
+      />
       <Toaster 
         position="top-right"
         toastOptions={{

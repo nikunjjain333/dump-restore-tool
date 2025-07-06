@@ -17,6 +17,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     title: string;
     message: string;
     type: 'success' | 'error' | 'info' | 'warning';
+    onConfirm?: () => void;
   }>({
     isOpen: false,
     title: '',
@@ -88,29 +89,33 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
   };
 
   const handleDelete = async (configId: number) => {
-    if (!window.confirm('Are you sure you want to delete this configuration?')) {
-      return;
-    }
-
-    try {
-      await api.deleteDockerComposeConfig(configId);
-      setConfigs(configs.filter(config => config.id !== configId));
-      setModal({
-        isOpen: true,
-        title: 'Success',
-        message: 'Configuration deleted successfully!',
-        type: 'success'
-      });
-      if (onRefresh) onRefresh();
-    } catch (err) {
-      console.error('Error deleting config:', err);
-      setModal({
-        isOpen: true,
-        title: 'Error',
-        message: 'Failed to delete configuration',
-        type: 'error'
-      });
-    }
+    setModal({
+      isOpen: true,
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this Docker Compose configuration? This action cannot be undone.',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await api.deleteDockerComposeConfig(configId);
+          setConfigs(configs.filter(config => config.id !== configId));
+          setModal({
+            isOpen: true,
+            title: 'Success',
+            message: 'Configuration deleted successfully!',
+            type: 'success'
+          });
+          if (onRefresh) onRefresh();
+        } catch (err) {
+          console.error('Error deleting config:', err);
+          setModal({
+            isOpen: true,
+            title: 'Error',
+            message: 'Failed to delete configuration',
+            type: 'error'
+          });
+        }
+      }
+    });
   };
 
   const isOperating = (configId: number) => operatingConfigs.has(configId);
@@ -151,6 +156,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
         title={modal.title}
         message={modal.message}
         type={modal.type}
+        onConfirm={modal.onConfirm}
+        confirmText="Delete"
+        cancelText="Cancel"
         autoClose={modal.type === 'success'}
         autoCloseDelay={5000}
       />

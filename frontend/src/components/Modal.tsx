@@ -10,6 +10,9 @@ interface ModalProps {
   showCloseButton?: boolean;
   autoClose?: boolean;
   autoCloseDelay?: number;
+  onConfirm?: () => void;
+  confirmText?: string;
+  cancelText?: string;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -20,7 +23,10 @@ const Modal: React.FC<ModalProps> = ({
   type = 'info',
   showCloseButton = true,
   autoClose = false,
-  autoCloseDelay = 3000
+  autoCloseDelay = 3000,
+  onConfirm,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel'
 }) => {
   useEffect(() => {
     if (isOpen && autoClose) {
@@ -75,9 +81,23 @@ const Modal: React.FC<ModalProps> = ({
           <p className="modal-message">{message}</p>
         </div>
         <div className="modal-footer">
-          <button className="btn btn-primary" onClick={onClose}>
-            OK
-          </button>
+          {onConfirm ? (
+            <>
+              <button className="btn btn-secondary" onClick={onClose}>
+                {cancelText}
+              </button>
+              <button className="btn btn-primary" onClick={() => {
+                onConfirm();
+                onClose();
+              }}>
+                {confirmText}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-primary" onClick={onClose}>
+              OK
+            </button>
+          )}
         </div>
       </div>
     </div>
