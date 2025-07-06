@@ -1,168 +1,137 @@
 .docker-control {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  margin-bottom: 24px;
-
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  
   .docker-status {
-    margin-bottom: 20px;
-
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    
     .status-indicator {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      
       .status-dot {
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
         animation: pulse 2s infinite;
       }
-
+      
       .status-text {
-        font-size: 18px;
         font-weight: 600;
-        color: white;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        color: var(--text-primary);
+        font-size: 1rem;
       }
-
+      
       .status-hint {
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.7);
+        color: var(--text-muted);
+        font-size: 0.875rem;
         font-style: italic;
-        margin-left: 8px;
       }
     }
-
+    
     .docker-info {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 12px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      padding: 16px;
-      backdrop-filter: blur(5px);
-
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      
       .info-item {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        text-align: center;
-
-        .label {
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.8);
-          font-weight: 500;
-          margin-bottom: 4px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-secondary);
+        border-radius: var(--radius-md);
+        transition: all 0.2s ease-in-out;
+        
+        &:hover {
+          border-color: var(--border-accent);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-md);
         }
-
+        
+        .info-icon {
+          color: var(--text-accent);
+          font-size: 1.25rem;
+          flex-shrink: 0;
+        }
+        
+        .label {
+          color: var(--text-secondary);
+          font-size: 0.875rem;
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        
         .value {
-          font-size: 16px;
-          font-weight: 700;
-          color: white;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+          color: var(--text-primary);
+          font-weight: 600;
+          font-size: 1rem;
+          margin-left: auto;
         }
       }
     }
   }
-
+  
   .docker-actions {
     display: flex;
-    gap: 12px;
+    gap: 1rem;
     flex-wrap: wrap;
-
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+    
     .btn {
       flex: 1;
       min-width: 140px;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      text-decoration: none;
       position: relative;
       overflow: hidden;
-
-      &::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-        transition: left 0.5s;
+      
+      .spinner {
+        animation: spin 1s linear infinite;
       }
-
-      &:hover::before {
-        left: 100%;
-      }
-
+      
       &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
-        transform: none;
+        transform: none !important;
+        box-shadow: var(--shadow-sm) !important;
       }
-
-      .spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid transparent;
-        border-top: 2px solid currentColor;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-    }
-
-    .btn-secondary {
-      background: linear-gradient(135deg, #6b7280, #4b5563);
-      color: white;
-      box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
-
-      &:hover:not(:disabled) {
+      
+      &:not(:disabled):hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
+        box-shadow: var(--shadow-lg);
       }
-    }
-
-    .btn-success {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-      }
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-
-      &:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+      
+      &:not(:disabled):active {
+        transform: translateY(0);
       }
     }
   }
 }
 
 // Animations
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
@@ -174,40 +143,48 @@
   }
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+// Status-specific animations
+.status-dot {
+  &[style*="10b981"] { // Running - green
+    animation: pulse 2s infinite;
   }
-  100% {
-    transform: rotate(360deg);
+  
+  &[style*="ef4444"] { // Stopped - red
+    animation: none;
+  }
+  
+  &[style*="f59e0b"] { // Warning - amber
+    animation: pulse 1.5s infinite;
+  }
+  
+  &[style*="6b7280"] { // Unknown - gray
+    animation: none;
   }
 }
 
-// Responsive design
-@media (max-width: 768px) {
+// Responsive improvements
+@media (max-width: 640px) {
   .docker-control {
-    padding: 20px;
-
-    .docker-actions {
-      flex-direction: column;
-
-      .btn {
-        min-width: auto;
+    .docker-status {
+      .docker-info {
+        grid-template-columns: 1fr;
+        
+        .info-item {
+          .label {
+            font-size: 0.75rem;
+          }
+          
+          .value {
+            font-size: 0.875rem;
+          }
+        }
       }
     }
-
-    .docker-info {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-}
-
-@media (max-width: 480px) {
-  .docker-control {
-    padding: 16px;
-
-    .docker-info {
-      grid-template-columns: 1fr;
+    
+    .docker-actions {
+      .btn {
+        min-width: 100%;
+      }
     }
   }
 } 

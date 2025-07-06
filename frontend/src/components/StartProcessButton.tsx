@@ -1,4 +1,5 @@
 import React from 'react';
+import { Play, Loader2, Download, Upload } from 'lucide-react';
 import './StartProcessButton.scss';
 
 interface StartProcessButtonProps {
@@ -7,14 +8,32 @@ interface StartProcessButtonProps {
 }
 
 const StartProcessButton: React.FC<StartProcessButtonProps> = ({ isLoading, operation }) => {
-  const getButtonText = () => {
+  const getButtonContent = () => {
     if (isLoading) {
-      return `Starting ${operation || 'process'}...`;
+      return (
+        <>
+          <Loader2 className="spinner" />
+          Starting {operation || 'process'}...
+        </>
+      );
     }
+    
     if (!operation) {
-      return 'Start Process';
+      return (
+        <>
+          <Play />
+          Start Process
+        </>
+      );
     }
-    return `Start ${operation.charAt(0).toUpperCase() + operation.slice(1)}`;
+    
+    const isDump = operation === 'dump';
+    return (
+      <>
+        {isDump ? <Download /> : <Upload />}
+        Start {operation.charAt(0).toUpperCase() + operation.slice(1)}
+      </>
+    );
   };
 
   return (
@@ -22,10 +41,16 @@ const StartProcessButton: React.FC<StartProcessButtonProps> = ({ isLoading, oper
       <button
         type="submit"
         disabled={isLoading || !operation}
-        className="btn btn-success btn-lg"
+        className={`btn btn-primary btn-lg ${isLoading ? 'loading' : ''}`}
       >
-        {getButtonText()}
+        {getButtonContent()}
       </button>
+      
+      {!operation && (
+        <div className="button-hint">
+          Please select a database type and operation to continue
+        </div>
+      )}
     </div>
   );
 };

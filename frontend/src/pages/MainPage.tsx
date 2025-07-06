@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast, { Toaster } from 'react-hot-toast';
+import { 
+  Database, 
+  Play, 
+  Save, 
+  Settings, 
+  FolderOpen, 
+  HardDrive, 
+  Zap,
+  CheckCircle,
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
 import './MainPage.scss';
 import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/client';
 import DockerButton from '../components/DockerButton';
@@ -155,11 +167,12 @@ const MainPage: React.FC = () => {
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#363636',
-            color: '#fff',
-            borderRadius: '8px',
-            padding: '12px 16px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            background: 'var(--bg-card)',
+            color: 'var(--text-primary)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '1rem 1.5rem',
+            boxShadow: 'var(--shadow-xl)',
+            border: '1px solid var(--border-primary)',
             zIndex: 9999,
           },
           success: {
@@ -176,7 +189,7 @@ const MainPage: React.FC = () => {
           },
           loading: {
             iconTheme: {
-              primary: '#3b82f6',
+              primary: 'var(--primary-blue)',
               secondary: '#fff',
             },
           },
@@ -186,12 +199,18 @@ const MainPage: React.FC = () => {
       <div className="container">
         <form onSubmit={handleSubmit(onSubmit)} className="main-form">
           <div className="form-section">
-            <h2>Docker Control</h2>
+            <div className="section__header">
+              <Zap className="icon" />
+              <h2>Docker Control</h2>
+            </div>
             <DockerButton />
           </div>
 
           <div className="form-section">
-            <h2>Database Configuration</h2>
+            <div className="section__header">
+              <Database className="icon" />
+              <h2>Database Configuration</h2>
+            </div>
             <DatabaseTypeSelector 
               value={dbType} 
               onChange={(value) => setValue('dbType', value)}
@@ -201,7 +220,10 @@ const MainPage: React.FC = () => {
           </div>
 
           <div className="form-section">
-            <h2>Operation</h2>
+            <div className="section__header">
+              <Play className="icon" />
+              <h2>Operation</h2>
+            </div>
             <OperationSelector 
               value={operation} 
               onChange={(value) => setValue('operation', value as 'dump' | 'restore')}
@@ -212,7 +234,10 @@ const MainPage: React.FC = () => {
 
           {dbType && operation && (
             <div className="form-section">
-              <h2>Database Parameters</h2>
+              <div className="section__header">
+                <Settings className="icon" />
+                <h2>Database Parameters</h2>
+              </div>
               <DynamicFormFields 
                 dbType={dbType}
                 operation={operation}
@@ -223,7 +248,10 @@ const MainPage: React.FC = () => {
           )}
 
           <div className="form-section">
-            <h2>Configuration</h2>
+            <div className="section__header">
+              <Save className="icon" />
+              <h2>Configuration</h2>
+            </div>
             <ConfigNameInput 
               register={register}
               errors={errors}
@@ -253,7 +281,10 @@ const MainPage: React.FC = () => {
           </div>
 
           <div className="form-section">
-            <h2>Saved Configurations</h2>
+            <div className="section__header">
+              <FolderOpen className="icon" />
+              <h2>Saved Configurations</h2>
+            </div>
             <SavedConfigsList 
               configs={savedConfigs}
               onSelect={handleConfigSelect}
@@ -261,6 +292,10 @@ const MainPage: React.FC = () => {
           </div>
 
           <div className="form-section">
+            <div className="section__header">
+              <HardDrive className="icon" />
+              <h2>Start Process</h2>
+            </div>
             <StartProcessButton 
               isLoading={isLoading}
               operation={operation}

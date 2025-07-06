@@ -1,4 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { 
+  Play, 
+  Square, 
+  RefreshCw, 
+  CheckCircle, 
+  AlertCircle, 
+  Loader2,
+  Container,
+  Image,
+  Code,
+  Activity
+} from 'lucide-react';
 import { api, DockerResponse } from '../api/client';
 import toast from 'react-hot-toast';
 import './DockerButton.scss';
@@ -189,14 +201,17 @@ const DockerButton: React.FC = () => {
         {dockerStatus.info && (
           <div className="docker-info">
             <div className="info-item">
+              <Container className="info-icon" />
               <span className="label">Containers:</span>
               <span className="value">{dockerStatus.info.containers}</span>
             </div>
             <div className="info-item">
+              <Image className="info-icon" />
               <span className="label">Images:</span>
               <span className="value">{dockerStatus.info.images}</span>
             </div>
             <div className="info-item">
+              <Code className="info-icon" />
               <span className="label">Version:</span>
               <span className="value">{dockerStatus.info.version}</span>
             </div>
@@ -213,13 +228,19 @@ const DockerButton: React.FC = () => {
         >
           {isCheckingStatus ? (
             <>
-              <span className="spinner"></span>
+              <Loader2 className="spinner" />
               Checking...
             </>
           ) : dockerStatus.status === 'unknown' ? (
-            '🔍 Check Docker Status'
+            <>
+              <Activity />
+              Check Docker Status
+            </>
           ) : (
-            '🔄 Refresh Status'
+            <>
+              <RefreshCw />
+              Refresh Status
+            </>
           )}
         </button>
 
@@ -231,11 +252,14 @@ const DockerButton: React.FC = () => {
         >
           {isLoading ? (
             <>
-              <span className="spinner"></span>
+              <Loader2 className="spinner" />
               Starting...
             </>
           ) : (
-            '▶️ Start Docker'
+            <>
+              <Play />
+              Start Docker
+            </>
           )}
         </button>
 
@@ -247,11 +271,14 @@ const DockerButton: React.FC = () => {
         >
           {isLoading ? (
             <>
-              <span className="spinner"></span>
+              <Loader2 className="spinner" />
               Stopping...
             </>
           ) : (
-            '⏹️ Stop Docker'
+            <>
+              <Square />
+              Stop Docker
+            </>
           )}
         </button>
       </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Download, Upload, Database } from 'lucide-react';
 import './OperationSelector.scss';
 
 interface OperationSelectorProps {
@@ -16,9 +17,9 @@ const OperationSelector: React.FC<OperationSelectorProps> = ({
 }) => {
   return (
     <div className="operation-selector">
-      <label>Operation Type</label>
+      <label className="field-label">Operation Type</label>
       <div className="radio-group">
-        <label className="radio-option">
+        <label className={`radio-option ${value === 'dump' ? 'selected' : ''}`}>
           <input
             type="radio"
             value="dump"
@@ -26,9 +27,15 @@ const OperationSelector: React.FC<OperationSelectorProps> = ({
             onChange={(e) => onChange(e.target.value)}
             {...register('operation', { required: 'Please select an operation' })}
           />
-          <span>Dump</span>
+          <div className="option-content">
+            <Download className="option-icon" />
+            <div className="option-text">
+              <span className="option-title">Dump</span>
+              <span className="option-description">Export database to file</span>
+            </div>
+          </div>
         </label>
-        <label className="radio-option">
+        <label className={`radio-option ${value === 'restore' ? 'selected' : ''}`}>
           <input
             type="radio"
             value="restore"
@@ -36,10 +43,21 @@ const OperationSelector: React.FC<OperationSelectorProps> = ({
             onChange={(e) => onChange(e.target.value)}
             {...register('operation', { required: 'Please select an operation' })}
           />
-          <span>Restore</span>
+          <div className="option-content">
+            <Upload className="option-icon" />
+            <div className="option-text">
+              <span className="option-title">Restore</span>
+              <span className="option-description">Import database from file</span>
+            </div>
+          </div>
         </label>
       </div>
-      {errors.operation && <span className="error-message">{errors.operation.message}</span>}
+      {errors.operation && (
+        <div className="field-error">
+          <span>⚠️</span>
+          {errors.operation.message}
+        </div>
+      )}
     </div>
   );
 };
