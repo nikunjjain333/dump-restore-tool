@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast, { Toaster } from 'react-hot-toast';
 import './MainPage.scss';
@@ -26,23 +26,58 @@ const MainPage: React.FC = () => {
   const [selectedConfig, setSelectedConfig] = useState<Config | null>(null);
   const [savedConfigs, setSavedConfigs] = useState<Config[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
+  const hasInitialized = useRef(false);
+  const currentConfigRequestId = useRef(0);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
 
   const dbType = watch('dbType') || '';
   const operation = watch('operation') || '';
 
+  // Load configs only once on mount
   useEffect(() => {
-    loadSavedConfigs();
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      // Add a small delay to prevent race conditions
+      const timer = setTimeout(() => {
+        loadSavedConfigs();
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const loadSavedConfigs = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingConfigs) {
+      console.log('🚫 Config loading already in progress, skipping...');
+      return;
+    }
+    
+    const requestId = ++currentConfigRequestId.current;
+    console.log(`📋 Loading configs... (Request ID: ${requestId})`);
+    setIsLoadingConfigs(true);
+    
     try {
       const response = await api.getConfigs();
+      
+      // Check if this is still the current request
+      if (requestId !== currentConfigRequestId.current) {
+        console.log(`🚫 Config request ${requestId} is outdated, ignoring response`);
+        return;
+      }
+      
+      console.log(`✅ Configs loaded successfully (${response.data.length} configs)`);
       setSavedConfigs(response.data);
     } catch (error) {
       console.error('Failed to load configs:', error);
       toast.error('Failed to load saved configurations');
+    } finally {
+      // Only reset if this is still the current request
+      if (requestId === currentConfigRequestId.current) {
+        setIsLoadingConfigs(false);
+      }
     }
   };
 
@@ -67,8 +102,11 @@ const MainPage: React.FC = () => {
       };
 
       // Save config
-      await api.createConfig(configData);
+      const savedConfig = await api.createConfig(configData);
       toast.success('Configuration saved successfully!');
+      
+      // Update local state with the new config
+      setSavedConfigs(prev => [...prev, savedConfig.data]);
 
       // Start process
       const processData: DumpRequest | RestoreRequest = {
@@ -87,8 +125,6 @@ const MainPage: React.FC = () => {
         toast.dismiss(loadingToast);
         toast.success(`✅ ${result.data.message}`);
       }
-
-      loadSavedConfigs();
     } catch (error: any) {
       console.error('Failed to start process:', error);
       toast.dismiss(loadingToast);

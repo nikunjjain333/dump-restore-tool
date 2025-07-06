@@ -72,9 +72,9 @@ export const api = {
 
   // Configs
   getConfigs: (): Promise<AxiosResponse<Config[]>> => 
-    apiClient.get<Config[]>('/configs'),
+    apiClient.get<Config[]>('/configs/'),
   createConfig: (config: ConfigCreate): Promise<AxiosResponse<Config>> => 
-    apiClient.post<Config>('/configs', config),
+    apiClient.post<Config>('/configs/', config),
 
   // Dump
   startDump: (data: DumpRequest): Promise<AxiosResponse<OperationResponse>> => 
