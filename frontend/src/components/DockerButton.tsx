@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  Play, 
-  Square, 
   RefreshCw, 
   CheckCircle, 
   AlertCircle, 
@@ -32,7 +30,6 @@ const DockerButton: React.FC = () => {
     isRunning: false,
     status: 'unknown'
   });
-  const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const hasInitialized = useRef(false);
   const currentRequestId = useRef(0);
@@ -89,66 +86,6 @@ const DockerButton: React.FC = () => {
       if (requestId === currentRequestId.current) {
         setIsCheckingStatus(false);
       }
-    }
-  };
-
-  const handleStartDocker = async () => {
-    setIsLoading(true);
-    const loadingToast = toast.loading('Starting Docker...');
-    
-    try {
-      const response = await api.startDocker();
-      const { success, message, status } = response.data;
-      
-      toast.dismiss(loadingToast);
-      
-      if (success) {
-        toast.success(`✅ ${message}`);
-        // Update status based on the response
-        setDockerStatus(prev => ({
-          ...prev,
-          isRunning: status === 'running',
-          status: status
-        }));
-      } else {
-        toast.error(`⚠️ ${message}`);
-      }
-    } catch (error) {
-      console.error('Failed to start Docker:', error);
-      toast.dismiss(loadingToast);
-      toast.error('❌ Failed to start Docker. Please check if Docker Desktop is installed and running.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleStopDocker = async () => {
-    setIsLoading(true);
-    const loadingToast = toast.loading('Stopping Docker...');
-    
-    try {
-      const response = await api.stopDocker();
-      const { success, message, status } = response.data;
-      
-      toast.dismiss(loadingToast);
-      
-      if (success) {
-        toast.success(`✅ ${message}`);
-        // Update status based on the response
-        setDockerStatus(prev => ({
-          ...prev,
-          isRunning: false,
-          status: status
-        }));
-      } else {
-        toast.error(`⚠️ ${message}`);
-      }
-    } catch (error) {
-      console.error('Failed to stop Docker:', error);
-      toast.dismiss(loadingToast);
-      toast.error('❌ Failed to stop Docker');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -240,44 +177,6 @@ const DockerButton: React.FC = () => {
             <>
               <RefreshCw />
               Refresh Status
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleStartDocker}
-          disabled={isLoading || dockerStatus.isRunning}
-          className="btn btn-success"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="spinner" />
-              Starting...
-            </>
-          ) : (
-            <>
-              <Play />
-              Start Docker
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleStopDocker}
-          disabled={isLoading || !dockerStatus.isRunning}
-          className="btn btn-danger"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="spinner" />
-              Stopping...
-            </>
-          ) : (
-            <>
-              <Square />
-              Stop Docker
             </>
           )}
         </button>

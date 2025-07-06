@@ -97,10 +97,6 @@ export const api = {
   // Docker
   getDockerStatus: (): Promise<AxiosResponse<DockerResponse>> => 
     apiClient.get<DockerResponse>('/docker/status'),
-  startDocker: (): Promise<AxiosResponse<DockerResponse>> => 
-    apiClient.post<DockerResponse>('/docker/start'),
-  stopDocker: (): Promise<AxiosResponse<DockerResponse>> => 
-    apiClient.post<DockerResponse>('/docker/stop'),
 
   // Configs
   getConfigs: (): Promise<AxiosResponse<Config[]>> => 

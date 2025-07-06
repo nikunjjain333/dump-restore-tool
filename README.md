@@ -4,7 +4,7 @@ A comprehensive tool for database dump and restore operations with a modern web 
 
 ## Features
 
-- **Docker Integration**: Start Docker daemon from the UI
+- **Docker Integration**: Check Docker daemon status from the UI
 - **Docker Compose Management**: Add, manage, and operate Docker Compose configurations
 - **Multiple Database Support**: PostgreSQL, MySQL, MongoDB, Redis, SQLite
 - **Dump & Restore Operations**: Separate logic for each operation
@@ -134,22 +134,23 @@ GET /health
 
 #### Docker Operations
 
-**Start Docker Daemon**
+**Check Docker Status**
 ```http
-POST /docker/start
-```
-**Request Body:**
-```json
-{
-  "force": false
-}
+GET /docker/status
 ```
 **Response:**
 ```json
 {
   "success": true,
-  "message": "Docker daemon started successfully",
-  "status": "started"
+  "message": "Docker daemon is running",
+  "status": "running",
+  "info": {
+    "containers": 5,
+    "images": 12,
+    "version": "24.0.5",
+    "os": "linux",
+    "architecture": "x86_64"
+  }
 }
 ```
 
@@ -411,7 +412,7 @@ REACT_APP_ENV=development
 ### Backend Services
 
 #### Docker Service
-- Manages Docker daemon startup
+- Checks Docker daemon status
 - Provides Docker client connections
 - Handles Docker container operations
 
@@ -435,7 +436,7 @@ REACT_APP_ENV=development
 ### Frontend Components
 
 #### DockerButton
-- Starts Docker daemon
+- Checks Docker daemon status
 - Shows loading state
 - Handles errors gracefully
 
