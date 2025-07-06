@@ -1,76 +1,48 @@
 version: '3.8'
-
 services:
   backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: db-tool-backend
-    restart: unless-stopped
+    build: ./backend
+    volumes:
+      - ./backend/app:/app/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env.example
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-dump_restore}
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key}
-      - DEBUG=${DEBUG:-True}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8000}
-    volumes:
-      - ./dumps:/app/dumps
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
     depends_on:
       db:
         condition: service_healthy
-
-  frontend:
-    build: 
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: db-tool-frontend
     restart: unless-stopped
+  frontend:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm start"
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=/api
-      - NODE_ENV=development
-      - PORT=3000
-      - HOST=0.0.0.0
-    volumes:
-      - ./frontend/src:/app/src
-      - /app/node_modules
-    networks:
-      - app-network
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_ENV=development
     depends_on:
       - backend
-
-  db:
-    image: postgres:13-alpine
-    container_name: db-tool-postgres
     restart: unless-stopped
+  db:
+    image: postgres:15
+    restart: always
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_DB=${POSTGRES_DB:-dump_restore}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: dump_restore
+    ports:
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dump_restore"]
       interval: 5s
       timeout: 5s
       retries: 5
-
-networks:
-  app-network:
-    driver: bridge
-
+      start_period: 10s
 volumes:
-  postgres_data:
-  dump_volume:
+  pgdata:

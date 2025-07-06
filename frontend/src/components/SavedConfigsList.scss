@@ -1,0 +1,47 @@
+.saved-configs-list {
+  .configs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+    
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .config-card {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border-color: #007bff;
+    }
+    
+    h4 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+    }
+    
+    p {
+      margin-bottom: 8px;
+      color: #666;
+      
+      strong {
+        color: #333;
+      }
+    }
+    
+    .btn {
+      margin-top: 15px;
+      width: 100%;
+    }
+  }
+} 

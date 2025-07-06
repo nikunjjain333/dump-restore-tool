@@ -1,0 +1,45 @@
+import os
+import platform
+from typing import List
+
+class Settings:
+    """Application settings from environment variables"""
+    
+    # Database
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/dump_restore")
+    
+    # API
+    API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
+    API_PORT: int = int(os.getenv("API_PORT", "8000"))
+    
+    # CORS
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080"
+    ]
+    
+    # Docker - Use appropriate socket path based on platform
+    def get_docker_host():
+        system = platform.system().lower()
+        if system == "darwin":  # macOS
+            return os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+        elif system == "windows":
+            return os.getenv("DOCKER_HOST", "npipe:////./pipe/docker_engine")
+        else:  # Linux
+            return os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+    
+    DOCKER_HOST: str = get_docker_host()
+    
+    # Logging
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    
+    # Security
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    
+    # File paths
+    DUMP_BASE_PATH: str = os.getenv("DUMP_BASE_PATH", "/tmp/dumps")
+    RESTORE_BASE_PATH: str = os.getenv("RESTORE_BASE_PATH", "/tmp/restores")
+
+settings = Settings() 

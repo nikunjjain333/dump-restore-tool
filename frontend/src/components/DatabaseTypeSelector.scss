@@ -1,0 +1,12 @@
+.database-type-selector {
+  .error {
+    border-color: #dc3545 !important;
+  }
+  
+  .error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+  }
+} 

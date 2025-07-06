@@ -1,247 +1,467 @@
 # Database Dump & Restore Tool
 
-A web-based tool for managing database dumps and restores with an intuitive UI. This application supports PostgreSQL and MySQL databases, allowing you to easily create backups and restore them when needed.
+A comprehensive tool for database dump and restore operations with a modern web interface and backend API.
 
 ## Features
 
-- **Multiple Database Support**: Works with PostgreSQL and MySQL databases
-- **Save Configurations**: Save your database connection settings for future use
-- **Dump & Restore**: Easily create database dumps and restore them
-- **Operation History**: Track all your dump and restore operations
-- **User-Friendly Interface**: Clean and intuitive web interface
-- **Docker Support**: Easy deployment using Docker and Docker Compose
+- **Docker Integration**: Start Docker daemon from the UI
+- **Multiple Database Support**: PostgreSQL, MySQL, MongoDB, Redis, SQLite
+- **Dump & Restore Operations**: Separate logic for each operation
+- **Configuration Management**: Save and reuse configurations
+- **Microservice Architecture**: Support for running processes in specific paths
+- **Modern UI**: React with TypeScript and SCSS
+- **RESTful API**: FastAPI backend with SQLAlchemy
 
-## Prerequisites
+## Tech Stack
 
-- Docker and Docker Compose installed on your system
-- Node.js (v14 or later) and npm for frontend development (optional)
-- Python (v3.8 or later) for backend development (optional)
+### Frontend
+- React 18
+- TypeScript
+- SCSS
+- React Hook Form
+- Axios
+- React Router DOM
+- React Select
 
-## Getting Started
-
-### Using Docker (Recommended)
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/database-dump-restore.git
-   cd database-dump-restore
-   ```
-
-2. Start the application using Docker Compose:
-   ```bash
-   docker-compose up -d
-   ```
-
-3. The application will be available at:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - PostgreSQL Database: localhost:5432
-
-### Manual Setup (Development)
-
-#### Backend Setup
-
-1. Navigate to the backend directory:
-   ```bash
-   cd backend
-   ```
-
-2. Create a virtual environment and activate it:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env file with your configuration
-   ```
-
-5. Run database migrations:
-   ```bash
-   alembic upgrade head
-   ```
-
-6. Start the backend server:
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-
-#### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm start
-   ```
-
-4. The frontend will be available at http://localhost:3000
-
-## Usage
-
-1. **Create a New Configuration**
-   - Click on "New Configuration"
-   - Fill in your database connection details
-   - Choose between Dump or Restore operation
-   - Save the configuration
-
-2. **Execute Operations**
-   - From the Configurations page, click on the "Dump" or "Restore" button
-   - Monitor the operation status in the Operations tab
-
-3. **View History**
-   - Navigate to the Operations page to view all past operations
-   - Filter by configuration, operation type, or status
+### Backend
+- Python 3.11
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Docker SDK
+- Pydantic
 
 ## Project Structure
 
 ```
-.
-├── backend/                 # Backend application
-│   ├── app/                # Application source code
-│   │   ├── __init__.py     # Application initialization
-│   │   ├── main.py         # FastAPI application
-│   │   ├── database.py     # Database configuration
-│   │   ├── models/         # Database models
-│   │   ├── schemas/        # Pydantic models
-│   │   └── services/       # Business logic
-│   ├── migrations/         # Database migrations
-│   ├── requirements.txt    # Python dependencies
-│   └── Dockerfile          # Docker configuration
-│
-├── frontend/               # Frontend application
-│   ├── public/             # Static files
-│   ├── src/                # Source code
-│   │   ├── components/     # Reusable components
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API services
-│   │   ├── styles/         # Global styles
-│   │   ├── App.tsx         # Main component
-│   │   └── index.tsx       # Entry point
-│   ├── package.json        # Node.js dependencies
-│   └── Dockerfile          # Docker configuration
-│
-├── docker-compose.yml      # Docker Compose configuration
-└── README.md              # This file
+dump-restore-tool/
+├── backend/
+│   ├── app/
+│   │   ├── api/           # FastAPI routers
+│   │   ├── core/          # Database and core utilities
+│   │   ├── models/        # SQLAlchemy models
+│   │   ├── schemas/       # Pydantic schemas
+│   │   ├── services/      # Business logic
+│   │   └── main.py        # FastAPI entry point
+│   ├── Dockerfile
+│   └── requirements.txt
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   ├── pages/         # Page components
+│   │   ├── styles/        # SCSS styles
+│   │   ├── api/           # API client
+│   │   ├── App.tsx
+│   │   └── index.tsx
+│   ├── package.json
+│   └── tsconfig.json
+├── docker-compose.yml
+└── README.md
 ```
 
-## Environment Variables
+## Quick Start
 
-### Backend
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
 
-Create a `.env` file in the `backend` directory with the following variables:
+### Using Docker Compose (Recommended)
 
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd dump-restore-tool
+   ```
+
+2. **Start all services**
+   ```bash
+   # Option 1: Use the startup script (recommended)
+   ./start.sh
+   
+   # Option 2: Manual startup
+   docker-compose up --build
+   ```
+
+3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+### Local Development
+
+#### Backend Setup
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
-DATABASE_URL=postgresql://postgres:postgres@db:5432/dump_restore
-SECRET_KEY=your-secret-key
-DEBUG=True
-```
 
-### Frontend
-
-Create a `.env` file in the `frontend` directory with the following variables:
-
-```
-REACT_APP_API_URL=http://localhost:8000
+#### Frontend Setup
+```bash
+cd frontend
+npm install
+npm start
 ```
 
 ## API Documentation
 
-Once the backend server is running, you can access the API documentation at:
+### Base URL
+```
+http://localhost:8000
+```
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+### Authentication
+Currently, the API doesn't require authentication. In production, implement proper authentication.
 
-## Development
+### Endpoints
+
+#### Health Check
+```http
+GET /health
+```
+**Response:**
+```json
+{
+  "status": "healthy",
+  "database": "connected"
+}
+```
+
+#### Docker Operations
+
+**Start Docker Daemon**
+```http
+POST /docker/start
+```
+**Request Body:**
+```json
+{
+  "force": false
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Docker daemon started successfully",
+  "status": "started"
+}
+```
+
+#### Configuration Management
+
+**List Configurations**
+```http
+GET /configs
+```
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "Production PostgreSQL",
+    "db_type": "postgres",
+    "operation": "dump",
+    "params": {
+      "host": "localhost",
+      "port": 5432,
+      "database": "myapp",
+      "username": "postgres",
+      "password": "password"
+    }
+  }
+]
+```
+
+**Create Configuration**
+```http
+POST /configs
+```
+**Request Body:**
+```json
+{
+  "name": "Production PostgreSQL",
+  "db_type": "postgres",
+  "operation": "dump",
+  "params": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "myapp",
+    "username": "postgres",
+    "password": "password"
+  }
+}
+```
+
+#### Database Operations
+
+**Start Dump Operation**
+```http
+POST /dump
+```
+**Request Body:**
+```json
+{
+  "db_type": "postgres",
+  "params": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "myapp",
+    "username": "postgres",
+    "password": "password"
+  },
+  "path": "/tmp/dumps/myapp_backup.sql",
+  "run_path": "/app"
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "message": "PostgreSQL dump completed successfully: /tmp/dumps/myapp_backup.sql",
+  "path": "/tmp/dumps/myapp_backup.sql"
+}
+```
+
+**Start Restore Operation**
+```http
+POST /restore
+```
+**Request Body:**
+```json
+{
+  "db_type": "postgres",
+  "params": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "myapp",
+    "username": "postgres",
+    "password": "password"
+  },
+  "path": "/tmp/dumps/myapp_backup.sql",
+  "run_path": "/app"
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "message": "PostgreSQL restore completed successfully from: /tmp/dumps/myapp_backup.sql",
+  "path": "/tmp/dumps/myapp_backup.sql"
+}
+```
+
+## Database Support
+
+### PostgreSQL
+**Parameters:**
+- `host`: Database host (default: localhost)
+- `port`: Database port (default: 5432)
+- `database`: Database name (required)
+- `username`: Username (required)
+- `password`: Password (required)
+
+**Dump Command:** `pg_dump`
+**Restore Command:** `psql`
+
+### MySQL
+**Parameters:**
+- `host`: Database host (default: localhost)
+- `port`: Database port (default: 3306)
+- `database`: Database name (required)
+- `username`: Username (required)
+- `password`: Password (required)
+
+**Dump Command:** `mysqldump`
+**Restore Command:** `mysql`
+
+### MongoDB
+**Parameters:**
+- `uri`: Connection URI (required)
+- `database`: Database name (required)
+
+**Dump Command:** `mongodump`
+**Restore Command:** `mongorestore`
+
+### Redis
+**Parameters:**
+- `host`: Redis host (default: localhost)
+- `port`: Redis port (default: 6379)
+- `password`: Password (optional)
+- `db`: Database number (default: 0)
+
+**Dump Command:** `redis-cli --rdb`
+**Restore Command:** Copy RDB file
+
+### SQLite
+**Parameters:**
+- `database`: Database file path (required)
+
+**Dump Command:** Copy database file
+**Restore Command:** Copy database file
+
+## Environment Variables
 
 ### Backend
+```bash
+# Database
+DATABASE_URL=postgresql://postgres:postgres@db:5432/dump_restore
 
-- Run tests:
-  ```bash
-  cd backend
-  pytest
-  ```
+# API
+API_HOST=0.0.0.0
+API_PORT=8000
 
-- Generate migration:
-  ```bash
-  cd backend
-  alembic revision --autogenerate -m "Your migration message"
-  ```
+# Docker
+DOCKER_HOST=unix:///var/run/docker.sock
+
+# Logging
+LOG_LEVEL=INFO
+
+# Security
+SECRET_KEY=your-secret-key-change-in-production
+
+# File paths
+DUMP_BASE_PATH=/tmp/dumps
+RESTORE_BASE_PATH=/tmp/restores
+```
 
 ### Frontend
+```bash
+# API Configuration
+REACT_APP_API_URL=http://localhost:8000
 
-- Run tests:
-  ```bash
-  cd frontend
-  npm test
-  ```
-
-- Build for production:
-  ```bash
-  cd frontend
-  npm run build
-  ```
-
-## Deployment
-
-### Production
-
-1. Build and start the production containers:
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d --build
-   ```
-
-2. The application will be available at http://your-server-ip
-
-### Environment Variables for Production
-
-For production, make sure to set the following environment variables in your production environment:
-
+# Development Configuration
+REACT_APP_ENV=development
 ```
-# Backend
-DATABASE_URL=postgresql://username:password@db:5432/dbname
-SECRET_KEY=your-secure-secret-key
-DEBUG=False
 
-# Frontend
-REACT_APP_API_URL=https://your-api-domain.com
-```
+## Implementation Details
+
+### Backend Services
+
+#### Docker Service
+- Manages Docker daemon startup
+- Provides Docker client connections
+- Handles Docker container operations
+
+#### Dump Service
+- Supports all database types
+- Uses Docker containers for database tools
+- Handles file path management
+- Provides detailed error reporting
+
+#### Restore Service
+- Supports all database types
+- Validates restore file existence
+- Uses Docker containers for database tools
+- Provides detailed error reporting
+
+#### Configuration Service
+- Manages saved configurations
+- Handles database CRUD operations
+- Provides validation and error handling
+
+### Frontend Components
+
+#### DockerButton
+- Starts Docker daemon
+- Shows loading state
+- Handles errors gracefully
+
+#### DatabaseTypeSelector
+- Dropdown for database selection
+- Supports all database types
+- Form validation integration
+
+#### OperationSelector
+- Radio buttons for dump/restore
+- Form validation integration
+- Clear visual feedback
+
+#### DynamicFormFields
+- Renders database-specific fields
+- Form validation
+- Default values for common settings
+
+#### ConfigNameInput
+- Configuration naming
+- Validation (min length, uniqueness)
+- Error display
+
+#### PathInput
+- File path input
+- Path validation
+- Error display
+
+#### SavedConfigsList
+- Displays saved configurations
+- Click to load configuration
+- Card-based layout
+
+#### StartProcessButton
+- Starts dump/restore operations
+- Loading state management
+- Disabled state handling
+
+## Error Handling
+
+### Backend
+- Comprehensive exception handling
+- Detailed error messages
+- HTTP status codes
+- Logging for debugging
+
+### Frontend
+- API error handling
+- Form validation errors
+- User-friendly error messages
+- Loading states
 
 ## Security Considerations
 
-- Always use strong, unique passwords for database connections
-- Keep your `.env` files secure and never commit them to version control
-- Use HTTPS in production
-- Regularly update your dependencies
-- Implement proper authentication and authorization for production use
+1. **Environment Variables**: Store sensitive data in environment variables
+2. **Input Validation**: All inputs are validated using Pydantic
+3. **SQL Injection**: Using SQLAlchemy ORM prevents SQL injection
+4. **File Path Validation**: Paths are validated to prevent directory traversal
+5. **Docker Security**: Containers run with minimal privileges
+
+## Production Deployment
+
+### Docker Compose
+```bash
+# Production environment
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Environment Variables
+Set all required environment variables in production:
+```bash
+export DATABASE_URL="postgresql://user:pass@host:5432/db"
+export SECRET_KEY="your-secure-secret-key"
+export LOG_LEVEL="WARNING"
+```
+
+### Reverse Proxy
+Use Nginx or similar for:
+- SSL termination
+- Rate limiting
+- Static file serving
 
 ## Contributing
 
 1. Fork the repository
-2. Create a new branch: `git checkout -b feature/your-feature`
-3. Make your changes and commit them: `git commit -m 'Add some feature'`
-4. Push to the branch: `git push origin feature/your-feature`
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
 5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## Support
 
-For support, please open an issue in the GitHub repository.
+For issues and questions, please create an issue in the repository.
