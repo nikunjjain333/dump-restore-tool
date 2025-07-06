@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { api, DockerResponse } from '../api/client';
 import toast from 'react-hot-toast';
 import './DockerButton.scss';
@@ -22,16 +22,36 @@ const DockerButton: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const hasInitialized = useRef(false);
+  const currentRequestId = useRef(0);
 
-  // Check Docker status on component mount
+  // Initialize with unknown status (only once)
   useEffect(() => {
-    checkDockerStatus();
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      setDockerStatus({
+        isRunning: false,
+        status: 'unknown'
+      });
+    }
   }, []);
 
   const checkDockerStatus = async () => {
+    // Prevent multiple simultaneous calls
+    if (isCheckingStatus) {
+      return;
+    }
+    
+    const requestId = ++currentRequestId.current;
     setIsCheckingStatus(true);
     try {
       const response = await api.getDockerStatus();
+      
+      // Check if this is still the current request
+      if (requestId !== currentRequestId.current) {
+        return;
+      }
+      
       const { success, status, info } = response.data;
       
       setDockerStatus({
@@ -53,7 +73,10 @@ const DockerButton: React.FC = () => {
       });
       toast.error('Failed to check Docker status');
     } finally {
-      setIsCheckingStatus(false);
+      // Only reset if this is still the current request
+      if (requestId === currentRequestId.current) {
+        setIsCheckingStatus(false);
+      }
     }
   };
 
@@ -69,10 +92,12 @@ const DockerButton: React.FC = () => {
       
       if (success) {
         toast.success(`✅ ${message}`);
-        setDockerStatus({
+        // Update status based on the response
+        setDockerStatus(prev => ({
+          ...prev,
           isRunning: status === 'running',
           status: status
-        });
+        }));
       } else {
         toast.error(`⚠️ ${message}`);
       }
@@ -97,10 +122,12 @@ const DockerButton: React.FC = () => {
       
       if (success) {
         toast.success(`✅ ${message}`);
-        setDockerStatus({
+        // Update status based on the response
+        setDockerStatus(prev => ({
+          ...prev,
           isRunning: false,
           status: status
-        });
+        }));
       } else {
         toast.error(`⚠️ ${message}`);
       }
@@ -113,7 +140,7 @@ const DockerButton: React.FC = () => {
     }
   };
 
-  const getStatusColor = () => {
+  const statusColor = useMemo(() => {
     switch (dockerStatus.status) {
       case 'running':
         return '#10b981'; // green
@@ -121,12 +148,14 @@ const DockerButton: React.FC = () => {
         return '#ef4444'; // red
       case 'not_accessible':
         return '#f59e0b'; // amber
+      case 'unknown':
+        return '#6b7280'; // gray
       default:
         return '#6b7280'; // gray
     }
-  };
+  }, [dockerStatus.status]);
 
-  const getStatusText = () => {
+  const statusText = useMemo(() => {
     switch (dockerStatus.status) {
       case 'running':
         return 'Running';
@@ -136,10 +165,12 @@ const DockerButton: React.FC = () => {
         return 'Not Accessible';
       case 'not_installed':
         return 'Not Installed';
+      case 'unknown':
+        return 'Click to Check';
       default:
         return 'Unknown';
     }
-  };
+  }, [dockerStatus.status]);
 
   return (
     <div className="docker-control">
@@ -147,9 +178,12 @@ const DockerButton: React.FC = () => {
         <div className="status-indicator">
           <div 
             className="status-dot" 
-            style={{ backgroundColor: getStatusColor() }}
+            style={{ backgroundColor: statusColor }}
           />
-          <span className="status-text">{getStatusText()}</span>
+          <span className="status-text">{statusText}</span>
+          {dockerStatus.status === 'unknown' && (
+            <span className="status-hint">(Click button below to check)</span>
+          )}
         </div>
         
         {dockerStatus.info && (
@@ -182,8 +216,10 @@ const DockerButton: React.FC = () => {
               <span className="spinner"></span>
               Checking...
             </>
+          ) : dockerStatus.status === 'unknown' ? (
+            '🔍 Check Docker Status'
           ) : (
-            '🔄 Check Status'
+            '🔄 Refresh Status'
           )}
         </button>
 

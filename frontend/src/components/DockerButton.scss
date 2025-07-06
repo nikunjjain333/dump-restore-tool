@@ -30,6 +30,13 @@
         color: white;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
+
+      .status-hint {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+        font-style: italic;
+        margin-left: 8px;
+      }
     }
 
     .docker-info {
