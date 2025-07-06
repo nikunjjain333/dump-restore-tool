@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api, DockerComposeConfig, DockerComposeOperationRequest } from '../api/client';
+import Modal from './Modal';
 import './DockerComposeConfigList.scss';
 
 interface DockerComposeConfigListProps {
@@ -11,6 +12,17 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [operatingConfigs, setOperatingConfigs] = useState<Set<number>>(new Set());
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   useEffect(() => {
     fetchConfigs();
@@ -43,14 +55,29 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       
       if (response.data.success) {
         // Show success message
-        alert(`Docker Compose ${operation} completed successfully!`);
+        setModal({
+          isOpen: true,
+          title: 'Success',
+          message: `Docker Compose ${operation} completed successfully!${response.data.output ? '\n\nOutput:\n' + response.data.output : ''}`,
+          type: 'success'
+        });
         if (onRefresh) onRefresh();
       } else {
-        alert(`Docker Compose ${operation} failed: ${response.data.message}`);
+        setModal({
+          isOpen: true,
+          title: 'Operation Failed',
+          message: `Docker Compose ${operation} failed: ${response.data.message}${response.data.output ? '\n\nOutput:\n' + response.data.output : ''}`,
+          type: 'error'
+        });
       }
     } catch (err) {
       console.error(`Error performing ${operation}:`, err);
-      alert(`Failed to perform ${operation} operation`);
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: `Failed to perform ${operation} operation: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
       setOperatingConfigs(prev => {
         const newSet = new Set(prev);
@@ -68,10 +95,21 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     try {
       await api.deleteDockerComposeConfig(configId);
       setConfigs(configs.filter(config => config.id !== configId));
+      setModal({
+        isOpen: true,
+        title: 'Success',
+        message: 'Configuration deleted successfully!',
+        type: 'success'
+      });
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error('Error deleting config:', err);
-      alert('Failed to delete configuration');
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to delete configuration',
+        type: 'error'
+      });
     }
   };
 
@@ -107,6 +145,15 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
 
   return (
     <div className="docker-compose-config-list">
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        autoClose={modal.type === 'success'}
+        autoCloseDelay={5000}
+      />
       <div className="configs-grid">
         {configs.map((config) => (
           <div key={config.id} className="config-card">

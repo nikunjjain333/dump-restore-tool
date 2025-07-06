@@ -27,7 +27,6 @@ class DockerComposeConfigOut(DockerComposeConfigBase):
         from_attributes = True
 
 class DockerComposeOperationRequest(BaseModel):
-    config_id: int = Field(..., description="Configuration ID to operate on")
     service_name: Optional[str] = Field(None, description="Override service name")
     flags: Optional[Dict[str, Any]] = Field(None, description="Override flags")
     operation: str = Field(..., description="Operation to perform (up, down, restart, logs, ps)")

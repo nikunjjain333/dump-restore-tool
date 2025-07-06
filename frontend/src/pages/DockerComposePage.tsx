@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { api, DockerComposeConfigCreate } from '../api/client';
 import DockerComposeConfigForm from '../components/DockerComposeConfigForm';
 import DockerComposeConfigList from '../components/DockerComposeConfigList';
+import Modal from '../components/Modal';
 import './DockerComposePage.scss';
 
 interface DockerStatus {
@@ -29,25 +30,38 @@ const DockerComposePage: React.FC<DockerComposePageProps> = ({
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   const handleSubmit = async (config: DockerComposeConfigCreate) => {
     try {
       setLoading(true);
-      setMessage(null);
       
       await api.createDockerComposeConfig(config);
       
-      setMessage({ type: 'success', text: 'Docker Compose configuration added successfully!' });
+      setModal({
+        isOpen: true,
+        title: 'Success',
+        message: 'Docker Compose configuration added successfully!',
+        type: 'success'
+      });
       setShowForm(false);
-      
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
     } catch (err: any) {
       console.error('Error creating Docker Compose config:', err);
-      setMessage({ 
-        type: 'error', 
-        text: err.response?.data?.detail || 'Failed to create Docker Compose configuration' 
+      setModal({
+        isOpen: true,
+        title: 'Error',
+        message: err.response?.data?.detail || 'Failed to create Docker Compose configuration',
+        type: 'error'
       });
     } finally {
       setLoading(false);
@@ -56,7 +70,6 @@ const DockerComposePage: React.FC<DockerComposePageProps> = ({
 
   const handleCancel = () => {
     setShowForm(false);
-    setMessage(null);
   };
 
   const handleRefresh = () => {
@@ -71,17 +84,15 @@ const DockerComposePage: React.FC<DockerComposePageProps> = ({
         <p>Manage your Docker Compose configurations and perform operations</p>
       </div>
 
-      {message && (
-        <div className={`message ${message.type}`}>
-          {message.text}
-          <button 
-            onClick={() => setMessage(null)}
-            className="message-close"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        autoClose={modal.type === 'success'}
+        autoCloseDelay={5000}
+      />
 
       <div className="page-actions">
         <button
