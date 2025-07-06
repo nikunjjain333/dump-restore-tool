@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import toast, { Toaster } from 'react-hot-toast';
 import './MainPage.scss';
+import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/client';
 import DockerButton from '../components/DockerButton';
 import DatabaseTypeSelector from '../components/DatabaseTypeSelector';
 import OperationSelector from '../components/OperationSelector';
@@ -10,7 +11,6 @@ import ConfigNameInput from '../components/ConfigNameInput';
 import PathInput from '../components/PathInput';
 import SavedConfigsList from '../components/SavedConfigsList';
 import StartProcessButton from '../components/StartProcessButton';
-import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/client';
 
 interface FormData {
   dbType: string;
