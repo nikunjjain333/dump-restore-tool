@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { 
   RefreshCw, 
   CheckCircle, 
@@ -9,7 +9,6 @@ import {
   Code,
   Activity
 } from 'lucide-react';
-import { api, DockerResponse } from '../api/client';
 import toast from 'react-hot-toast';
 import './DockerButton.scss';
 
@@ -25,70 +24,17 @@ interface DockerStatus {
   };
 }
 
-const DockerButton: React.FC = () => {
-  const [dockerStatus, setDockerStatus] = useState<DockerStatus>({
-    isRunning: false,
-    status: 'unknown'
-  });
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
-  const hasInitialized = useRef(false);
-  const currentRequestId = useRef(0);
+interface DockerButtonProps {
+  dockerStatus: DockerStatus;
+  checkDockerStatus: () => Promise<void>;
+  isCheckingStatus: boolean;
+}
 
-  // Initialize with unknown status (only once)
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      setDockerStatus({
-        isRunning: false,
-        status: 'unknown'
-      });
-    }
-  }, []);
-
-  const checkDockerStatus = async () => {
-    // Prevent multiple simultaneous calls
-    if (isCheckingStatus) {
-      return;
-    }
-    
-    const requestId = ++currentRequestId.current;
-    setIsCheckingStatus(true);
-    try {
-      const response = await api.getDockerStatus();
-      
-      // Check if this is still the current request
-      if (requestId !== currentRequestId.current) {
-        return;
-      }
-      
-      const { success, status, info } = response.data;
-      
-      setDockerStatus({
-        isRunning: success && status === 'running',
-        status: status,
-        info: info
-      });
-
-      if (success) {
-        toast.success(`Docker is ${status}! 🐳`);
-      } else {
-        toast.error('Docker is not accessible');
-      }
-    } catch (error) {
-      console.error('Failed to check Docker status:', error);
-      setDockerStatus({
-        isRunning: false,
-        status: 'error'
-      });
-      toast.error('Failed to check Docker status');
-    } finally {
-      // Only reset if this is still the current request
-      if (requestId === currentRequestId.current) {
-        setIsCheckingStatus(false);
-      }
-    }
-  };
-
+const DockerButton: React.FC<DockerButtonProps> = ({ 
+  dockerStatus, 
+  checkDockerStatus, 
+  isCheckingStatus 
+}) => {
   const statusColor = useMemo(() => {
     switch (dockerStatus.status) {
       case 'running':
@@ -120,6 +66,19 @@ const DockerButton: React.FC = () => {
         return 'Unknown';
     }
   }, [dockerStatus.status]);
+
+  const handleCheckStatus = async () => {
+    try {
+      await checkDockerStatus();
+      if (dockerStatus.status === 'running') {
+        toast.success(`Docker is ${dockerStatus.status}! 🐳`);
+      } else if (dockerStatus.status !== 'unknown') {
+        toast.error('Docker is not accessible');
+      }
+    } catch (error) {
+      toast.error('Failed to check Docker status');
+    }
+  };
 
   return (
     <div className="docker-control">
@@ -159,7 +118,7 @@ const DockerButton: React.FC = () => {
       <div className="docker-actions">
         <button
           type="button"
-          onClick={checkDockerStatus}
+          onClick={handleCheckStatus}
           disabled={isCheckingStatus}
           className="btn btn-secondary"
         >

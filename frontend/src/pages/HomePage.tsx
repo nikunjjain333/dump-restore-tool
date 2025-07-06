@@ -19,9 +19,25 @@ import './HomePage.scss';
 import { api, Config } from '../api/client';
 import DockerButton from '../components/DockerButton';
 
-interface HomePageProps {}
+interface DockerStatus {
+  isRunning: boolean;
+  status: string;
+  info?: {
+    containers: number;
+    images: number;
+    version: string;
+    os: string;
+    architecture: string;
+  };
+}
 
-const HomePage: React.FC<HomePageProps> = () => {
+interface HomePageProps {
+  dockerStatus: DockerStatus;
+  checkDockerStatus: () => Promise<void>;
+  isCheckingStatus: boolean;
+}
+
+const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, isCheckingStatus }) => {
   const navigate = useNavigate();
   const [recentConfigs, setRecentConfigs] = useState<Config[]>([]);
   const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
@@ -137,7 +153,11 @@ const HomePage: React.FC<HomePageProps> = () => {
             <Zap className="icon" />
             <h2>Docker Control</h2>
           </div>
-          <DockerButton />
+          <DockerButton 
+            dockerStatus={dockerStatus}
+            checkDockerStatus={checkDockerStatus}
+            isCheckingStatus={isCheckingStatus}
+          />
         </div>
 
         {/* Quick Actions */}

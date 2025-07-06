@@ -4,7 +4,29 @@ import DockerComposeConfigForm from '../components/DockerComposeConfigForm';
 import DockerComposeConfigList from '../components/DockerComposeConfigList';
 import './DockerComposePage.scss';
 
-const DockerComposePage: React.FC = () => {
+interface DockerStatus {
+  isRunning: boolean;
+  status: string;
+  info?: {
+    containers: number;
+    images: number;
+    version: string;
+    os: string;
+    architecture: string;
+  };
+}
+
+interface DockerComposePageProps {
+  dockerStatus: DockerStatus;
+  checkDockerStatus: () => Promise<void>;
+  isCheckingStatus: boolean;
+}
+
+const DockerComposePage: React.FC<DockerComposePageProps> = ({ 
+  dockerStatus, 
+  checkDockerStatus, 
+  isCheckingStatus 
+}) => {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
