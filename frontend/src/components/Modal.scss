@@ -35,6 +35,13 @@
     max-width: 700px;
     min-width: 400px;
   }
+
+  // Error modals should be larger for better readability
+  &.modal-content-error {
+    max-width: 700px;
+    width: 90%;
+    max-height: 85vh;
+  }
 }
 
 .modal-header {
@@ -140,6 +147,41 @@
       &::-webkit-scrollbar-thumb {
         background: var(--border-accent);
         border-radius: 4px;
+        
+        &:hover {
+          background: var(--text-muted);
+        }
+      }
+    }
+
+    // Preformatted text (for error messages) should be larger and more readable
+    &.modal-preformatted {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-primary);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      max-height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: var(--text-primary);
+      word-break: break-word;
+      
+      // Scrollbar styling for preformatted text
+      &::-webkit-scrollbar {
+        width: 10px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: var(--bg-tertiary);
+        border-radius: 5px;
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: var(--border-accent);
+        border-radius: 5px;
         
         &:hover {
           background: var(--text-muted);

@@ -24,6 +24,7 @@ import ConfigNameInput from '../components/ConfigNameInput';
 import PathInput from '../components/PathInput';
 import SavedConfigsList from '../components/SavedConfigsList';
 import StartProcessButton from '../components/StartProcessButton';
+import Modal from '../components/Modal';
 
 interface FormData {
   dbType: string;
@@ -45,6 +46,18 @@ const AddConfigurationPage: React.FC = () => {
   const hasInitialized = useRef(false);
   const currentConfigRequestId = useRef(0);
   const configLoadedFromNavigation = useRef(false);
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info' | 'warning';
+    contentType?: 'text' | 'logs' | 'preformatted';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
 
@@ -184,7 +197,15 @@ const AddConfigurationPage: React.FC = () => {
       toast.dismiss(loadingToast);
       
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start process';
-      toast.error(`❌ ${errorMessage}`);
+      
+      // Show error in modal instead of toast for better readability
+      setModal({
+        isOpen: true,
+        title: `${data.operation.charAt(0).toUpperCase() + data.operation.slice(1)} Operation Failed`,
+        message: errorMessage,
+        type: 'error',
+        contentType: 'preformatted' // Use preformatted for better error display
+      });
     } finally {
       setIsLoading(false);
     }
@@ -221,6 +242,14 @@ const AddConfigurationPage: React.FC = () => {
 
   return (
     <div className="add-configuration-page">
+      <Modal
+        isOpen={modal.isOpen}
+        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        contentType={modal.contentType}
+      />
       <Toaster 
         position="top-right"
         toastOptions={{
