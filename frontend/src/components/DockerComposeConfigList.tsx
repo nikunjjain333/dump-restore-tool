@@ -389,8 +389,34 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                   </button>
                 </div>
               </div>
-              
-              <div className="detail-item">
+              {/* Service Table - moved below the label-section block for correct alignment */}
+              <div className="containers-list">
+                <table style={{ width: '100%', fontSize: '0.95em', marginTop: 8 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left' }}>Service</th>
+                      <th style={{ textAlign: 'left' }}>Container</th>
+                      <th style={{ textAlign: 'left' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(getContainerStatuses(config.id) as any[]).length === 0 ? (
+                      <tr>
+                        <td colSpan={3} style={{ color: '#888', fontStyle: 'italic' }}>No containers found</td>
+                      </tr>
+                    ) : (
+                      getContainerStatuses(config.id).map((service: any, idx: number) => (
+                        <tr key={idx}>
+                          <td>{service.service_name || service.Service || service.Name || '-'}</td>
+                          <td>{service.container_name || service.Name || '-'}</td>
+                          <td>{getContainerStatusIcon(service.status || service.State || service.Status)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="detail-item path-block">
                 <span className="label">Path:</span>
                 <span className="value">{config.path}</span>
               </div>

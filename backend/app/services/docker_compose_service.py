@@ -170,7 +170,7 @@ def run_docker_compose_operation(db: Session, config_id: int, operation: str, se
         }
 
 def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
-    """Get list of services from docker-compose.yml"""
+    """Get list of services from docker-compose.yml with service name, container name, and status"""
     try:
         # Validate that the path exists
         if not os.path.exists(config_path):
@@ -197,15 +197,21 @@ def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
         if result.returncode == 0:
             # Parse the output to get service information
             services = []
-            for line in result.stdout.strip().split('\n'):
-                if line:
-                    try:
-                        import json
-                        service_info = json.loads(line)
-                        services.append(service_info)
-                    except json.JSONDecodeError:
-                        continue
-            
+            import json
+            try:
+                # The output is a JSON array
+                service_infos = json.loads(result.stdout)
+                for service_info in service_infos:
+                    services.append({
+                        "service_name": service_info.get("Service"),
+                        "container_name": service_info.get("Name"),
+                        "status": service_info.get("State")
+                    })
+            except Exception as e:
+                return {
+                    "success": False,
+                    "message": f"Failed to parse docker-compose ps output: {str(e)}"
+                }
             return {
                 "success": True,
                 "services": services
