@@ -81,9 +81,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
           });
           
           // Preserve backend fields: service_name, container_name, status
-          const validServices = response.data.services.filter((service: any) => 
-            service && typeof service === 'object'
-          ).map((service: any) => ({
+          const validServices = response.data.services.map((service: any) => ({
             service_name: service.service_name || service.Service || service.Name || 'Unknown',
             container_name: service.container_name || service.Name || 'Unknown',
             status: service.status || service.State || 'Unknown',
@@ -318,6 +316,15 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     return `${runningCount}/${containers.length} containers running`;
   };
 
+  // Helper to check if any container is running for a config
+  const hasAnyRunningContainer = (configId: number) => {
+    const containers = getContainerStatuses(configId);
+    return containers.some((s: any) => {
+      const state = (s.status || '').toLowerCase();
+      return state.includes('running') || state.includes('up') || state === 'started';
+    });
+  };
+
   if (loading) {
     return (
       <div className="docker-compose-config-list">
@@ -473,7 +480,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                 <button
                   onClick={() => handleOperation(config.id, 'restart')}
                   className="btn btn-info"
-                  disabled={isOperating(config.id)}
+                  disabled={isOperating(config.id) || !hasAnyRunningContainer(config.id)}
                 >
                   {getOperatingOperation(config.id) === 'restart' ? 'Restarting...' : '🔄 Restart'}
                 </button>
@@ -499,7 +506,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                 <button
                   onClick={() => handleOperation(config.id, 'build')}
                   className="btn btn-secondary btn-small"
-                  disabled={isOperating(config.id)}
+                  disabled={isOperating(config.id) || !hasAnyRunningContainer(config.id)}
                 >
                   {getOperatingOperation(config.id) === 'build' ? 'Building...' : '🔨 Build'}
                 </button>
