@@ -24,6 +24,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     }>;
     hasSpecificService: boolean;
   }>>(new Map());
+  const [containerErrors, setContainerErrors] = useState<Map<number, Map<string, string>>>(new Map());
   const [modal, setModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -144,6 +145,13 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
             contentType: 'preformatted'
           });
         } else {
+          // Clear any previous errors for this config
+          setContainerErrors(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(configId);
+            return newMap;
+          });
+          
           // Show success message for other operations
           setModal({
             isOpen: true,
@@ -160,6 +168,14 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
           if (onRefresh) onRefresh();
         }
       } else {
+        // Parse container-specific errors from the output
+        const errors = parseContainerErrors(response.data.output || '');
+        setContainerErrors(prev => {
+          const newMap = new Map(prev);
+          newMap.set(configId, errors);
+          return newMap;
+        });
+        
         setModal({
           isOpen: true,
           title: 'Operation Failed',
@@ -328,6 +344,54 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     });
   };
 
+  // Parse error messages to extract container-specific errors
+  const parseContainerErrors = (output: string): Map<string, string> => {
+    const errorMap = new Map<string, string>();
+    
+    if (!output) return errorMap;
+    
+    const lines = output.split('\n');
+    let currentContainer = '';
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Look for container creation/operation lines
+      const containerMatch = trimmedLine.match(/Container\s+([^\s]+)\s+(Creating|Created|Starting|Started|Stopping|Stopped|Restarting|Restarted|Error|Failed)/);
+      if (containerMatch) {
+        currentContainer = containerMatch[1];
+        continue;
+      }
+      
+      // Look for error lines that follow container operations
+      if (trimmedLine.toLowerCase().includes('error') || 
+          trimmedLine.toLowerCase().includes('failed') ||
+          trimmedLine.toLowerCase().includes('bind for') ||
+          trimmedLine.toLowerCase().includes('port is already allocated') ||
+          trimmedLine.toLowerCase().includes('driver failed programming') ||
+          trimmedLine.toLowerCase().includes('cannot restart container')) {
+        
+        if (currentContainer) {
+          errorMap.set(currentContainer, trimmedLine);
+        } else {
+          // If no specific container, try to extract container name from error
+          const containerNameMatch = trimmedLine.match(/endpoint\s+([^\s]+)/);
+          if (containerNameMatch) {
+            const containerName = containerNameMatch[1];
+            errorMap.set(containerName, trimmedLine);
+          }
+        }
+      }
+    }
+    
+    return errorMap;
+  };
+
+  const getContainerError = (configId: number, containerName: string): string | undefined => {
+    const configErrors = containerErrors.get(configId);
+    return configErrors?.get(containerName);
+  };
+
   if (loading) {
     return (
       <div className="docker-compose-config-list">
@@ -412,20 +476,34 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                         <td colSpan={3} style={{ color: '#888', fontStyle: 'italic' }}>No containers found</td>
                       </tr>
                     ) : (
-                      getContainerStatuses(config.id).map((service: any, idx: number) => (
-                        <tr key={idx}>
-                          <td>{service.service_name || '-'}</td>
-                          <td>{service.container_name || '-'}</td>
-                          <td>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                              {getContainerStatusIcon(service.status)}
-                              <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
-                                {service.status || 'Unknown'}
+                      getContainerStatuses(config.id).map((service: any, idx: number) => {
+                        const containerError = getContainerError(config.id, service.container_name);
+                        const hasError = !!containerError;
+                        const statusIcon = hasError ? '❌' : getContainerStatusIcon(service.status);
+                        const statusText = hasError ? 'Error' : (service.status || 'Unknown');
+                        return (
+                          <tr key={idx}>
+                            <td>{service.service_name || '-'}</td>
+                            <td>{service.container_name || '-'}</td>
+                            <td>
+                              <span
+                                className={hasError ? 'status-with-tooltip error-status' : ''}
+                                style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}
+                              >
+                                {statusIcon}
+                                <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+                                  {statusText}
+                                </span>
+                                {hasError && (
+                                  <span className="status-tooltip">
+                                    {containerError}
+                                  </span>
+                                )}
                               </span>
-                            </span>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
