@@ -392,14 +392,6 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
               <div className="detail-item">
                 <div className="label-section">
                   <span className="label">Containers:</span>
-                  <button
-                    onClick={() => fetchServiceStatuses([config])}
-                    className="btn btn-icon btn-refresh"
-                    title="Refresh container status"
-                    disabled={isOperating(config.id)}
-                  >
-                    <RefreshCw className="compose-icon-gradient" size={18} />
-                  </button>
                 </div>
               </div>
               {/* Service Table - moved below the label-section block for correct alignment */}
