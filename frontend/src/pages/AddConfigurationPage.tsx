@@ -68,14 +68,30 @@ const AddConfigurationPage: React.FC = () => {
   useEffect(() => {
     if (location.state?.selectedConfig && !configLoadedFromNavigation.current) {
       const config = location.state.selectedConfig;
+      
       setSelectedConfig(config);
       setValue('dbType', config.db_type);
       setValue('operation', config.operation as 'dump' | 'restore');
       setValue('configName', config.name);
-      // Set other fields based on config.params
+      
+      // Set database parameters from config.params
       Object.entries(config.params).forEach(([key, value]) => {
         setValue(key, value);
       });
+      
+      // Set path fields from dedicated database columns
+      setTimeout(() => {
+        if (config.dump_path) {
+          setValue('dumpPath', config.dump_path);
+        }
+        if (config.restore_path) {
+          setValue('restorePath', config.restore_path);
+        }
+        if (config.run_path) {
+          setValue('runPath', config.run_path);
+        }
+      }, 100);
+      
       toast.success(`Configuration "${config.name}" loaded!`);
       configLoadedFromNavigation.current = true;
     }
@@ -131,8 +147,13 @@ const AddConfigurationPage: React.FC = () => {
           dumpPath: undefined,
           restorePath: undefined,
           runPath: undefined
-        }
+        },
+        dump_path: data.dumpPath,
+        restore_path: data.restorePath,
+        run_path: data.runPath
       };
+      
+
 
       // Save config
       const savedConfig = await api.createConfig(configData);
@@ -174,10 +195,25 @@ const AddConfigurationPage: React.FC = () => {
     setValue('dbType', config.db_type);
     setValue('operation', config.operation as 'dump' | 'restore');
     setValue('configName', config.name);
-    // Set other fields based on config.params
+    
+    // Set database parameters from config.params
     Object.entries(config.params).forEach(([key, value]) => {
       setValue(key, value);
     });
+    
+    // Set path fields from dedicated database columns
+    setTimeout(() => {
+      if (config.dump_path) {
+        setValue('dumpPath', config.dump_path);
+      }
+      if (config.restore_path) {
+        setValue('restorePath', config.restore_path);
+      }
+      if (config.run_path) {
+        setValue('runPath', config.run_path);
+      }
+    }, 100);
+    
     // Reset the navigation flag and show toast for manual selection
     configLoadedFromNavigation.current = false;
     toast.success(`Configuration "${config.name}" loaded!`);

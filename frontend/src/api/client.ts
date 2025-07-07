@@ -32,6 +32,9 @@ export interface Config {
   db_type: string;
   operation: string;
   params: Record<string, any>;
+  dump_path?: string;
+  restore_path?: string;
+  run_path?: string;
 }
 
 export interface ConfigCreate {
@@ -39,6 +42,9 @@ export interface ConfigCreate {
   db_type: string;
   operation: string;
   params: Record<string, any>;
+  dump_path?: string;
+  restore_path?: string;
+  run_path?: string;
 }
 
 export interface DumpRequest {
