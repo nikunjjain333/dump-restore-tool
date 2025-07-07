@@ -25,6 +25,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     hasSpecificService: boolean;
   }>>(new Map());
   const [containerErrors, setContainerErrors] = useState<Map<number, Map<string, string>>>(new Map());
+  const [refreshingStatuses, setRefreshingStatuses] = useState<Set<number>>(new Set());
   const [modal, setModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -60,7 +61,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     }
   };
 
-  const fetchServiceStatuses = async (configsToCheck: DockerComposeConfig[]) => {
+  const fetchServiceStatuses = async (configsToCheck: DockerComposeConfig[], showRefreshing: boolean = false) => {
+    console.log(`Fetching service statuses for ${configsToCheck.length} configs, showRefreshing: ${showRefreshing}`);
+    
     const statusMap = new Map<number, { 
       isRunning: boolean; 
       services: Array<{
@@ -70,6 +73,15 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       }>;
       hasSpecificService: boolean;
     }>();
+    
+    // Set refreshing state for configs being checked
+    if (showRefreshing) {
+      setRefreshingStatuses(prev => {
+        const newSet = new Set(prev);
+        configsToCheck.forEach(config => newSet.add(config.id));
+        return newSet;
+      });
+    }
     
     for (const config of configsToCheck) {
       try {
@@ -112,6 +124,15 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     }
     
     setServiceStatuses(statusMap);
+    
+    // Clear refreshing state
+    if (showRefreshing) {
+      setRefreshingStatuses(prev => {
+        const newSet = new Set(prev);
+        configsToCheck.forEach(config => newSet.delete(config.id));
+        return newSet;
+      });
+    }
   };
 
   const handleOperation = async (configId: number, operation: string) => {
@@ -164,6 +185,17 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
           setTimeout(async () => {
             await fetchServiceStatuses(configs);
           }, 1000);
+          
+          // For 'up' operation, refresh status again after 5 seconds to catch containers that take time to start
+          if (operation === 'up') {
+            setTimeout(async () => {
+              console.log(`Refreshing status for config ${configId} after 5 seconds...`);
+              const configToRefresh = configs.find(c => c.id === configId);
+              if (configToRefresh) {
+                await fetchServiceStatuses([configToRefresh], true); // Show refreshing indicator
+              }
+            }, 5000);
+          }
           
           if (onRefresh) onRefresh();
         }
@@ -371,19 +403,26 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
           trimmedLine.toLowerCase().includes('driver failed programming') ||
           trimmedLine.toLowerCase().includes('cannot restart container')) {
         
-        if (currentContainer) {
+        // First, try to extract container name from the error message itself
+        let errorContainer = '';
+        
+        // Look for endpoint pattern: "endpoint treezpay-postgres"
+        const endpointMatch = trimmedLine.match(/endpoint\s+([^\s]+)/);
+        if (endpointMatch) {
+          errorContainer = endpointMatch[1];
+        }
+        
+        // If we found a container in the error message, use that
+        if (errorContainer) {
+          errorMap.set(errorContainer, trimmedLine);
+        } else if (currentContainer) {
+          // Fallback to the last container mentioned
           errorMap.set(currentContainer, trimmedLine);
-        } else {
-          // If no specific container, try to extract container name from error
-          const containerNameMatch = trimmedLine.match(/endpoint\s+([^\s]+)/);
-          if (containerNameMatch) {
-            const containerName = containerNameMatch[1];
-            errorMap.set(containerName, trimmedLine);
-          }
         }
       }
     }
     
+    console.log('Parsed errors:', Object.fromEntries(errorMap));
     return errorMap;
   };
 
@@ -479,8 +518,23 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                       getContainerStatuses(config.id).map((service: any, idx: number) => {
                         const containerError = getContainerError(config.id, service.container_name);
                         const hasError = !!containerError;
-                        const statusIcon = hasError ? '❌' : getContainerStatusIcon(service.status);
-                        const statusText = hasError ? 'Error' : (service.status || 'Unknown');
+                        const isRefreshing = refreshingStatuses.has(config.id);
+                        
+                        // Debug logging
+                        if (hasError) {
+                          console.log(`Container ${service.container_name} has error:`, containerError);
+                        }
+                        
+                        // Determine status icon and text
+                        let statusIcon, statusText;
+                        if (hasError) {
+                          statusIcon = '❌';
+                          statusText = 'Error';
+                        } else {
+                          statusIcon = getContainerStatusIcon(service.status);
+                          statusText = service.status || 'Unknown';
+                        }
+                        
                         return (
                           <tr key={idx}>
                             <td>{service.service_name || '-'}</td>
@@ -491,8 +545,13 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                                 style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}
                               >
                                 {statusIcon}
-                                <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+                                <span style={{ fontSize: '0.85em', color: hasError ? '#ef4444' : 'var(--text-secondary)' }}>
                                   {statusText}
+                                  {isRefreshing && (
+                                    <span style={{ marginLeft: '4px', fontSize: '0.8em', color: 'var(--text-accent)' }}>
+                                      (refreshing...)
+                                    </span>
+                                  )}
                                 </span>
                                 {hasError && (
                                   <span className="status-tooltip">
