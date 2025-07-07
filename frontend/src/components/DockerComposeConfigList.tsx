@@ -254,10 +254,12 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     const stateLower = state.toLowerCase();
     if (stateLower.includes('running') || stateLower.includes('up') || stateLower === 'started') {
       return '🟢';
-    } else if (stateLower.includes('exited') || stateLower.includes('stopped') || stateLower.includes('down')) {
+    } else if (stateLower.includes('exited') || stateLower.includes('stopped') || stateLower.includes('down') || stateLower.includes('created')) {
       return '🔴';
-    } else if (stateLower.includes('starting') || stateLower.includes('stopping') || stateLower.includes('restarting')) {
+    } else if (stateLower.includes('starting') || stateLower.includes('stopping') || stateLower.includes('restarting') || stateLower.includes('paused')) {
       return '🔄';
+    } else if (stateLower.includes('error') || stateLower.includes('failed')) {
+      return '❌';
     } else {
       return '🟡';
     }
@@ -414,7 +416,14 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                         <tr key={idx}>
                           <td>{service.service_name || '-'}</td>
                           <td>{service.container_name || '-'}</td>
-                          <td>{getContainerStatusIcon(service.status)}</td>
+                          <td>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              {getContainerStatusIcon(service.status)}
+                              <span style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>
+                                {service.status || 'Unknown'}
+                              </span>
+                            </span>
+                          </td>
                         </tr>
                       ))
                     )}

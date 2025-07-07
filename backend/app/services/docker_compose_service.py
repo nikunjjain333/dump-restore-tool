@@ -188,7 +188,7 @@ def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
             }
         
         result = subprocess.run(
-            ["docker-compose", "ps", "--format", "json"],
+            ["docker-compose", "ps", "-a", "--format", "json"],
             cwd=config_path,
             capture_output=True,
             text=True
@@ -199,6 +199,13 @@ def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
             services = []
             import json
             try:
+                # Handle empty output
+                if not result.stdout.strip():
+                    return {
+                        "success": True,
+                        "services": []
+                    }
+                
                 # The output is a JSON array
                 service_infos = json.loads(result.stdout)
                 for service_info in service_infos:
@@ -207,7 +214,14 @@ def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
                         "container_name": service_info.get("Name") or service_info.get("Service") or "Unknown",
                         "status": service_info.get("State") or service_info.get("Status") or "Unknown"
                     })
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse docker-compose ps JSON output: {e}")
+                return {
+                    "success": False,
+                    "message": f"Failed to parse docker-compose ps output: {str(e)}"
+                }
             except Exception as e:
+                logger.error(f"Unexpected error parsing docker-compose ps output: {e}")
                 return {
                     "success": False,
                     "message": f"Failed to parse docker-compose ps output: {str(e)}"
