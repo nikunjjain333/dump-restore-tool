@@ -17,10 +17,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
   const [serviceStatuses, setServiceStatuses] = useState<Map<number, { 
     isRunning: boolean; 
     services: Array<{
-      Name?: string;
-      State?: string;
-      Status?: string;
-      Ports?: string;
+      service_name: string;
+      container_name: string;
+      status: string;
     }>;
     hasSpecificService: boolean;
   }>>(new Map());
@@ -63,10 +62,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     const statusMap = new Map<number, { 
       isRunning: boolean; 
       services: Array<{
-        Name?: string;
-        State?: string;
-        Status?: string;
-        Ports?: string;
+        service_name: string;
+        container_name: string;
+        status: string;
       }>;
       hasSpecificService: boolean;
     }>();
@@ -78,18 +76,17 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
           
           // Check for running services - look for various possible state values
           const runningServices = response.data.services.filter((service: any) => {
-            const state = service.State?.toLowerCase() || '';
+            const state = (service.status || service.State || '').toLowerCase();
             return state.includes('running') || state.includes('up') || state === 'started';
           });
           
-          // Filter out invalid service objects and ensure they have required properties
+          // Preserve backend fields: service_name, container_name, status
           const validServices = response.data.services.filter((service: any) => 
             service && typeof service === 'object'
           ).map((service: any) => ({
-            Name: service.Name || 'Unknown',
-            State: service.State || 'Unknown',
-            Status: service.Status || '',
-            Ports: service.Ports || ''
+            service_name: service.service_name || service.Service || service.Name || 'Unknown',
+            container_name: service.container_name || service.Name || 'Unknown',
+            status: service.status || service.State || 'Unknown',
           }));
           
           statusMap.set(config.id, {
@@ -407,9 +404,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                     ) : (
                       getContainerStatuses(config.id).map((service: any, idx: number) => (
                         <tr key={idx}>
-                          <td>{service.service_name || service.Service || service.Name || '-'}</td>
-                          <td>{service.container_name || service.Name || '-'}</td>
-                          <td>{getContainerStatusIcon(service.status || service.State || service.Status)}</td>
+                          <td>{service.service_name || '-'}</td>
+                          <td>{service.container_name || '-'}</td>
+                          <td>{getContainerStatusIcon(service.status)}</td>
                         </tr>
                       ))
                     )}

@@ -203,9 +203,9 @@ def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
                 service_infos = json.loads(result.stdout)
                 for service_info in service_infos:
                     services.append({
-                        "service_name": service_info.get("Service"),
-                        "container_name": service_info.get("Name"),
-                        "status": service_info.get("State")
+                        "service_name": service_info.get("Service") or service_info.get("Name") or "Unknown",
+                        "container_name": service_info.get("Name") or service_info.get("Service") or "Unknown",
+                        "status": service_info.get("State") or service_info.get("Status") or "Unknown"
                     })
             except Exception as e:
                 return {
