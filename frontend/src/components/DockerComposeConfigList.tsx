@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api, DockerComposeConfig, DockerComposeOperationRequest } from '../api/client';
 import Modal from './Modal';
 import './DockerComposeConfigList.scss';
+import { Play, StopCircle, RefreshCw, LogOut, List, FileText, Hammer, Trash2, Layers } from 'lucide-react';
 
 interface DockerComposeConfigListProps {
   onRefresh?: () => void;
@@ -372,6 +373,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
           <div key={config.id} className="config-card">
             <div className="config-header">
               <div className="config-title-section">
+                <span className="compose-icon-gradient"><Layers size={24} /></span>
                 <h4>{config.name}</h4>
               </div>
               <div className="config-actions">
@@ -381,7 +383,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                   title="Delete configuration"
                   disabled={isOperating(config.id)}
                 >
-                  🗑️
+                  <Trash2 className="compose-icon-gradient" />
                 </button>
               </div>
             </div>
@@ -396,7 +398,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                     title="Refresh container status"
                     disabled={isOperating(config.id)}
                   >
-                    🔄
+                    <RefreshCw className="compose-icon-gradient" size={18} />
                   </button>
                 </div>
               </div>
@@ -463,26 +465,38 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
               <div className="operation-buttons">
                 <button
                   onClick={() => handleOperation(config.id, 'up')}
-                  className="btn btn-success"
+                  className="btn btn-gradient"
                   disabled={isOperating(config.id)}
                 >
-                  {getOperatingOperation(config.id) === 'up' ? 'Starting...' : '🚀 Up'}
+                  {getOperatingOperation(config.id) === 'up' ? (
+                    <><Play className="compose-icon-gradient" size={18} /> Launching...</>
+                  ) : (
+                    <><Play className="compose-icon-gradient" size={18} /> Launch Stack</>
+                  )}
                 </button>
                 
                 <button
                   onClick={() => handleOperation(config.id, 'down')}
-                  className="btn btn-warning"
+                  className="btn btn-gradient"
                   disabled={isOperating(config.id)}
                 >
-                  {getOperatingOperation(config.id) === 'down' ? 'Stopping...' : '⏹️ Down'}
+                  {getOperatingOperation(config.id) === 'down' ? (
+                    <><StopCircle className="compose-icon-gradient" size={18} /> Stopping...</>
+                  ) : (
+                    <><StopCircle className="compose-icon-gradient" size={18} /> Stop Stack</>
+                  )}
                 </button>
                 
                 <button
                   onClick={() => handleOperation(config.id, 'restart')}
-                  className="btn btn-info"
+                  className="btn btn-gradient"
                   disabled={isOperating(config.id) || !hasAnyRunningContainer(config.id)}
                 >
-                  {getOperatingOperation(config.id) === 'restart' ? 'Restarting...' : '🔄 Restart'}
+                  {getOperatingOperation(config.id) === 'restart' ? (
+                    <><RefreshCw className="compose-icon-gradient" size={18} /> Restarting...</>
+                  ) : (
+                    <><RefreshCw className="compose-icon-gradient" size={18} /> Restart Stack</>
+                  )}
                 </button>
               </div>
 
@@ -492,7 +506,11 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                   className="btn btn-secondary btn-small"
                   disabled={isOperating(config.id)}
                 >
-                  {getOperatingOperation(config.id) === 'ps' ? 'Checking...' : '📊 Status'}
+                  {getOperatingOperation(config.id) === 'ps' ? (
+                    <><List className="compose-icon-gradient" size={16} /> Checking...</>
+                  ) : (
+                    <><List className="compose-icon-gradient" size={16} /> Show Status</>
+                  )}
                 </button>
                 
                 <button
@@ -500,7 +518,11 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                   className="btn btn-secondary btn-small"
                   disabled={isOperating(config.id)}
                 >
-                  {getOperatingOperation(config.id) === 'logs' ? 'Loading...' : '📋 Logs'}
+                  {getOperatingOperation(config.id) === 'logs' ? (
+                    <><FileText className="compose-icon-gradient" size={16} /> Loading...</>
+                  ) : (
+                    <><FileText className="compose-icon-gradient" size={16} /> View Logs</>
+                  )}
                 </button>
                 
                 <button
@@ -508,7 +530,11 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                   className="btn btn-secondary btn-small"
                   disabled={isOperating(config.id) || !hasAnyRunningContainer(config.id)}
                 >
-                  {getOperatingOperation(config.id) === 'build' ? 'Building...' : '🔨 Build'}
+                  {getOperatingOperation(config.id) === 'build' ? (
+                    <><Hammer className="compose-icon-gradient" size={16} /> Building...</>
+                  ) : (
+                    <><Hammer className="compose-icon-gradient" size={16} /> Rebuild Images</>
+                  )}
                 </button>
               </div>
             </div>
