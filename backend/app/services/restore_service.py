@@ -45,20 +45,21 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str]
     try:
         client = get_docker_client()
         
-        # Create environment variables for PostgreSQL connection
-        env_vars = {
-            'PGHOST': params.get('host', 'localhost'),
-            'PGPORT': str(params.get('port', 5432)),
-            'PGDATABASE': params['database'],
-            'PGUSER': params['username'],
-            'PGPASSWORD': params['password']
-        }
+        # Build the psql command with direct parameter substitution
+        host = params.get('host', 'localhost')
+        port = str(params.get('port', 5432))
+        database = params['database']
+        username = params['username']
+        password = params['password']
         
-        # Run psql restore in Docker container
+        # Get the filename from the path
+        filename = os.path.basename(path)
+        
+        # Run psql restore in Docker container with direct parameter substitution
         container = client.containers.run(
-            'postgres:15',
-            command=f'psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -f /restore/input.sql',
-            environment=env_vars,
+            'postgres:16',
+            command=f'psql -h {host} -p {port} -U {username} -d {database} -f /restore/{filename}',
+            environment={'PGPASSWORD': password},  # Only set password as env var
             volumes={
                 os.path.dirname(path): {'bind': '/restore', 'mode': 'rw'}
             },
@@ -83,8 +84,11 @@ def _restore_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = 
     try:
         client = get_docker_client()
         
+        # Get the filename from the path
+        filename = os.path.basename(path)
+        
         # Create mysql restore command
-        restore_cmd = f"mysql -h {params.get('host', 'localhost')} -P {params.get('port', 3306)} -u {params['username']} -p{params['password']} {params['database']} < /restore/input.sql"
+        restore_cmd = f"mysql -h {params.get('host', 'localhost')} -P {params.get('port', 3306)} -u {params['username']} -p{params['password']} {params['database']} < /restore/{filename}"
         
         container = client.containers.run(
             'mysql:8.0',
@@ -143,11 +147,14 @@ def _restore_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = 
     try:
         client = get_docker_client()
         
+        # Get the filename from the path
+        filename = os.path.basename(path)
+        
         # For Redis, we need to stop the server, replace the RDB file, and restart
         # This is a simplified approach - in production you might want more sophisticated handling
         
         # Copy the RDB file to Redis data directory
-        redis_cmd = f"cp /restore/dump.rdb /data/dump.rdb"
+        redis_cmd = f"cp /restore/{filename} /data/dump.rdb"
         
         container = client.containers.run(
             'redis:7.0',

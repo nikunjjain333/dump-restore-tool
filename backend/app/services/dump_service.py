@@ -41,20 +41,21 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = 
     try:
         client = get_docker_client()
         
-        # Create environment variables for PostgreSQL connection
-        env_vars = {
-            'PGHOST': params.get('host', 'localhost'),
-            'PGPORT': str(params.get('port', 5432)),
-            'PGDATABASE': params['database'],
-            'PGUSER': params['username'],
-            'PGPASSWORD': params['password']
-        }
+        # Build the pg_dump command with direct parameter substitution
+        host = params.get('host', 'localhost')
+        port = str(params.get('port', 5432))
+        database = params['database']
+        username = params['username']
+        password = params['password']
         
-        # Run pg_dump in Docker container
+        # Get the filename from the path to preserve the original extension
+        filename = os.path.basename(path)
+        
+        # Run pg_dump in Docker container with direct parameter substitution
         container = client.containers.run(
-            'postgres:15',
-            command=f'pg_dump -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE -f /dump/output.sql',
-            environment=env_vars,
+            'postgres:16',
+            command=f'pg_dump -h {host} -p {port} -U {username} -d {database} -f /dump/{filename}',
+            environment={'PGPASSWORD': password},  # Only set password as env var
             volumes={
                 os.path.dirname(path): {'bind': '/dump', 'mode': 'rw'}
             },
@@ -63,10 +64,7 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = 
             detach=False
         )
         
-        # Rename the output file to the specified path
-        temp_path = os.path.join(os.path.dirname(path), 'output.sql')
-        if os.path.exists(temp_path):
-            os.rename(temp_path, path)
+        # No need to rename since we're using the correct filename directly
         
         return {
             "success": True,
@@ -84,8 +82,11 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
     try:
         client = get_docker_client()
         
+        # Get the filename from the path to preserve the original extension
+        filename = os.path.basename(path)
+        
         # Create mysqldump command
-        dump_cmd = f"mysqldump -h {params.get('host', 'localhost')} -P {params.get('port', 3306)} -u {params['username']} -p{params['password']} {params['database']} > /dump/output.sql"
+        dump_cmd = f"mysqldump -h {params.get('host', 'localhost')} -P {params.get('port', 3306)} -u {params['username']} -p{params['password']} {params['database']} > /dump/{filename}"
         
         container = client.containers.run(
             'mysql:8.0',
@@ -98,10 +99,7 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
             detach=False
         )
         
-        # Rename the output file
-        temp_path = os.path.join(os.path.dirname(path), 'output.sql')
-        if os.path.exists(temp_path):
-            os.rename(temp_path, path)
+        # No need to rename since we're using the correct filename directly
         
         return {
             "success": True,
@@ -149,11 +147,14 @@ def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
     try:
         client = get_docker_client()
         
+        # Get the filename from the path
+        filename = os.path.basename(path)
+        
         # Create redis-cli command for RDB dump
         redis_cmd = f"redis-cli -h {params.get('host', 'localhost')} -p {params.get('port', 6379)}"
         if params.get('password'):
             redis_cmd += f" -a {params['password']}"
-        redis_cmd += f" --rdb /dump/dump.rdb"
+        redis_cmd += f" --rdb /dump/{filename}"
         
         container = client.containers.run(
             'redis:7.0',
