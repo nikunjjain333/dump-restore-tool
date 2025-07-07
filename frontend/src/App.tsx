@@ -122,6 +122,7 @@ const App: React.FC = () => {
         <main className="app-main">
           <Routes>
             <Route path="/" element={<HomePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
+            <Route path="/add-configuration" element={<AddConfigurationPage />} />
             <Route path="/configurations" element={<ConfigurationsPage />} />
             <Route path="/docker-compose" element={<DockerComposePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
           </Routes>
