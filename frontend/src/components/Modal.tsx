@@ -6,7 +6,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   message: string;
-  type?: 'success' | 'error' | 'info' | 'warning';
+  type?: 'success' | 'error' | 'info' | 'warning' | 'status';
   contentType?: 'text' | 'logs' | 'preformatted';
   showCloseButton?: boolean;
   autoClose?: boolean;
@@ -61,6 +61,8 @@ const Modal: React.FC<ModalProps> = ({
         return '❌';
       case 'warning':
         return '⚠️';
+      case 'status':
+        return '📊';
       case 'info':
       default:
         return 'ℹ️';
@@ -69,7 +71,7 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-content ${contentType === 'logs' ? 'modal-content-logs' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`modal-content${contentType === 'logs' ? ' modal-content-logs' : ''}${type === 'status' ? ' modal-content-status' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className={`modal-header modal-${type}`}>
           <div className="modal-icon">{getIcon()}</div>
           <h3 className="modal-title">{title}</h3>

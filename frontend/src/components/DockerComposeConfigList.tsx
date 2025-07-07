@@ -27,7 +27,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     isOpen: boolean;
     title: string;
     message: string;
-    type: 'success' | 'error' | 'info' | 'warning';
+    type: 'success' | 'error' | 'info' | 'warning' | 'status';
     contentType?: 'text' | 'logs' | 'preformatted';
     onConfirm?: () => void;
   }>({
@@ -135,6 +135,14 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
             message: response.data.output || 'No logs available',
             type: 'info',
             contentType: 'logs'
+          });
+        } else if (operation === 'ps') {
+          setModal({
+            isOpen: true,
+            title: 'Container Status',
+            message: response.data.output || 'No status available',
+            type: 'status',
+            contentType: 'preformatted'
           });
         } else {
           // Show success message for other operations
@@ -343,15 +351,14 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       <Modal
         isOpen={modal.isOpen}
         onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
-        title={modal.title}
+        title={modal.type === 'status' ? 'Container Status' : modal.title}
         message={modal.message}
         type={modal.type}
         contentType={modal.contentType}
         onConfirm={modal.onConfirm}
         confirmText="Delete"
         cancelText="Cancel"
-        autoClose={modal.type === 'success'}
-        autoCloseDelay={5000}
+        autoClose={false}
       />
       <div className="configs-grid">
         {configs.map((config) => (
