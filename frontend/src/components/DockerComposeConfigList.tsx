@@ -14,7 +14,16 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
   const [error, setError] = useState<string>('');
   const [operatingConfigs, setOperatingConfigs] = useState<Set<number>>(new Set());
   const [operatingOperations, setOperatingOperations] = useState<Map<number, string>>(new Map());
-  const [serviceStatuses, setServiceStatuses] = useState<Map<number, { isRunning: boolean; services: any[] }>>(new Map());
+  const [serviceStatuses, setServiceStatuses] = useState<Map<number, { 
+    isRunning: boolean; 
+    services: Array<{
+      Name?: string;
+      State?: string;
+      Status?: string;
+      Ports?: string;
+    }>;
+    hasSpecificService: boolean;
+  }>>(new Map());
   const [modal, setModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -51,28 +60,57 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
   };
 
   const fetchServiceStatuses = async (configsToCheck: DockerComposeConfig[]) => {
-    const statusMap = new Map<number, { isRunning: boolean; services: any[] }>();
+    const statusMap = new Map<number, { 
+      isRunning: boolean; 
+      services: Array<{
+        Name?: string;
+        State?: string;
+        Status?: string;
+        Ports?: string;
+      }>;
+      hasSpecificService: boolean;
+    }>();
     
     for (const config of configsToCheck) {
       try {
         const response = await api.getDockerComposeServices(config.id);
         if (response.data.success && response.data.services) {
+          
           // Check for running services - look for various possible state values
           const runningServices = response.data.services.filter((service: any) => {
             const state = service.State?.toLowerCase() || '';
             return state.includes('running') || state.includes('up') || state === 'started';
           });
           
+          // Filter out invalid service objects and ensure they have required properties
+          const validServices = response.data.services.filter((service: any) => 
+            service && typeof service === 'object'
+          ).map((service: any) => ({
+            Name: service.Name || 'Unknown',
+            State: service.State || 'Unknown',
+            Status: service.Status || '',
+            Ports: service.Ports || ''
+          }));
+          
           statusMap.set(config.id, {
             isRunning: runningServices.length > 0,
-            services: response.data.services
+            services: validServices,
+            hasSpecificService: !!config.service_name
           });
         } else {
-          statusMap.set(config.id, { isRunning: false, services: [] });
+          statusMap.set(config.id, { 
+            isRunning: false, 
+            services: [],
+            hasSpecificService: !!config.service_name
+          });
         }
       } catch (err) {
         console.error(`Error fetching services for config ${config.id}:`, err);
-        statusMap.set(config.id, { isRunning: false, services: [] });
+        statusMap.set(config.id, { 
+          isRunning: false, 
+          services: [],
+          hasSpecificService: !!config.service_name
+        });
       }
     }
     
@@ -196,6 +234,85 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     return status?.isRunning || false;
   };
 
+  const getContainerStatuses = (configId: number) => {
+    const status = serviceStatuses.get(configId);
+    return status?.services || [];
+  };
+
+  const hasSpecificService = (configId: number) => {
+    const status = serviceStatuses.get(configId);
+    return status?.hasSpecificService || false;
+  };
+
+  const getContainerStatusIcon = (state: string | undefined) => {
+    if (!state) return '🟡';
+    
+    const stateLower = state.toLowerCase();
+    if (stateLower.includes('running') || stateLower.includes('up') || stateLower === 'started') {
+      return '🟢';
+    } else if (stateLower.includes('exited') || stateLower.includes('stopped') || stateLower.includes('down')) {
+      return '🔴';
+    } else if (stateLower.includes('starting') || stateLower.includes('stopping') || stateLower.includes('restarting')) {
+      return '🔄';
+    } else {
+      return '🟡';
+    }
+  };
+
+  const getContainerName = (service: any) => {
+    // Try different possible container name fields
+    const name = service.Name || service.Container || service.Service;
+    return name || 'Container';
+  };
+
+  const getContainerStatus = (service: any) => {
+    // Try different possible status fields
+    const status = service.State || service.Status;
+    return status || 'Stopped';
+  };
+
+  const getOverallStatusIcon = (configId: number) => {
+    const containers = getContainerStatuses(configId);
+    if (containers.length === 0) return '🟡';
+    
+    const runningCount = containers.filter((s: any) => {
+      const state = getContainerStatus(s)?.toLowerCase() || '';
+      return state.includes('running') || state.includes('up');
+    }).length;
+    
+    if (runningCount === 0) return '🔴'; // All stopped
+    if (runningCount === containers.length) return '🟢'; // All running
+    return '🟡'; // Mixed state
+  };
+
+  const getOverallStatusClass = (configId: number) => {
+    const containers = getContainerStatuses(configId);
+    if (containers.length === 0) return 'status-unknown';
+    
+    const runningCount = containers.filter((s: any) => {
+      const state = getContainerStatus(s)?.toLowerCase() || '';
+      return state.includes('running') || state.includes('up');
+    }).length;
+    
+    if (runningCount === 0) return 'status-stopped';
+    if (runningCount === containers.length) return 'status-running';
+    return 'status-mixed';
+  };
+
+  const getOverallStatusTitle = (configId: number) => {
+    const containers = getContainerStatuses(configId);
+    if (containers.length === 0) return 'No containers found';
+    
+    const runningCount = containers.filter((s: any) => {
+      const state = getContainerStatus(s)?.toLowerCase() || '';
+      return state.includes('running') || state.includes('up');
+    }).length;
+    
+    if (runningCount === 0) return 'All containers stopped';
+    if (runningCount === containers.length) return 'All containers running';
+    return `${runningCount}/${containers.length} containers running`;
+  };
+
   if (loading) {
     return (
       <div className="docker-compose-config-list">
@@ -243,7 +360,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
         {configs.map((config) => (
           <div key={config.id} className="config-card">
             <div className="config-header">
-              <h4>{config.name}</h4>
+              <div className="config-title-section">
+                <h4>{config.name}</h4>
+              </div>
               <div className="config-actions">
                 <button
                   onClick={() => handleDelete(config.id)}
@@ -258,24 +377,17 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
 
             <div className="config-details">
               <div className="detail-item">
-                <span className="label">Status:</span>
-                <span className={`value status-indicator ${
-                  isOperating(config.id) 
-                    ? 'status-loading' 
-                    : isServiceRunning(config.id) 
-                      ? 'status-running' 
-                      : 'status-stopped'
-                }`}>
-                  {isOperating(config.id) 
-                    ? `🔄 ${getOperatingOperation(config.id) === 'up' ? 'Starting...' : 
-                         getOperatingOperation(config.id) === 'down' ? 'Stopping...' : 
-                         getOperatingOperation(config.id) === 'restart' ? 'Restarting...' : 
-                         'Processing...'}`
-                    : isServiceRunning(config.id) 
-                      ? '🟢 Running' 
-                      : '🔴 Stopped'
-                  }
-                </span>
+                <div className="label-section">
+                  <span className="label">Containers:</span>
+                  <button
+                    onClick={() => fetchServiceStatuses([config])}
+                    className="btn btn-icon btn-refresh"
+                    title="Refresh container status"
+                    disabled={isOperating(config.id)}
+                  >
+                    🔄
+                  </button>
+                </div>
               </div>
               
               <div className="detail-item">
@@ -357,8 +469,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
                 <button
                   onClick={() => handleOperation(config.id, 'build')}
                   className="btn btn-secondary btn-small"
-                  disabled={isOperating(config.id) || !isServiceRunning(config.id)}
-                  title={!isServiceRunning(config.id) ? 'Services must be running to build' : ''}
+                  disabled={isOperating(config.id)}
                 >
                   {getOperatingOperation(config.id) === 'build' ? 'Building...' : '🔨 Build'}
                 </button>

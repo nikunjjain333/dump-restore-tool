@@ -75,13 +75,12 @@ def update_docker_compose_config(db: Session, config_id: int, config_update: Doc
         raise
 
 def delete_docker_compose_config(db: Session, config_id: int) -> bool:
-    """Soft delete a Docker Compose configuration"""
+    """Hard delete a Docker Compose configuration"""
     try:
         db_config = get_docker_compose_config(db, config_id)
         if not db_config:
             return False
-        
-        db_config.is_active = False
+        db.delete(db_config)
         db.commit()
         return True
     except Exception as e:
