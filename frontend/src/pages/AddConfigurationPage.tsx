@@ -44,6 +44,7 @@ const AddConfigurationPage: React.FC = () => {
   const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
   const hasInitialized = useRef(false);
   const currentConfigRequestId = useRef(0);
+  const configLoadedFromNavigation = useRef(false);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
 
@@ -65,7 +66,7 @@ const AddConfigurationPage: React.FC = () => {
 
   // Load selected config from navigation state
   useEffect(() => {
-    if (location.state?.selectedConfig) {
+    if (location.state?.selectedConfig && !configLoadedFromNavigation.current) {
       const config = location.state.selectedConfig;
       setSelectedConfig(config);
       setValue('dbType', config.db_type);
@@ -76,6 +77,7 @@ const AddConfigurationPage: React.FC = () => {
         setValue(key, value);
       });
       toast.success(`Configuration "${config.name}" loaded!`);
+      configLoadedFromNavigation.current = true;
     }
   }, [location.state, setValue]);
 
@@ -176,6 +178,8 @@ const AddConfigurationPage: React.FC = () => {
     Object.entries(config.params).forEach(([key, value]) => {
       setValue(key, value);
     });
+    // Reset the navigation flag and show toast for manual selection
+    configLoadedFromNavigation.current = false;
     toast.success(`Configuration "${config.name}" loaded!`);
   };
 
