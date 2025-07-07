@@ -7,21 +7,22 @@ interface PathInputProps {
   name: string;
   register: any;
   errors: any;
+  required?: boolean;
 }
 
-const PathInput: React.FC<PathInputProps> = ({ label, name, register, errors }) => {
+const PathInput: React.FC<PathInputProps> = ({ label, name, register, errors, required = true }) => {
   return (
     <div className="path-input">
       <label className="field-label">
         <FolderOpen className="field-icon" />
         {label}
-        <span className="required">*</span>
+        {required && <span className="required">*</span>}
       </label>
       <div className="input-wrapper">
         <input
           type="text"
           {...register(name, { 
-            required: `${label} is required`,
+            required: required ? `${label} is required` : false,
             pattern: {
               value: /^[\/\w\-\.]+$/,
               message: 'Please enter a valid path'

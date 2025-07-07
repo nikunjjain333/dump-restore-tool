@@ -31,7 +31,7 @@ interface FormData {
   configName: string;
   dumpPath: string;
   restorePath: string;
-  runPath: string;
+  runPath?: string;
   [key: string]: any;
 }
 
@@ -295,10 +295,11 @@ const AddConfigurationPage: React.FC = () => {
               />
             )}
             <PathInput 
-              label="Run Path (Microservice)"
+              label="Run Path (Microservice) - Optional"
               name="runPath"
               register={register}
               errors={errors}
+              required={false}
             />
           </div>
 

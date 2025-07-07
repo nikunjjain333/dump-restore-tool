@@ -1,12 +1,12 @@
 import os
 import logging
 import subprocess
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from .docker_service import get_docker_client
 
 logger = logging.getLogger(__name__)
 
-def run_dump(db_type: str, params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def run_dump(db_type: str, params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """
     Run database dump operation
     """
@@ -36,7 +36,7 @@ def run_dump(db_type: str, params: Dict[str, Any], path: str, run_path: str) -> 
             "message": f"Dump operation failed: {str(e)}"
         }
 
-def _dump_postgres(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Dump PostgreSQL database"""
     try:
         client = get_docker_client()
@@ -79,7 +79,7 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: str) -> Dict[str
             "message": f"PostgreSQL dump failed: {str(e)}"
         }
 
-def _dump_mysql(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Dump MySQL database"""
     try:
         client = get_docker_client()
@@ -114,7 +114,7 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, A
             "message": f"MySQL dump failed: {str(e)}"
         }
 
-def _dump_mongodb(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _dump_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Dump MongoDB database"""
     try:
         client = get_docker_client()
@@ -144,7 +144,7 @@ def _dump_mongodb(params: Dict[str, Any], path: str, run_path: str) -> Dict[str,
             "message": f"MongoDB dump failed: {str(e)}"
         }
 
-def _dump_redis(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Dump Redis database"""
     try:
         client = get_docker_client()
@@ -177,7 +177,7 @@ def _dump_redis(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, A
             "message": f"Redis dump failed: {str(e)}"
         }
 
-def _dump_sqlite(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _dump_sqlite(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Dump SQLite database"""
     try:
         # For SQLite, we can copy the database file directly

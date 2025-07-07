@@ -1,12 +1,12 @@
 import os
 import logging
 import subprocess
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from .docker_service import get_docker_client
 
 logger = logging.getLogger(__name__)
 
-def run_restore(db_type: str, params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def run_restore(db_type: str, params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """
     Run database restore operation
     """
@@ -40,7 +40,7 @@ def run_restore(db_type: str, params: Dict[str, Any], path: str, run_path: str) 
             "message": f"Restore operation failed: {str(e)}"
         }
 
-def _restore_postgres(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Restore PostgreSQL database"""
     try:
         client = get_docker_client()
@@ -78,7 +78,7 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: str) -> Dict[
             "message": f"PostgreSQL restore failed: {str(e)}"
         }
 
-def _restore_mysql(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _restore_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Restore MySQL database"""
     try:
         client = get_docker_client()
@@ -108,7 +108,7 @@ def _restore_mysql(params: Dict[str, Any], path: str, run_path: str) -> Dict[str
             "message": f"MySQL restore failed: {str(e)}"
         }
 
-def _restore_mongodb(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _restore_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Restore MongoDB database"""
     try:
         client = get_docker_client()
@@ -138,7 +138,7 @@ def _restore_mongodb(params: Dict[str, Any], path: str, run_path: str) -> Dict[s
             "message": f"MongoDB restore failed: {str(e)}"
         }
 
-def _restore_redis(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _restore_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Restore Redis database"""
     try:
         client = get_docker_client()
@@ -172,7 +172,7 @@ def _restore_redis(params: Dict[str, Any], path: str, run_path: str) -> Dict[str
             "message": f"Redis restore failed: {str(e)}"
         }
 
-def _restore_sqlite(params: Dict[str, Any], path: str, run_path: str) -> Dict[str, Any]:
+def _restore_sqlite(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Restore SQLite database"""
     try:
         # For SQLite, we can copy the database file directly

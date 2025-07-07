@@ -10,7 +10,7 @@ class DumpRequest(BaseModel):
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
     params: Dict[str, Any] = Field(..., description="Database connection parameters")
     path: str = Field(..., description="Path where to save the dump file")
-    run_path: str = Field(default="/", description="Working directory for the operation")
+    run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     
     @validator('db_type')
     def validate_db_type(cls, v):
@@ -30,7 +30,7 @@ class RestoreRequest(BaseModel):
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
     params: Dict[str, Any] = Field(..., description="Database connection parameters")
     path: str = Field(..., description="Path to the restore file")
-    run_path: str = Field(default="/", description="Working directory for the operation")
+    run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     
     @validator('db_type')
     def validate_db_type(cls, v):
