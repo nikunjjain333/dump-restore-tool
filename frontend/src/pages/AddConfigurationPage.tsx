@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { 
   Database, 
   Play, 
@@ -58,6 +58,8 @@ const AddConfigurationPage: React.FC = () => {
     message: '',
     type: 'info'
   });
+  
+  const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
 
@@ -146,6 +148,7 @@ const AddConfigurationPage: React.FC = () => {
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
     const loadingToast = toast.loading(`Starting ${data.operation} process...`);
+    let savedConfig: any = null;
     
     try {
       const configData: ConfigCreate = {
@@ -165,11 +168,9 @@ const AddConfigurationPage: React.FC = () => {
         restore_path: data.restorePath,
         run_path: data.runPath
       };
-      
-
 
       // Save config
-      const savedConfig = await api.createConfig(configData);
+      savedConfig = await api.createConfig(configData);
       toast.success('Configuration saved successfully!');
       
       // Update local state with the new config
@@ -183,20 +184,40 @@ const AddConfigurationPage: React.FC = () => {
         run_path: data.runPath
       };
 
+      // Set status to running for the new config
+      setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'running' }));
+
       if (data.operation === 'dump') {
         const result = await api.startDump(processData as DumpRequest);
         toast.dismiss(loadingToast);
-        toast.success(`✅ ${result.data.message}`);
+        if (result.data.success) {
+          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'success' }));
+          toast.success(`✅ ${result.data.message}`);
+        } else {
+          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
+          toast.error(`❌ ${result.data.message}`);
+        }
       } else {
         const result = await api.startRestore(processData as RestoreRequest);
         toast.dismiss(loadingToast);
-        toast.success(`✅ ${result.data.message}`);
+        if (result.data.success) {
+          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'success' }));
+          toast.success(`✅ ${result.data.message}`);
+        } else {
+          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
+          toast.error(`❌ ${result.data.message}`);
+        }
       }
     } catch (error: any) {
       console.error('Failed to start process:', error);
       toast.dismiss(loadingToast);
       
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start process';
+      
+      // If we have a saved config, update its status to error
+      if (savedConfig?.data?.id) {
+        setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
+      }
       
       // Show error in modal instead of toast for better readability
       setModal({
@@ -240,6 +261,48 @@ const AddConfigurationPage: React.FC = () => {
     toast.success(`Configuration "${config.name}" loaded!`);
   };
 
+  const handleStartOperation = async (config: Config) => {
+    // Set status to running
+    setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
+    
+    try {
+      // Prepare the operation data
+      const processData: DumpRequest | RestoreRequest = {
+        db_type: config.db_type,
+        params: config.params,
+        path: config.operation === 'dump' ? config.dump_path! : config.restore_path!,
+        run_path: config.run_path
+      };
+
+      // Start the operation
+      if (config.operation === 'dump') {
+        const result = await api.startDump(processData as DumpRequest);
+        if (result.data.success) {
+          setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
+          toast.success(`✅ ${result.data.message}`);
+        } else {
+          setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+          toast.error(`❌ ${result.data.message}`);
+        }
+      } else {
+        const result = await api.startRestore(processData as RestoreRequest);
+        if (result.data.success) {
+          setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
+          toast.success(`✅ ${result.data.message}`);
+        } else {
+          setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+          toast.error(`❌ ${result.data.message}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Failed to start operation:', error);
+      setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+      
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to start operation';
+      toast.error(`❌ ${errorMessage}`);
+    }
+  };
+
   return (
     <div className="add-configuration-page">
       <Modal
@@ -250,39 +313,7 @@ const AddConfigurationPage: React.FC = () => {
         type={modal.type}
         contentType={modal.contentType}
       />
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '1rem 1.5rem',
-            boxShadow: 'var(--shadow-xl)',
-            border: '1px solid var(--border-primary)',
-            zIndex: 9999,
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-          loading: {
-            iconTheme: {
-              primary: 'var(--primary-blue)',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+
       
       <div className="container">
         <div className="page-header">
@@ -380,6 +411,8 @@ const AddConfigurationPage: React.FC = () => {
             <SavedConfigsList 
               configs={savedConfigs}
               onSelect={handleConfigSelect}
+              onStartOperation={handleStartOperation}
+              operationStatus={operationStatus}
             />
           </div>
 

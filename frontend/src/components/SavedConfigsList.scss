@@ -110,6 +110,7 @@
       align-items: flex-start;
       gap: 1rem;
       margin-bottom: 1rem;
+      position: relative;
       
       .config-icon-wrapper {
         display: flex;
@@ -175,6 +176,42 @@
           }
         }
       }
+      
+      .status-indicator {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem;
+        background: var(--bg-card);
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-primary);
+        
+        .status-icon {
+          font-size: 1rem;
+          
+          &.running {
+            color: var(--primary-blue);
+            animation: spin 1s linear infinite;
+          }
+          
+          &.success {
+            color: #10b981;
+          }
+          
+          &.error {
+            color: #ef4444;
+          }
+        }
+        
+        .status-text {
+          font-size: 0.75rem;
+          font-weight: 500;
+          color: var(--text-secondary);
+        }
+      }
     }
     
     .card-content {
@@ -215,15 +252,65 @@
     }
     
     .card-actions {
+      display: flex;
+      gap: 0.5rem;
+      
       .btn {
-        width: 100%;
+        flex: 1;
         justify-content: center;
         gap: 0.5rem;
         padding: 0.75rem 1rem;
         font-size: 0.875rem;
         font-weight: 500;
+        
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        
+        .spinner {
+          animation: spin 1s linear infinite;
+        }
       }
     }
+    
+    // Status-specific styles
+    &.status-running {
+      border-color: var(--primary-blue);
+      
+      &::before {
+        background: var(--primary-blue);
+        opacity: 1;
+      }
+    }
+    
+    &.status-success {
+      border-color: #10b981;
+      
+      &::before {
+        background: #10b981;
+        opacity: 1;
+      }
+    }
+    
+    &.status-error {
+      border-color: #ef4444;
+      
+      &::before {
+        background: #ef4444;
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// Spin animation
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -271,6 +358,16 @@
                 font-size: 0.625rem;
               }
             }
+          }
+        }
+        
+        .card-actions {
+          flex-direction: column;
+          gap: 0.5rem;
+          
+          .btn {
+            font-size: 0.75rem;
+            padding: 0.6rem 0.8rem;
           }
         }
       }

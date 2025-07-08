@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Home, Plus, Database, Container } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import './styles/App.scss';
 import HomePage from './pages/HomePage';
 import AddConfigurationPage from './pages/AddConfigurationPage';
@@ -127,6 +128,39 @@ const App: React.FC = () => {
             <Route path="/docker-compose" element={<DockerComposePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
           </Routes>
         </main>
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '1rem 1.5rem',
+              boxShadow: 'var(--shadow-xl)',
+              border: '1px solid var(--border-primary)',
+              zIndex: 9999,
+            },
+            success: {
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+            loading: {
+              iconTheme: {
+                primary: 'var(--primary-blue)',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
       </div>
     </Router>
   );
