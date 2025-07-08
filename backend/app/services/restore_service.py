@@ -11,6 +11,29 @@ def run_restore(db_type: str, params: Dict[str, Any], path: str, run_path: Optio
     Run database restore operation
     """
     try:
+        # Enforce restore on localhost
+        params = dict(params)  # Make a copy to avoid mutating input
+        if db_type in ['postgres', 'mysql', 'redis']:
+            params['host'] = 'localhost'
+        elif db_type == 'mongodb' and 'uri' in params:
+            try:
+                from urllib.parse import urlparse, urlunparse
+                uri = params['uri']
+                parsed = urlparse(uri)
+                new_netloc = 'localhost'
+                if parsed.port:
+                    new_netloc += f':{parsed.port}'
+                if parsed.username:
+                    if parsed.password:
+                        new_netloc = f"{parsed.username}:{parsed.password}@" + new_netloc
+                    else:
+                        new_netloc = f"{parsed.username}@" + new_netloc
+                parsed = parsed._replace(netloc=new_netloc)
+                params['uri'] = urlunparse(parsed)
+            except Exception:
+                # fallback: just replace hostname
+                import re
+                params['uri'] = re.sub(r'//.*?:', '//localhost:', params['uri'])
         # Check if restore file exists
         if not os.path.exists(path):
             return {

@@ -365,9 +365,24 @@ const ConfigurationsPage: React.FC = () => {
                                   setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
                                   return;
                                 }
+                                // Clone params and force host/uri to localhost
+                                const params = { ...config.params };
+                                if (['postgres', 'mysql', 'redis'].includes(config.db_type)) {
+                                  params.host = 'localhost';
+                                } else if (config.db_type === 'mongodb' && params.uri) {
+                                  // Replace host in URI with localhost
+                                  try {
+                                    const url = new URL(params.uri);
+                                    url.hostname = 'localhost';
+                                    params.uri = url.toString();
+                                  } catch (e) {
+                                    // fallback: just replace hostname
+                                    params.uri = params.uri.replace(/:\/\/(.*?):/, '://localhost:');
+                                  }
+                                }
                                 const processData = {
                                   db_type: config.db_type,
-                                  params: config.params,
+                                  params,
                                   path,
                                   run_path: config.run_path
                                 };
