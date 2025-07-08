@@ -195,7 +195,16 @@ const AddConfigurationPage: React.FC = () => {
           toast.success(`✅ ${result.data.message}`);
         } else {
           setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
-          toast.error(`❌ ${result.data.message}`);
+          // Show simple message in toast
+          toast.error(`❌ ${data.operation} failed`);
+          // Show detailed error in modal
+          setModal({
+            isOpen: true,
+            title: `${data.operation.charAt(0).toUpperCase() + data.operation.slice(1)} Operation Failed`,
+            message: result.data.message,
+            type: 'error',
+            contentType: 'preformatted'
+          });
         }
       } else {
         const result = await api.startRestore(processData as RestoreRequest);
@@ -205,7 +214,16 @@ const AddConfigurationPage: React.FC = () => {
           toast.success(`✅ ${result.data.message}`);
         } else {
           setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
-          toast.error(`❌ ${result.data.message}`);
+          // Show simple message in toast
+          toast.error(`❌ ${data.operation} failed`);
+          // Show detailed error in modal
+          setModal({
+            isOpen: true,
+            title: `${data.operation.charAt(0).toUpperCase() + data.operation.slice(1)} Operation Failed`,
+            message: result.data.message,
+            type: 'error',
+            contentType: 'preformatted'
+          });
         }
       }
     } catch (error: any) {
@@ -282,7 +300,16 @@ const AddConfigurationPage: React.FC = () => {
           toast.success(`✅ ${result.data.message}`);
         } else {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-          toast.error(`❌ ${result.data.message}`);
+          // Show simple message in toast
+          toast.error(`❌ ${config.operation} failed`);
+          // Show detailed error in modal
+          setModal({
+            isOpen: true,
+            title: `${config.operation.charAt(0).toUpperCase() + config.operation.slice(1)} Operation Failed`,
+            message: result.data.message,
+            type: 'error',
+            contentType: 'preformatted'
+          });
         }
       } else {
         const result = await api.startRestore(processData as RestoreRequest);
@@ -291,7 +318,16 @@ const AddConfigurationPage: React.FC = () => {
           toast.success(`✅ ${result.data.message}`);
         } else {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-          toast.error(`❌ ${result.data.message}`);
+          // Show simple message in toast
+          toast.error(`❌ ${config.operation} failed`);
+          // Show detailed error in modal
+          setModal({
+            isOpen: true,
+            title: `${config.operation.charAt(0).toUpperCase() + config.operation.slice(1)} Operation Failed`,
+            message: result.data.message,
+            type: 'error',
+            contentType: 'preformatted'
+          });
         }
       }
     } catch (error: any) {
@@ -299,7 +335,18 @@ const AddConfigurationPage: React.FC = () => {
       setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
       
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start operation';
-      toast.error(`❌ ${errorMessage}`);
+      
+      // Show simple message in toast
+      toast.error(`❌ ${config.operation} failed`);
+      
+      // Show detailed error in modal
+      setModal({
+        isOpen: true,
+        title: `${config.operation.charAt(0).toUpperCase() + config.operation.slice(1)} Operation Failed`,
+        message: errorMessage,
+        type: 'error',
+        contentType: 'preformatted'
+      });
     }
   };
 
@@ -384,6 +431,8 @@ const AddConfigurationPage: React.FC = () => {
                 name="dumpPath"
                 register={register}
                 errors={errors}
+                operation={operation}
+                dbType={dbType}
               />
             )}
             {operation === 'restore' && (
@@ -392,6 +441,8 @@ const AddConfigurationPage: React.FC = () => {
                 name="restorePath"
                 register={register}
                 errors={errors}
+                operation={operation}
+                dbType={dbType}
               />
             )}
             <PathInput 
