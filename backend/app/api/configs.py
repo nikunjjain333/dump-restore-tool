@@ -20,7 +20,7 @@ def add_config(config: ConfigCreate, db: Session = Depends(get_db)):
     try:
         return create_config(db, config)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create configuration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create configuration: {str(e)}") 
 
 @router.put("/{config_id}", response_model=ConfigOut)
 def update_config_endpoint(config_id: int, config: ConfigCreate, db: Session = Depends(get_db)):

@@ -7,13 +7,11 @@ import {
   Upload, 
   Settings, 
   Search,
-  Filter,
   Plus,
   ArrowLeft,
   Edit,
   Trash2,
   Play,
-  MoreVertical,
   Loader2
 } from 'lucide-react';
 import './ConfigurationsPage.scss';
@@ -149,8 +147,11 @@ const ConfigurationsPage: React.FC = () => {
         result = await api.startRestore(processData);
       }
       if (result.data.success) {
-        setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
         toast.success(result.data.message || 'Operation completed successfully');
+        // Simulate polling for file existence (replace with real polling if backend supports it)
+        setTimeout(() => {
+          setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
+        }, 2000); // 2 seconds delay to simulate file write
       } else {
         setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
         toast.error(result.data.message || 'Operation failed');

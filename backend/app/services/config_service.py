@@ -29,7 +29,7 @@ def create_config(db: Session, config: ConfigCreate):
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to create configuration: {e}")
-        raise
+        raise 
 
 def update_config(db: Session, config_id: int, config: ConfigCreate):
     """Update an existing configuration in database"""
