@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { FC } from 'react';
 import { Play, Loader2, Download, Upload } from 'lucide-react';
 import './StartProcessButton.scss';
 
@@ -7,7 +7,7 @@ interface StartProcessButtonProps {
   operation: string;
 }
 
-const StartProcessButton: React.FC<StartProcessButtonProps> = ({ isLoading, operation }) => {
+const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, operation }: StartProcessButtonProps) => {
   const getButtonContent = () => {
     if (isLoading) {
       return (
