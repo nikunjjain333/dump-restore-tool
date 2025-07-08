@@ -13,7 +13,8 @@ import {
   Edit,
   Trash2,
   Play,
-  MoreVertical
+  MoreVertical,
+  Loader2
 } from 'lucide-react';
 import './ConfigurationsPage.scss';
 import { api, Config } from '../api/client';
@@ -40,6 +41,7 @@ const ConfigurationsPage: React.FC = () => {
     message: '',
     type: 'info'
   });
+  const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
   const hasLoaded = useRef(false);
 
   useEffect(() => {
@@ -126,10 +128,12 @@ const ConfigurationsPage: React.FC = () => {
   };
 
   const handleStartOperation = async (config: Config) => {
+    setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
     try {
       const path = config.operation === 'dump' ? config.dump_path : config.restore_path;
       if (!path) {
         toast.error('No path specified for this configuration.');
+        setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
         return;
       }
       const processData = {
@@ -145,11 +149,14 @@ const ConfigurationsPage: React.FC = () => {
         result = await api.startRestore(processData);
       }
       if (result.data.success) {
+        setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
         toast.success(result.data.message || 'Operation completed successfully');
       } else {
+        setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
         toast.error(result.data.message || 'Operation failed');
       }
     } catch (error: any) {
+      setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
       console.error('Failed to start operation:', error);
       toast.error(error.response?.data?.detail || error.message || 'Failed to start operation');
     }
@@ -324,8 +331,9 @@ const ConfigurationsPage: React.FC = () => {
                       className="btn btn--primary btn-sm"
                       onClick={() => handleStartOperation(config)}
                       title="Use Configuration"
+                      disabled={operationStatus[config.id] === 'running'}
                     >
-                      <Play />
+                      {operationStatus[config.id] === 'running' ? <Loader2 className="spinner" /> : <Play />}
                     </button>
                     <button 
                       className="btn btn--danger btn-sm"
