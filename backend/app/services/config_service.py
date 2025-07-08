@@ -42,10 +42,7 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
             raise ValueError(f"Configuration with name '{config.name}' already exists")
         db_config.name = config.name
         db_config.db_type = config.db_type
-        db_config.operation = config.operation
         db_config.params = config.params
-        db_config.dump_path = config.dump_path
-        db_config.restore_path = config.restore_path
         db_config.run_path = config.run_path
         db.commit()
         db.refresh(db_config)

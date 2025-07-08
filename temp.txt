@@ -4,3 +4,17 @@ treezpay-platform-sandbox-cluster.cluster-ro-cltxiqumoump.us-west-2.rds.amazonaw
 treezpay
 dev_user
 jkobQ4KlRAOgX7Jv
+
+
+
+
+
+message
+: 
+"PostgreSQL dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: /tmp/temp_test.sql"
+path
+: 
+"/tmp/temp_test.sql"
+success
+: 
+true

@@ -1,21 +1,20 @@
 import React, { FC } from 'react';
-import { Play, Loader2, Download, Upload } from 'lucide-react';
+import { Play, Download, Upload, Loader2 } from 'lucide-react';
 import './StartProcessButton.scss';
 
 interface StartProcessButtonProps {
   isLoading: boolean;
-  operation: string;
   label?: string;
   icon?: React.ReactNode;
 }
 
-const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, operation, label, icon }: StartProcessButtonProps) => {
+const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, label, icon }: StartProcessButtonProps) => {
   const getButtonContent = () => {
     if (isLoading) {
       return (
         <>
           <Loader2 className="spinner" />
-          {label ? `Adding...` : `Starting ${operation || 'process'}...`}
+          {label ? `Adding...` : `Starting process...`}
         </>
       );
     }
@@ -28,20 +27,11 @@ const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, operation,
         </>
       );
     }
-    if (!operation) {
-      return (
-        <>
-          <Play />
-          Start Process
-        </>
-      );
-    }
     
-    const isDump = operation === 'dump';
     return (
       <>
-        {isDump ? <Download /> : <Upload />}
-        Start {operation.charAt(0).toUpperCase() + operation.slice(1)}
+        <Play />
+        Start Process
       </>
     );
   };
@@ -50,17 +40,11 @@ const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, operation,
     <div className="start-process-button">
       <button
         type="submit"
-        disabled={isLoading || (!operation && !label)}
+        disabled={isLoading}
         className={`btn btn-primary btn-lg ${isLoading ? 'loading' : ''}`}
       >
         {getButtonContent()}
       </button>
-      
-      {!operation && !label && (
-        <div className="button-hint">
-          Please select a database type and operation to continue
-        </div>
-      )}
     </div>
   );
 };

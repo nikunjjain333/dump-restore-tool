@@ -18,7 +18,7 @@ import './SavedConfigsList.scss';
 interface SavedConfigsListProps {
   configs: Config[];
   onSelect: (config: Config) => void;
-  onStartOperation?: (config: Config, operationType: string) => void;
+  onStartOperation?: (config: Config, operationType: 'dump' | 'restore') => void;
   operationStatus?: Record<number, 'idle' | 'running' | 'success' | 'error'>;
 }
 

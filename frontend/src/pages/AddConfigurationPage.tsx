@@ -19,20 +19,15 @@ import {
 import './AddConfigurationPage.scss';
 import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/client';
 import DatabaseTypeSelector from '../components/DatabaseTypeSelector';
-import OperationSelector from '../components/OperationSelector';
 import DynamicFormFields from '../components/DynamicFormFields';
 import ConfigNameInput from '../components/ConfigNameInput';
-import PathInput from '../components/PathInput';
 import SavedConfigsList from '../components/SavedConfigsList';
 import StartProcessButton from '../components/StartProcessButton';
 import Modal from '../components/Modal';
 
 interface FormData {
   dbType: string;
-  operation: 'dump' | 'restore';
   configName: string;
-  dumpPath: string;
-  restorePath: string;
   runPath?: string;
   [key: string]: any;
 }
@@ -87,7 +82,6 @@ const AddConfigurationPage: React.FC = () => {
       
       setSelectedConfig(config);
       setValue('dbType', config.db_type);
-      setValue('operation', config.operation as 'dump' | 'restore');
       setValue('configName', config.name);
       
       // Set database parameters from config.params
@@ -97,12 +91,6 @@ const AddConfigurationPage: React.FC = () => {
       
       // Set path fields from dedicated database columns
       setTimeout(() => {
-        if (config.dump_path) {
-          setValue('dumpPath', config.dump_path);
-        }
-        if (config.restore_path) {
-          setValue('restorePath', config.restore_path);
-        }
         if (config.run_path) {
           setValue('runPath', config.run_path);
         }
@@ -153,18 +141,12 @@ const AddConfigurationPage: React.FC = () => {
       const configData: ConfigCreate = {
         name: data.configName,
         db_type: data.dbType,
-        operation: data.operation,
         params: {
           ...data,
           configName: undefined,
           dbType: undefined,
-          operation: undefined,
-          dumpPath: undefined,
-          restorePath: undefined,
           runPath: undefined
         },
-        dump_path: data.dumpPath,
-        restore_path: data.restorePath,
         run_path: data.runPath
       };
 
@@ -198,7 +180,6 @@ const AddConfigurationPage: React.FC = () => {
   const handleConfigSelect = (config: Config) => {
     setSelectedConfig(config);
     setValue('dbType', config.db_type);
-    setValue('operation', config.operation as 'dump' | 'restore');
     setValue('configName', config.name);
     
     // Set database parameters from config.params
@@ -208,12 +189,6 @@ const AddConfigurationPage: React.FC = () => {
     
     // Set path fields from dedicated database columns
     setTimeout(() => {
-      if (config.dump_path) {
-        setValue('dumpPath', config.dump_path);
-      }
-      if (config.restore_path) {
-        setValue('restorePath', config.restore_path);
-      }
       if (config.run_path) {
         setValue('runPath', config.run_path);
       }
@@ -224,21 +199,27 @@ const AddConfigurationPage: React.FC = () => {
     toast.success(`Configuration "${config.name}" loaded!`);
   };
 
-  const handleStartOperation = async (config: Config) => {
+  const handleStartOperation = async (config: Config, operationType: 'dump' | 'restore') => {
     // Set status to running
     setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
     
     try {
+      // For now, we'll use a default path since we removed path fields
+      // In a real implementation, you might want to prompt the user for the path
+      const defaultPath = operationType === 'dump' 
+        ? `/tmp/${config.name}_dump.sql` 
+        : `/tmp/${config.name}_restore.sql`;
+      
       // Prepare the operation data
       const processData: DumpRequest | RestoreRequest = {
         db_type: config.db_type,
         params: config.params,
-        path: config.operation === 'dump' ? config.dump_path! : config.restore_path!,
+        path: defaultPath,
         run_path: config.run_path
       };
 
       // Start the operation
-      if (config.operation === 'dump') {
+      if (operationType === 'dump') {
         const result = await api.startDump(processData as DumpRequest);
         if (result.data.success) {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
@@ -246,11 +227,11 @@ const AddConfigurationPage: React.FC = () => {
         } else {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
           // Show simple message in toast
-          toast.error(`❌ ${config.operation} failed`);
+          toast.error(`❌ ${operationType} failed`);
           // Show detailed error in modal
           setModal({
             isOpen: true,
-            title: `${config.operation.charAt(0).toUpperCase() + config.operation.slice(1)} Operation Failed`,
+            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
             message: result.data.message,
             type: 'error',
             contentType: 'preformatted'
@@ -264,11 +245,11 @@ const AddConfigurationPage: React.FC = () => {
         } else {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
           // Show simple message in toast
-          toast.error(`❌ ${config.operation} failed`);
+          toast.error(`❌ ${operationType} failed`);
           // Show detailed error in modal
           setModal({
             isOpen: true,
-            title: `${config.operation.charAt(0).toUpperCase() + config.operation.slice(1)} Operation Failed`,
+            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
             message: result.data.message,
             type: 'error',
             contentType: 'preformatted'
@@ -282,12 +263,12 @@ const AddConfigurationPage: React.FC = () => {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start operation';
       
       // Show simple message in toast
-      toast.error(`❌ ${config.operation} failed`);
+      toast.error(`❌ ${operationType} failed`);
       
       // Show detailed error in modal
       setModal({
         isOpen: true,
-        title: `${config.operation.charAt(0).toUpperCase() + config.operation.slice(1)} Operation Failed`,
+        title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
         message: errorMessage,
         type: 'error',
         contentType: 'preformatted'
@@ -333,20 +314,7 @@ const AddConfigurationPage: React.FC = () => {
             />
           </div>
 
-          <div className="form-section">
-            <div className="section__header">
-              <Play className="icon" />
-              <h2>Operation</h2>
-            </div>
-            <OperationSelector 
-              value={operation} 
-              onChange={(value) => setValue('operation', value as 'dump' | 'restore')}
-              register={register}
-              errors={errors}
-            />
-          </div>
-
-          {dbType && operation && (
+          {dbType && (
             <div className="form-section">
               <div className="section__header">
                 <Settings className="icon" />
@@ -354,7 +322,6 @@ const AddConfigurationPage: React.FC = () => {
               </div>
               <DynamicFormFields 
                 dbType={dbType}
-                operation={operation}
                 register={register}
                 errors={errors}
               />
@@ -370,33 +337,26 @@ const AddConfigurationPage: React.FC = () => {
               register={register}
               errors={errors}
             />
-            {operation === 'dump' && (
-              <PathInput 
-                label="Dump Path"
-                name="dumpPath"
-                register={register}
-                errors={errors}
-                operation={operation}
-                dbType={dbType}
-              />
-            )}
-            {operation === 'restore' && (
-              <PathInput 
-                label="Restore Path"
-                name="restorePath"
-                register={register}
-                errors={errors}
-                operation={operation}
-                dbType={dbType}
-              />
-            )}
-            <PathInput 
-              label="Run Path (Microservice) - Optional"
-              name="runPath"
-              register={register}
-              errors={errors}
-              required={false}
-            />
+            <div className="run-path-input">
+              <label className="field-label">
+                <FolderOpen className="field-icon" />
+                Run Path (Microservice) - Optional
+              </label>
+              <div className="input-wrapper">
+                <input
+                  type="text"
+                  {...register('runPath')}
+                  className={`field-input ${errors.runPath ? 'error' : ''}`}
+                  placeholder="e.g., /app or /var/www"
+                />
+              </div>
+              {errors.runPath && (
+                <div className="field-error">
+                  <span className="error-icon">⚠</span>
+                  {errors.runPath.message}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* <div className="form-section">
@@ -419,7 +379,6 @@ const AddConfigurationPage: React.FC = () => {
             </div>
             <StartProcessButton 
               isLoading={isLoading}
-              operation={''}
               label={selectedConfig ? 'Update Configuration' : 'Add Configuration'}
               icon={selectedConfig ? <Edit /> : <Save />}
             />

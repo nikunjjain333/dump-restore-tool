@@ -215,7 +215,7 @@ const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, is
                   </div>
                   <div className="config-info">
                     <h4>{config.name}</h4>
-                    <p>{config.db_type.toUpperCase()} • {config.operation}</p>
+                    <p>{config.db_type.toUpperCase()} • Database Config</p>
                   </div>
                   <ArrowRight className="arrow-icon" />
                 </div>

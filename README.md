@@ -7,8 +7,8 @@ A comprehensive tool for database dump and restore operations with a modern web 
 - **Docker Integration**: Check Docker daemon status from the UI
 - **Docker Compose Management**: Add, manage, and operate Docker Compose configurations
 - **Multiple Database Support**: PostgreSQL, MySQL, MongoDB, Redis, SQLite
-- **Dump & Restore Operations**: Separate logic for each operation
-- **Configuration Management**: Save and reuse configurations
+- **Dump & Restore Operations**: Perform both operations on any saved configuration
+- **Configuration Management**: Save database configurations and perform operations directly from config cards
 - **Microservice Architecture**: Support for running processes in specific paths
 - **Modern UI**: React with TypeScript and SCSS
 - **RESTful API**: FastAPI backend with SQLAlchemy
@@ -234,7 +234,6 @@ GET /configs
     "id": 1,
     "name": "Production PostgreSQL",
     "db_type": "postgres",
-    "operation": "dump",
     "params": {
       "host": "localhost",
       "port": 5432,
@@ -255,7 +254,6 @@ POST /configs
 {
   "name": "Production PostgreSQL",
   "db_type": "postgres",
-  "operation": "dump",
   "params": {
     "host": "localhost",
     "port": 5432,

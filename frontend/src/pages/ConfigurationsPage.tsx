@@ -84,10 +84,8 @@ const ConfigurationsPage: React.FC = () => {
       filtered = filtered.filter(config => config.db_type === filterType);
     }
 
-    // Operation filter
-    if (filterOperation !== 'all') {
-      filtered = filtered.filter(config => config.operation === filterOperation);
-    }
+    // Note: Operation filtering removed since we no longer store operation in config
+    // Users can now perform both dump and restore operations on any config
 
     setFilteredConfigs(filtered);
   };
@@ -127,23 +125,22 @@ const ConfigurationsPage: React.FC = () => {
     });
   };
 
-  const handleStartOperation = async (config: Config) => {
+  const handleStartOperation = async (config: Config, operationType: 'dump' | 'restore') => {
     setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
     try {
-      const path = config.operation === 'dump' ? config.dump_path : config.restore_path;
-      if (!path) {
-        toast.error('No path specified for this configuration.');
-        setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-        return;
-      }
+      // For now, we'll use a default path since we removed path fields
+      const defaultPath = operationType === 'dump' 
+        ? `/tmp/${config.name}_dump.sql` 
+        : `/tmp/${config.name}_restore.sql`;
+      
       const processData = {
         db_type: config.db_type,
         params: config.params,
-        path,
+        path: defaultPath,
         run_path: config.run_path
       };
       let result: AxiosResponse<OperationResponse>;
-      if (config.operation === 'dump') {
+      if (operationType === 'dump') {
         result = await api.startDump(processData);
       } else {
         result = await api.startRestore(processData);
@@ -179,9 +176,7 @@ const ConfigurationsPage: React.FC = () => {
     }
   };
 
-  const getOperationIcon = (operation: string) => {
-    return operation === 'dump' ? <Download className="operation-icon" /> : <Upload className="operation-icon" />;
-  };
+  // getOperationIcon function removed - no longer needed
 
   return (
     <div className="configurations-page">
@@ -274,18 +269,7 @@ const ConfigurationsPage: React.FC = () => {
               </select>
             </div>
             
-            <div className="filter-group">
-              <label>Operation:</label>
-              <select 
-                value={filterOperation} 
-                onChange={(e) => setFilterOperation(e.target.value)}
-                className="filter-select"
-              >
-                <option value="all">All Operations</option>
-                <option value="dump">Dump</option>
-                <option value="restore">Restore</option>
-              </select>
-            </div>
+            {/* Operation filter removed - all configs can be used for both dump and restore */}
           </div>
         </div>
 
@@ -318,8 +302,7 @@ const ConfigurationsPage: React.FC = () => {
                       <div className="config-meta">
                         <span className="db-type">{config.db_type.toUpperCase()}</span>
                         <div className="operation-badge">
-                          {getOperationIcon(config.operation)}
-                          <span>{config.operation}</span>
+                          <span>Database Config</span>
                         </div>
                       </div>
                     </div>
@@ -343,81 +326,22 @@ const ConfigurationsPage: React.FC = () => {
                       >
                         <Edit />
                       </button>
-                      {config.operation === 'dump' ? (
-                        <>
-                          <button
-                            className="btn btn--primary btn-sm"
-                            onClick={() => handleStartOperation(config)}
-                            title="Dump (Download)"
-                            disabled={operationStatus[config.id] === 'running'}
-                          >
-                            <Download />
-                          </button>
-                          <button
-                            className="btn btn--primary btn-sm"
-                            onClick={async () => {
-                              // Trigger restore using the same config, but with restore_path
-                              setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
-                              try {
-                                const path = config.restore_path;
-                                if (!path) {
-                                  toast.error('No restore path specified for this configuration.');
-                                  setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-                                  return;
-                                }
-                                // Clone params and force host/uri to localhost
-                                const params = { ...config.params };
-                                if (['postgres', 'mysql', 'redis'].includes(config.db_type)) {
-                                  params.host = 'localhost';
-                                } else if (config.db_type === 'mongodb' && params.uri) {
-                                  // Replace host in URI with localhost
-                                  try {
-                                    const url = new URL(params.uri);
-                                    url.hostname = 'localhost';
-                                    params.uri = url.toString();
-                                  } catch (e) {
-                                    // fallback: just replace hostname
-                                    params.uri = params.uri.replace(/:\/\/(.*?):/, '://localhost:');
-                                  }
-                                }
-                                const processData = {
-                                  db_type: config.db_type,
-                                  params,
-                                  path,
-                                  run_path: config.run_path
-                                };
-                                const result = await api.startRestore(processData);
-                                if (result.data.success) {
-                                  toast.success(result.data.message || 'Restore completed successfully');
-                                  setTimeout(() => {
-                                    setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
-                                  }, 2000);
-                                } else {
-                                  setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-                                  toast.error(result.data.message || 'Restore operation failed');
-                                }
-                              } catch (error: any) {
-                                setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-                                console.error('Failed to start restore operation:', error);
-                                toast.error(error.response?.data?.detail || error.message || 'Failed to start restore operation');
-                              }
-                            }}
-                            title="Restore (Upload)"
-                            disabled={operationStatus[config.id] === 'running'}
-                          >
-                            <Upload />
-                          </button>
-                        </>
-                      ) : (
-                        <button 
-                          className="btn btn--primary btn-sm"
-                          onClick={() => handleStartOperation(config)}
-                          title="Use Configuration"
-                          disabled={operationStatus[config.id] === 'running'}
-                        >
-                          <Play />
-                        </button>
-                      )}
+                      <button
+                        className="btn btn--primary btn-sm"
+                        onClick={() => handleStartOperation(config, 'dump')}
+                        title="Dump (Download)"
+                        disabled={operationStatus[config.id] === 'running'}
+                      >
+                        <Download />
+                      </button>
+                      <button
+                        className="btn btn--primary btn-sm"
+                        onClick={() => handleStartOperation(config, 'restore')}
+                        title="Restore (Upload)"
+                        disabled={operationStatus[config.id] === 'running'}
+                      >
+                        <Upload />
+                      </button>
                       <button 
                         className="btn btn--danger btn-sm"
                         onClick={() => handleConfigDelete(config.id)}

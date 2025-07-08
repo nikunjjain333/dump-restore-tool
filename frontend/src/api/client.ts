@@ -30,20 +30,14 @@ export interface Config {
   id: number;
   name: string;
   db_type: string;
-  operation: string;
   params: Record<string, any>;
-  dump_path?: string;
-  restore_path?: string;
   run_path?: string;
 }
 
 export interface ConfigCreate {
   name: string;
   db_type: string;
-  operation: string;
   params: Record<string, any>;
-  dump_path?: string;
-  restore_path?: string;
   run_path?: string;
 }
 

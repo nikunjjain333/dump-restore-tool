@@ -1,5 +1,5 @@
 import React from 'react';
-import { Server, User, Lock, Database, Globe, Hash } from 'lucide-react';
+import { Database, Server, Key, User, Lock, Globe } from 'lucide-react';
 import './DynamicFormFields.scss';
 
 interface FieldConfig {
@@ -13,14 +13,12 @@ interface FieldConfig {
 
 interface DynamicFormFieldsProps {
   dbType: string;
-  operation: string;
   register: any;
   errors: any;
 }
 
 const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({ 
   dbType, 
-  operation, 
   register, 
   errors 
 }) => {
@@ -30,7 +28,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
       case 'mysql':
         return [
           { name: 'host', label: 'Host', type: 'text', icon: Server, defaultValue: 'localhost' },
-          { name: 'port', label: 'Port', type: 'number', icon: Hash, defaultValue: dbType === 'postgres' ? '5432' : '3306' },
+          { name: 'port', label: 'Port', type: 'number', icon: Key, defaultValue: dbType === 'postgres' ? '5432' : '3306' },
           { name: 'database', label: 'Database', type: 'text', icon: Database, required: true },
           { name: 'username', label: 'Username', type: 'text', icon: User, required: true },
           { name: 'password', label: 'Password', type: 'password', icon: Lock, required: true }
@@ -43,7 +41,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
       case 'redis':
         return [
           { name: 'host', label: 'Host', type: 'text', icon: Server, defaultValue: 'localhost' },
-          { name: 'port', label: 'Port', type: 'number', icon: Hash, defaultValue: '6379' },
+          { name: 'port', label: 'Port', type: 'number', icon: Key, defaultValue: '6379' },
           { name: 'password', label: 'Password', type: 'password', icon: Lock },
           { name: 'db', label: 'Database Number', type: 'number', icon: Database, defaultValue: '0' }
         ];
