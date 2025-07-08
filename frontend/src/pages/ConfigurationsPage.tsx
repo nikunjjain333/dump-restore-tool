@@ -98,23 +98,24 @@ const ConfigurationsPage: React.FC = () => {
       type: 'warning',
       onConfirm: async () => {
         try {
-          // Note: This would require a delete endpoint in the API
-          // await api.deleteConfig(configId);
+          await api.deleteConfig(configId);
           setConfigs(prev => prev.filter(config => config.id !== configId));
           setModal({
-            isOpen: true,
-            title: 'Success',
-            message: 'Configuration deleted successfully',
-            type: 'success'
+            isOpen: false,
+            title: '',
+            message: '',
+            type: 'info'
           });
+          toast.success('Configuration deleted successfully');
         } catch (error) {
           console.error('Failed to delete configuration:', error);
           setModal({
-            isOpen: true,
-            title: 'Error',
-            message: 'Failed to delete configuration',
-            type: 'error'
+            isOpen: false,
+            title: '',
+            message: '',
+            type: 'info'
           });
+          toast.error('Failed to delete configuration');
         }
       }
     });

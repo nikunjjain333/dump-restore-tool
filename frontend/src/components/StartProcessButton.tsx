@@ -5,19 +5,29 @@ import './StartProcessButton.scss';
 interface StartProcessButtonProps {
   isLoading: boolean;
   operation: string;
+  label?: string;
+  icon?: React.ReactNode;
 }
 
-const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, operation }: StartProcessButtonProps) => {
+const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, operation, label, icon }: StartProcessButtonProps) => {
   const getButtonContent = () => {
     if (isLoading) {
       return (
         <>
           <Loader2 className="spinner" />
-          Starting {operation || 'process'}...
+          {label ? `Adding...` : `Starting ${operation || 'process'}...`}
         </>
       );
     }
     
+    if (label) {
+      return (
+        <>
+          {icon ? icon : <Play />}
+          {label}
+        </>
+      );
+    }
     if (!operation) {
       return (
         <>
@@ -40,13 +50,13 @@ const StartProcessButton: FC<StartProcessButtonProps> = ({ isLoading, operation 
     <div className="start-process-button">
       <button
         type="submit"
-        disabled={isLoading || !operation}
+        disabled={isLoading || (!operation && !label)}
         className={`btn btn-primary btn-lg ${isLoading ? 'loading' : ''}`}
       >
         {getButtonContent()}
       </button>
       
-      {!operation && (
+      {!operation && !label && (
         <div className="button-hint">
           Please select a database type and operation to continue
         </div>

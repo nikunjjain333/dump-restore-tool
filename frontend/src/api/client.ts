@@ -109,6 +109,10 @@ export const api = {
     apiClient.get<Config[]>('/configs/'),
   createConfig: (config: ConfigCreate): Promise<AxiosResponse<Config>> => 
     apiClient.post<Config>('/configs/', config),
+  updateConfig: (id: number, config: Partial<ConfigCreate>): Promise<AxiosResponse<Config>> =>
+    apiClient.put<Config>(`/configs/${id}`, config),
+  deleteConfig: (id: number): Promise<AxiosResponse<{success: boolean, message: string}>> =>
+    apiClient.delete(`/configs/${id}`),
 
   // Dump
   startDump: (data: DumpRequest): Promise<AxiosResponse<OperationResponse>> => 

@@ -13,7 +13,8 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Edit
 } from 'lucide-react';
 import './AddConfigurationPage.scss';
 import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/client';
@@ -147,9 +148,7 @@ const AddConfigurationPage: React.FC = () => {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
-    const loadingToast = toast.loading(`Starting ${data.operation} process...`);
     let savedConfig: any = null;
-    
     try {
       const configData: ConfigCreate = {
         name: data.configName,
@@ -169,81 +168,27 @@ const AddConfigurationPage: React.FC = () => {
         run_path: data.runPath
       };
 
-      // Save config
-      savedConfig = await api.createConfig(configData);
-      toast.success('Configuration saved successfully!');
-      
-      // Update local state with the new config
-      setSavedConfigs(prev => [...prev, savedConfig.data]);
-
-      // Start process
-      const processData: DumpRequest | RestoreRequest = {
-        db_type: data.dbType,
-        params: configData.params,
-        path: data.operation === 'dump' ? data.dumpPath : data.restorePath,
-        run_path: data.runPath
-      };
-
-      // Set status to running for the new config
-      setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'running' }));
-
-      if (data.operation === 'dump') {
-        const result = await api.startDump(processData as DumpRequest);
-        toast.dismiss(loadingToast);
-        if (result.data.success) {
-          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'success' }));
-          toast.success(`✅ ${result.data.message}`);
-        } else {
-          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
-          // Show simple message in toast
-          toast.error(`❌ ${data.operation} failed`);
-          // Show detailed error in modal
-          setModal({
-            isOpen: true,
-            title: `${data.operation.charAt(0).toUpperCase() + data.operation.slice(1)} Operation Failed`,
-            message: result.data.message,
-            type: 'error',
-            contentType: 'preformatted'
-          });
-        }
+      if (selectedConfig) {
+        // Edit mode: update existing config
+        savedConfig = await api.updateConfig(selectedConfig.id, configData);
+        toast.success('Configuration updated successfully!');
       } else {
-        const result = await api.startRestore(processData as RestoreRequest);
-        toast.dismiss(loadingToast);
-        if (result.data.success) {
-          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'success' }));
-          toast.success(`✅ ${result.data.message}`);
-        } else {
-          setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
-          // Show simple message in toast
-          toast.error(`❌ ${data.operation} failed`);
-          // Show detailed error in modal
-          setModal({
-            isOpen: true,
-            title: `${data.operation.charAt(0).toUpperCase() + data.operation.slice(1)} Operation Failed`,
-            message: result.data.message,
-            type: 'error',
-            contentType: 'preformatted'
-          });
-        }
+        // Add mode: create new config
+        savedConfig = await api.createConfig(configData);
+        toast.success('Configuration added successfully!');
       }
+      // Navigate to configurations page
+      navigate('/configurations');
     } catch (error: any) {
-      console.error('Failed to start process:', error);
-      toast.dismiss(loadingToast);
-      
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to start process';
-      
-      // If we have a saved config, update its status to error
-      if (savedConfig?.data?.id) {
-        setOperationStatus(prev => ({ ...prev, [savedConfig.data.id]: 'error' }));
-      }
-      
-      // Show error in modal instead of toast for better readability
+      console.error('Failed to save configuration:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save configuration';
+      toast.error(errorMessage);
       setModal({
         isOpen: true,
-        title: `${data.operation.charAt(0).toUpperCase() + data.operation.slice(1)} Operation Failed`,
+        title: 'Save Configuration Failed',
         message: errorMessage,
         type: 'error',
-        contentType: 'preformatted' // Use preformatted for better error display
+        contentType: 'preformatted'
       });
     } finally {
       setIsLoading(false);
@@ -470,11 +415,13 @@ const AddConfigurationPage: React.FC = () => {
           <div className="form-section">
             <div className="section__header">
               <HardDrive className="icon" />
-              <h2>Start Process</h2>
+              <h2>{selectedConfig ? 'Update Configuration' : 'Add Configuration'}</h2>
             </div>
             <StartProcessButton 
               isLoading={isLoading}
-              operation={operation}
+              operation={''}
+              label={selectedConfig ? 'Update Configuration' : 'Add Configuration'}
+              icon={selectedConfig ? <Edit /> : <Save />}
             />
           </div>
         </form>
