@@ -343,14 +343,66 @@ const ConfigurationsPage: React.FC = () => {
                       >
                         <Edit />
                       </button>
-                      <button 
-                        className="btn btn--primary btn-sm"
-                        onClick={() => handleStartOperation(config)}
-                        title="Use Configuration"
-                        disabled={operationStatus[config.id] === 'running'}
-                      >
-                        <Play />
-                      </button>
+                      {config.operation === 'dump' ? (
+                        <>
+                          <button
+                            className="btn btn--primary btn-sm"
+                            onClick={() => handleStartOperation(config)}
+                            title="Dump (Download)"
+                            disabled={operationStatus[config.id] === 'running'}
+                          >
+                            <Download />
+                          </button>
+                          <button
+                            className="btn btn--primary btn-sm"
+                            onClick={async () => {
+                              // Trigger restore using the same config, but with restore_path
+                              setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
+                              try {
+                                const path = config.restore_path;
+                                if (!path) {
+                                  toast.error('No restore path specified for this configuration.');
+                                  setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+                                  return;
+                                }
+                                const processData = {
+                                  db_type: config.db_type,
+                                  params: config.params,
+                                  path,
+                                  run_path: config.run_path
+                                };
+                                const result = await api.startRestore(processData);
+                                if (result.data.success) {
+                                  toast.success(result.data.message || 'Restore completed successfully');
+                                  setTimeout(() => {
+                                    setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
+                                  }, 2000);
+                                } else {
+                                  setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+                                  toast.error(result.data.message || 'Restore operation failed');
+                                }
+                              } catch (error: any) {
+                                setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+                                console.error('Failed to start restore operation:', error);
+                                toast.error(error.response?.data?.detail || error.message || 'Failed to start restore operation');
+                              }
+                            }}
+                            title="Restore (Upload)"
+                            disabled={operationStatus[config.id] === 'running'}
+                          >
+                            <Upload />
+                          </button>
+                        </>
+                      ) : (
+                        <button 
+                          className="btn btn--primary btn-sm"
+                          onClick={() => handleStartOperation(config)}
+                          title="Use Configuration"
+                          disabled={operationStatus[config.id] === 'running'}
+                        >
+                          <Play />
+                        </button>
+                      )}
                       <button 
                         className="btn btn--danger btn-sm"
                         onClick={() => handleConfigDelete(config.id)}
