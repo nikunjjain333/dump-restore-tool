@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, JSON
+from sqlalchemy import Column, Integer, String, JSON # type: ignore
 from app.core.db import Base
 
 class Config(Base):
@@ -7,4 +7,6 @@ class Config(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     db_type = Column(String, nullable=False)
     params = Column(JSON, nullable=False)
-    run_path = Column(String, nullable=True)  # Working directory for operations 
+    run_path = Column(String, nullable=True)  # Working directory for operations
+    restore_password = Column(String, nullable=False)  # Required password for restore operations
+    local_database_name = Column(String, nullable=True)  # Optional local database name for restore operations 

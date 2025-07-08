@@ -139,11 +139,18 @@ const ConfigurationsPage: React.FC = () => {
         path: defaultPath,
         run_path: config.run_path
       };
+      
       let result: AxiosResponse<OperationResponse>;
       if (operationType === 'dump') {
         result = await api.startDump(processData);
       } else {
-        result = await api.startRestore(processData);
+        // Add restore-specific parameters for restore operations
+        const restoreData = {
+          ...processData,
+          restore_password: config.restore_password,
+          local_database_name: config.local_database_name
+        };
+        result = await api.startRestore(restoreData);
       }
       if (result.data.success) {
         toast.success(result.data.message || 'Operation completed successfully');

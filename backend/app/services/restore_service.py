@@ -6,13 +6,24 @@ from .docker_service import get_docker_client
 
 logger = logging.getLogger(__name__)
 
-def run_restore(db_type: str, params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+def run_restore(db_type: str, params: Dict[str, Any], path: str, restore_password: str, 
+                run_path: Optional[str] = None, local_database_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Run database restore operation
     """
     try:
         # Enforce restore on localhost
         params = dict(params)  # Make a copy to avoid mutating input
+        
+        # Use local database name if provided, otherwise use the original database name
+        if local_database_name:
+            params['database'] = local_database_name
+            logger.info(f"Using local database name for restore: {local_database_name}")
+        
+        # Use restore password (required)
+        params['password'] = restore_password
+        logger.info("Using restore password for restore operation")
+        
         if db_type in ['postgres', 'mysql', 'redis']:
             params['host'] = 'localhost'
         elif db_type == 'mongodb' and 'uri' in params:

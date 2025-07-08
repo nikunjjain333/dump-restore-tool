@@ -29,6 +29,8 @@ interface FormData {
   dbType: string;
   configName: string;
   runPath?: string;
+  restore_password: string;
+  local_database_name?: string;
   [key: string]: any;
 }
 
@@ -94,6 +96,12 @@ const AddConfigurationPage: React.FC = () => {
         if (config.run_path) {
           setValue('runPath', config.run_path);
         }
+        if (config.restore_password) {
+          setValue('restore_password', config.restore_password);
+        }
+        if (config.local_database_name) {
+          setValue('local_database_name', config.local_database_name);
+        }
       }, 100);
       
       toast.success(`Configuration "${config.name}" loaded!`);
@@ -145,9 +153,13 @@ const AddConfigurationPage: React.FC = () => {
           ...data,
           configName: undefined,
           dbType: undefined,
-          runPath: undefined
+          runPath: undefined,
+          restore_password: undefined,
+          local_database_name: undefined
         },
-        run_path: data.runPath
+        run_path: data.runPath,
+        restore_password: data.restore_password,
+        local_database_name: data.local_database_name
       };
 
       if (selectedConfig) {
@@ -192,6 +204,12 @@ const AddConfigurationPage: React.FC = () => {
       if (config.run_path) {
         setValue('runPath', config.run_path);
       }
+      if (config.restore_password) {
+        setValue('restore_password', config.restore_password);
+      }
+      if (config.local_database_name) {
+        setValue('local_database_name', config.local_database_name);
+      }
     }, 100);
     
     // Reset the navigation flag and show toast for manual selection
@@ -217,6 +235,12 @@ const AddConfigurationPage: React.FC = () => {
         path: defaultPath,
         run_path: config.run_path
       };
+
+      // Add restore-specific parameters for restore operations
+      if (operationType === 'restore') {
+        (processData as RestoreRequest).restore_password = config.restore_password;
+        (processData as RestoreRequest).local_database_name = config.local_database_name;
+      }
 
       // Start the operation
       if (operationType === 'dump') {

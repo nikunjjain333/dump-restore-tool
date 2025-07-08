@@ -32,6 +32,8 @@ export interface Config {
   db_type: string;
   params: Record<string, any>;
   run_path?: string;
+  restore_password: string;
+  local_database_name?: string;
 }
 
 export interface ConfigCreate {
@@ -39,6 +41,8 @@ export interface ConfigCreate {
   db_type: string;
   params: Record<string, any>;
   run_path?: string;
+  restore_password: string;
+  local_database_name?: string;
 }
 
 export interface DumpRequest {
@@ -53,6 +57,8 @@ export interface RestoreRequest {
   params: Record<string, any>;
   path: string;
   run_path?: string;
+  restore_password: string;
+  local_database_name?: string;
 }
 
 export interface OperationResponse {

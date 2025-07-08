@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator # type: ignore
 from typing import Dict, Any, Optional
 
 class DockerStartRequest(BaseModel):
@@ -31,6 +31,8 @@ class RestoreRequest(BaseModel):
     params: Dict[str, Any] = Field(..., description="Database connection parameters")
     path: str = Field(..., description="Path to the restore file")
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
+    restore_password: str = Field(..., description="Required password for restore operations")
+    local_database_name: Optional[str] = Field(default=None, description="Optional local database name for restore operations")
     
     @validator('db_type')
     def validate_db_type(cls, v):

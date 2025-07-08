@@ -7,7 +7,14 @@ router = APIRouter()
 @router.post("/")
 def run_restore_endpoint(request: RestoreRequest):
     """Start database restore operation"""
-    result = run_restore(request.db_type, request.params, request.path, request.run_path)
+    result = run_restore(
+        request.db_type, 
+        request.params, 
+        request.path,
+        request.restore_password,
+        request.run_path,
+        request.local_database_name
+    )
     
     if result["success"]:
         return {

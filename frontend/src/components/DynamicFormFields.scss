@@ -1,4 +1,28 @@
 .dynamic-form-fields {
+  .fields-section {
+    margin-bottom: 2rem;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--border-primary);
+    }
+    
+    .section-description {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+  }
+
   .fields-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));

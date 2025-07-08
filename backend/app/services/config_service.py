@@ -44,6 +44,8 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
         db_config.db_type = config.db_type
         db_config.params = config.params
         db_config.run_path = config.run_path
+        db_config.restore_password = config.restore_password
+        db_config.local_database_name = config.local_database_name
         db.commit()
         db.refresh(db_config)
         return db_config
