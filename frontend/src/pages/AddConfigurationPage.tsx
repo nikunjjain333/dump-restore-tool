@@ -454,7 +454,7 @@ const AddConfigurationPage: React.FC = () => {
             />
           </div>
 
-          <div className="form-section">
+          {/* <div className="form-section">
             <div className="section__header">
               <FolderOpen className="icon" />
               <h2>Saved Configurations</h2>
@@ -465,7 +465,7 @@ const AddConfigurationPage: React.FC = () => {
               onStartOperation={handleStartOperation}
               operationStatus={operationStatus}
             />
-          </div>
+          </div> */}
 
           <div className="form-section">
             <div className="section__header">

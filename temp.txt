@@ -1,0 +1,6 @@
+/Users/nikunjjain/Documents/Database-dumps/sandbox_treezpay.dump
+treezpay-platform-sandbox-cluster.cluster-ro-cltxiqumoump.us-west-2.rds.amazonaws.com
+5432
+treezpay
+dev_user
+jkobQ4KlRAOgX7Jv
