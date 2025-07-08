@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { 
@@ -40,9 +40,13 @@ const ConfigurationsPage: React.FC = () => {
     message: '',
     type: 'info'
   });
+  const hasLoaded = useRef(false);
 
   useEffect(() => {
-    loadConfigurations();
+    if (!hasLoaded.current) {
+      loadConfigurations();
+      hasLoaded.current = true;
+    }
   }, []);
 
   useEffect(() => {
