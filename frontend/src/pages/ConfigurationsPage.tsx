@@ -125,6 +125,36 @@ const ConfigurationsPage: React.FC = () => {
     });
   };
 
+  const handleStartOperation = async (config: Config) => {
+    try {
+      const path = config.operation === 'dump' ? config.dump_path : config.restore_path;
+      if (!path) {
+        toast.error('No path specified for this configuration.');
+        return;
+      }
+      const processData = {
+        db_type: config.db_type,
+        params: config.params,
+        path,
+        run_path: config.run_path
+      };
+      let result;
+      if (config.operation === 'dump') {
+        result = await api.startDump(processData);
+      } else {
+        result = await api.startRestore(processData);
+      }
+      if (result.data.success) {
+        toast.success(result.data.message || 'Operation completed successfully');
+      } else {
+        toast.error(result.data.message || 'Operation failed');
+      }
+    } catch (error: any) {
+      console.error('Failed to start operation:', error);
+      toast.error(error.response?.data?.detail || error.message || 'Failed to start operation');
+    }
+  };
+
   const getDatabaseIcon = (dbType: string) => {
     switch (dbType) {
       case 'postgres':
@@ -292,7 +322,7 @@ const ConfigurationsPage: React.FC = () => {
                     </button>
                     <button 
                       className="btn btn--primary btn-sm"
-                      onClick={() => navigate('/add-configuration', { state: { selectedConfig: config } })}
+                      onClick={() => handleStartOperation(config)}
                       title="Use Configuration"
                     >
                       <Play />
