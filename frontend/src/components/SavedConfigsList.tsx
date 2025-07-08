@@ -7,7 +7,8 @@ import {
   Loader2,
   FolderOpen,
   Clock,
-  Play,
+  ArrowUp,
+  ArrowDown,
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
@@ -17,7 +18,7 @@ import './SavedConfigsList.scss';
 interface SavedConfigsListProps {
   configs: Config[];
   onSelect: (config: Config) => void;
-  onStartOperation?: (config: Config) => void;
+  onStartOperation?: (config: Config, operationType: string) => void;
   operationStatus?: Record<number, 'idle' | 'running' | 'success' | 'error'>;
 }
 
@@ -40,10 +41,6 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
       default:
         return <Database className="config-icon" />;
     }
-  };
-
-  const getOperationIcon = (operation: string) => {
-    return operation === 'dump' ? <Download className="operation-icon" /> : <Upload className="operation-icon" />;
   };
 
   const getStatusIcon = (configId: number) => {
@@ -107,10 +104,6 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
                   <h4>{config.name}</h4>
                   <div className="config-meta">
                     <span className="db-type">{config.db_type.toUpperCase()}</span>
-                    <div className="operation-badge">
-                      {getOperationIcon(config.operation)}
-                      <span>{config.operation}</span>
-                    </div>
                   </div>
                 </div>
                 {status && (
@@ -151,27 +144,50 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
                   Load Configuration
                 </button>
                 {onStartOperation && (
-                  <button 
-                    type="button" 
-                    className="btn btn-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStartOperation(config);
-                    }}
-                    disabled={isRunning}
-                  >
-                    {isRunning ? (
-                      <>
-                        <Loader2 className="spinner" />
-                        Running...
-                      </>
-                    ) : (
-                      <>
-                        <Play />
-                        Start {config.operation}
-                      </>
-                    )}
-                  </button>
+                  <>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStartOperation(config, 'dump');
+                      }}
+                      disabled={isRunning}
+                    >
+                      {isRunning ? (
+                        <>
+                          <Loader2 className="spinner" />
+                          Running...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowUp />
+                          Dump
+                        </>
+                      )}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStartOperation(config, 'restore');
+                      }}
+                      disabled={isRunning}
+                    >
+                      {isRunning ? (
+                        <>
+                          <Loader2 className="spinner" />
+                          Running...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDown />
+                          Restore
+                        </>
+                      )}
+                    </button>
+                  </>
                 )}
               </div>
             </div>

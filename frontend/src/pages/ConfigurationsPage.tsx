@@ -15,7 +15,8 @@ import {
   Loader2
 } from 'lucide-react';
 import './ConfigurationsPage.scss';
-import { api, Config } from '../api/client';
+import { api, Config, OperationResponse } from '../api/client';
+import type { AxiosResponse } from 'axios';
 import SavedConfigsList from '../components/SavedConfigsList';
 import Modal from '../components/Modal';
 
@@ -41,6 +42,7 @@ const ConfigurationsPage: React.FC = () => {
   });
   const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
   const hasLoaded = useRef(false);
+  const [downloadLinks, setDownloadLinks] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (!hasLoaded.current) {
@@ -140,7 +142,7 @@ const ConfigurationsPage: React.FC = () => {
         path,
         run_path: config.run_path
       };
-      let result;
+      let result: AxiosResponse<OperationResponse>;
       if (config.operation === 'dump') {
         result = await api.startDump(processData);
       } else {
@@ -148,10 +150,9 @@ const ConfigurationsPage: React.FC = () => {
       }
       if (result.data.success) {
         toast.success(result.data.message || 'Operation completed successfully');
-        // Simulate polling for file existence (replace with real polling if backend supports it)
         setTimeout(() => {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
-        }, 2000); // 2 seconds delay to simulate file write
+        }, 2000);
       } else {
         setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
         toast.error(result.data.message || 'Operation failed');
@@ -304,65 +305,80 @@ const ConfigurationsPage: React.FC = () => {
           </div>
         ) : filteredConfigs.length > 0 ? (
           <div className="configurations-grid">
-            {filteredConfigs.map((config) => (
-              <div key={config.id} className="configuration-card">
-                <div className="card-header">
-                  <div className="config-icon-wrapper">
-                    {getDatabaseIcon(config.db_type)}
-                  </div>
-                  <div className="config-info">
-                    <h3>{config.name}</h3>
-                    <div className="config-meta">
-                      <span className="db-type">{config.db_type.toUpperCase()}</span>
-                      <div className="operation-badge">
-                        {getOperationIcon(config.operation)}
-                        <span>{config.operation}</span>
+            {filteredConfigs.map((config) => {
+              const hasStatus = !!operationStatus[config.id];
+              return (
+                <div key={config.id} className={`configuration-card${!hasStatus ? ' no-status-indicator' : ''}`}>
+                  <div className="card-header">
+                    <div className="config-icon-wrapper">
+                      {getDatabaseIcon(config.db_type)}
+                    </div>
+                    <div className="config-info">
+                      <h3>{config.name}</h3>
+                      <div className="config-meta">
+                        <span className="db-type">{config.db_type.toUpperCase()}</span>
+                        <div className="operation-badge">
+                          {getOperationIcon(config.operation)}
+                          <span>{config.operation}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="card-actions">
-                    <button 
-                      className="btn btn--secondary btn-sm"
-                      onClick={() => handleConfigSelect(config)}
-                      title="Edit Configuration"
-                    >
-                      <Edit />
-                    </button>
-                    <button 
-                      className="btn btn--primary btn-sm"
-                      onClick={() => handleStartOperation(config)}
-                      title="Use Configuration"
-                      disabled={operationStatus[config.id] === 'running'}
-                    >
-                      {operationStatus[config.id] === 'running' ? <Loader2 className="spinner" /> : <Play />}
-                    </button>
-                    <button 
-                      className="btn btn--danger btn-sm"
-                      onClick={() => handleConfigDelete(config.id)}
-                      title="Delete Configuration"
-                    >
-                      <Trash2 />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="card-content">
-                  <div className="config-params">
-                    {Object.entries(config.params).slice(0, 4).map(([key, value]) => (
-                      <div key={key} className="param-item">
-                        <span className="param-label">{key}:</span>
-                        <span className="param-value">{String(value)}</span>
-                      </div>
-                    ))}
-                    {Object.keys(config.params).length > 4 && (
-                      <div className="param-item">
-                        <span className="param-label">+{Object.keys(config.params).length - 4} more</span>
+                    {hasStatus && (
+                      <div className="status-indicator">
+                        {operationStatus[config.id] === 'running' && <Loader2 className="status-icon running" />}
+                        {operationStatus[config.id] === 'success' && <span className="status-icon success">✔️</span>}
+                        {operationStatus[config.id] === 'error' && <span className="status-icon error">❌</span>}
+                        <span className="status-text">
+                          {operationStatus[config.id] === 'running' && 'Running...'}
+                          {operationStatus[config.id] === 'success' && 'Completed'}
+                          {operationStatus[config.id] === 'error' && 'Failed'}
+                        </span>
                       </div>
                     )}
+                    <div className="card-actions">
+                      <button 
+                        className="btn btn--secondary btn-sm"
+                        onClick={() => handleConfigSelect(config)}
+                        title="Edit Configuration"
+                      >
+                        <Edit />
+                      </button>
+                      <button 
+                        className="btn btn--primary btn-sm"
+                        onClick={() => handleStartOperation(config)}
+                        title="Use Configuration"
+                        disabled={operationStatus[config.id] === 'running'}
+                      >
+                        <Play />
+                      </button>
+                      <button 
+                        className="btn btn--danger btn-sm"
+                        onClick={() => handleConfigDelete(config.id)}
+                        title="Delete Configuration"
+                      >
+                        <Trash2 />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="card-content">
+                    <div className="config-params">
+                      {Object.entries(config.params).slice(0, 4).map(([key, value]) => (
+                        <div key={key} className="param-item">
+                          <span className="param-label">{key}:</span>
+                          <span className="param-value">{String(value)}</span>
+                        </div>
+                      ))}
+                      {Object.keys(config.params).length > 4 && (
+                        <div className="param-item">
+                          <span className="param-label">+{Object.keys(config.params).length - 4} more</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="empty-state">

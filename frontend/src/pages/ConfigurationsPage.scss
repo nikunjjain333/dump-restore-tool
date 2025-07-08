@@ -166,6 +166,8 @@
     }
     
     .configuration-card {
+      position: relative;
+      padding-top: 1.6rem; // Add extra top padding for status-indicator
       background: var(--bg-card);
       border: 1px solid var(--border-primary);
       border-radius: var(--radius-lg);
@@ -179,12 +181,23 @@
         box-shadow: var(--shadow-lg);
       }
       
+      &.no-status-indicator {
+        padding-top: 0.5rem;
+      }
+      @media (max-width: 640px) {
+        padding-top: 1.2rem;
+        &.no-status-indicator {
+          padding-top: 0.3rem;
+        }
+      }
+      
       .card-header {
         display: flex;
         align-items: center;
         gap: 1rem;
         padding: 1.5rem;
         border-bottom: 1px solid var(--border-primary);
+        position: relative;
         
         .config-icon-wrapper {
           display: flex;
@@ -246,6 +259,7 @@
         .card-actions {
           display: flex;
           gap: 0.5rem;
+          margin-top: 1.2rem;
           
           .btn-sm {
             padding: 0.5rem;
@@ -255,6 +269,54 @@
               font-size: 1rem;
             }
           }
+        }
+        .status-indicator {
+          position: absolute;
+          top: -0.7rem;
+          right: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.3rem;
+          border-radius: 999px;
+          padding: 0.12rem 0.6rem 0.12rem 0.4rem;
+          z-index: 2;
+          font-size: 0.85rem;
+          background: #eaf3ff;
+          border: 1.5px solid #3b82f6;
+          box-shadow: none;
+          .status-icon {
+            font-size: 1rem;
+            margin-right: 0.15rem;
+            &.running {
+              color: #2563eb;
+              animation: spin 1s linear infinite;
+            }
+            &.success {
+              color: #10b981;
+            }
+            &.error {
+              color: #ef4444;
+            }
+          }
+          .status-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #2563eb;
+            white-space: nowrap;
+            margin-left: 0.05rem;
+          }
+        }
+        @media (max-width: 640px) {
+          .status-indicator {
+            top: -0.5rem;
+            right: 0.5rem;
+            padding: 0.08rem 0.4rem 0.08rem 0.25rem;
+            font-size: 0.75rem;
+          }
+          .card-actions {
+            margin-top: 1.1rem;
+          }
+          padding-top: 1.2rem;
         }
       }
       

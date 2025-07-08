@@ -296,6 +296,8 @@ POST /dump
 }
 ```
 
+> **Note:** The backend will attempt to write the dump file to the path you specify. If the path is not writable due to file system restrictions, the backend will suggest alternative writable paths (such as `/tmp`, `~/Downloads`, or `~/Desktop`). There is no download endpoint; you should use a writable path accessible from your host system.
+
 **Start Restore Operation**
 ```http
 POST /restore

@@ -87,273 +87,121 @@ def run_dump(db_type: str, params: Dict[str, Any], path: str, run_path: Optional
 
 def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Dump PostgreSQL database"""
-    try:
-        client = get_docker_client()
-        
-        # Build the pg_dump command with direct parameter substitution
-        host = params.get('host', 'localhost')
-        port = str(params.get('port', 5432))
-        database = params['database']
-        username = params['username']
-        password = params['password']
-        
-        # Ensure the path has a proper file extension
-        if not path.endswith('.sql'):
-            if path.endswith('/') or path.endswith('\\'):
-                # If path ends with directory separator, append filename
-                path = os.path.join(path, f"{database}_dump.sql")
-            else:
-                # If no extension, append .sql
-                path = f"{path}.sql"
-        
-        # Get the filename from the path to preserve the original extension
-        filename = os.path.basename(path)
-        
-        # Validate that the filename is not empty or just a directory
-        if not filename or filename == '.' or filename == '..':
-            return {
-                "success": False,
-                "message": f"Invalid filename extracted from path: {path}"
-            }
-        
-        # Get the directory path for Docker volume mounting
-        dir_path = os.path.dirname(path)
-        
-        # Don't preemptively create directories - let the file copy operations handle this
-        # This avoids "Read-only file system" errors when the directory can't be created
-        
-        logger.info(f"PostgreSQL dump: Using filename '{filename}' for path '{path}' in directory '{dir_path}'")
-        
-        # First, try to dump to a temporary location that Docker can definitely write to
-        temp_filename = f"temp_{filename}"
-        temp_path = os.path.join('/tmp', temp_filename)
-        
+    import os
+    client = get_docker_client()
+    host = params.get('host', 'localhost')
+    port = str(params.get('port', 5432))
+    database = params['database']
+    username = params['username']
+    password = params['password']
+    # Ensure the path has a proper file extension
+    if not path.endswith('.sql'):
+        if path.endswith('/') or path.endswith('\\'):
+            path = os.path.join(path, f"{database}_dump.sql")
+        else:
+            path = f"{path}.sql"
+    filename = os.path.basename(path)
+    if not filename or filename == '.' or filename == '..':
+        return {
+            "success": False,
+            "message": f"Invalid filename extracted from path: {path}"
+        }
+    dir_path = os.path.dirname(path)
+    # If the user path is absolute and exists, mount it and write directly
+    if os.path.isabs(path) and os.path.exists(dir_path) and os.access(dir_path, os.W_OK):
         try:
-            # Run pg_dump in Docker container to temporary location
             container = client.containers.run(
                 'postgres:16',
-                command=f'pg_dump -h {host} -p {port} -U {username} -d {database} -f /tmp/{temp_filename}',
+                command=f'pg_dump -h {host} -p {port} -U {username} -d {database} -f /dump/{filename}',
                 environment={'PGPASSWORD': password},
                 volumes={
-                    '/tmp': {'bind': '/tmp', 'mode': 'rw'}
+                    dir_path: {'bind': '/dump', 'mode': 'rw'}
                 },
                 working_dir=run_path if run_path else '/',
                 remove=True,
                 detach=False
             )
+            return {
+                "success": True,
+                "message": f"PostgreSQL dump completed successfully: {path}",
+                "path": path
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Failed to write dump to requested path: {path}. Error: {str(e)}"
+            }
+    # Fallback to /tmp as before
+    # First, try to dump to a temporary location that Docker can definitely write to
+    temp_filename = f"temp_{filename}"
+    temp_path = os.path.join('/tmp', temp_filename)
+    
+    try:
+        # Run pg_dump in Docker container to temporary location
+        container = client.containers.run(
+            'postgres:16',
+            command=f'pg_dump -h {host} -p {port} -U {username} -d {database} -f /tmp/{temp_filename}',
+            environment={'PGPASSWORD': password},
+            volumes={
+                '/tmp': {'bind': '/tmp', 'mode': 'rw'}
+            },
+            working_dir=run_path if run_path else '/',
+            remove=True,
+            detach=False
+        )
+        
+        # If successful, try to copy the file to the desired location
+        import shutil
+        try:
+            # Try to create the directory if it doesn't exist
+            target_dir = os.path.dirname(path)
+            if target_dir:
+                try:
+                    os.makedirs(target_dir, exist_ok=True)
+                except (IOError, OSError) as dir_error:
+                    # If directory creation fails, this will be caught by the copy operation
+                    logger.warning(f"Could not create directory {target_dir}: {dir_error}")
             
-            # If successful, try to copy the file to the desired location
-            import shutil
+            shutil.copy2(temp_path, path)
+            
+            # Clean up temporary file
             try:
-                # Try to create the directory if it doesn't exist
-                target_dir = os.path.dirname(path)
-                if target_dir:
-                    try:
-                        os.makedirs(target_dir, exist_ok=True)
-                    except (IOError, OSError) as dir_error:
-                        # If directory creation fails, this will be caught by the copy operation
-                        logger.warning(f"Could not create directory {target_dir}: {dir_error}")
-                
-                shutil.copy2(temp_path, path)
+                os.remove(temp_path)
+            except:
+                pass  # Ignore cleanup errors
+            
+            return {
+                "success": True,
+                "message": f"PostgreSQL dump completed successfully: {path}",
+                "path": path
+            }
+            
+        except (IOError, OSError) as copy_error:
+            # If copy fails, try to copy to a writable location and inform user
+            logger.warning(f"Failed to copy to desired location: {copy_error}")
+            
+            # Try to copy to Downloads as fallback
+            fallback_path = os.path.join(os.path.expanduser('~/Downloads'), filename)
+            try:
+                shutil.copy2(temp_path, fallback_path)
                 
                 # Clean up temporary file
                 try:
                     os.remove(temp_path)
-                except:
-                    pass  # Ignore cleanup errors
-                
-                return {
-                    "success": True,
-                    "message": f"PostgreSQL dump completed successfully: {path}",
-                    "path": path
-                }
-                
-            except (IOError, OSError) as copy_error:
-                # If copy fails, try to copy to a writable location and inform user
-                logger.warning(f"Failed to copy to desired location: {copy_error}")
-                
-                # Try to copy to Downloads as fallback
-                fallback_path = os.path.join(os.path.expanduser('~/Downloads'), filename)
-                try:
-                    shutil.copy2(temp_path, fallback_path)
-                    
-                    # Clean up temporary file
-                    try:
-                        os.remove(temp_path)
-                    except:
-                        pass
-                    
-                    return {
-                        "success": True,
-                        "message": f"PostgreSQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {fallback_path}",
-                        "path": fallback_path
-                    }
-                    
-                except (IOError, OSError) as fallback_error:
-                    # If even Downloads fails, try /tmp
-                    final_path = os.path.join('/tmp', filename)
-                    try:
-                        shutil.copy2(temp_path, final_path)
-                        
-                        # Clean up temporary file
-                        try:
-                            os.remove(temp_path)
-                        except:
-                            pass
-                        
-                        return {
-                            "success": True,
-                            "message": f"PostgreSQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {final_path}",
-                            "path": final_path
-                        }
-                        
-                    except (IOError, OSError) as final_error:
-                        # If all copy operations fail, return the temp file location
-                        return {
-                            "success": True,
-                            "message": f"PostgreSQL dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: {temp_path}",
-                            "path": temp_path
-                        }
-            
-        except Exception as docker_error:
-            # If Docker operation fails, try alternative approach
-            error_msg = str(docker_error)
-            logger.warning(f"Docker operation failed: {error_msg}")
-            
-            # Try using a different temporary directory that might work better
-            try:
-                # Use a different approach - dump to a location that's definitely writable
-                alt_temp_path = os.path.join(os.path.expanduser('~/Downloads'), temp_filename)
-                
-                container = client.containers.run(
-                    'postgres:16',
-                    command=f'pg_dump -h {host} -p {port} -U {username} -d {database} -f /dump/{temp_filename}',
-                    environment={'PGPASSWORD': password},
-                    volumes={
-                        os.path.expanduser('~/Downloads'): {'bind': '/dump', 'mode': 'rw'}
-                    },
-                    working_dir=run_path if run_path else '/',
-                    remove=True,
-                    detach=False
-                )
-                
-                # Copy to desired location
-                import shutil
-                shutil.copy2(alt_temp_path, path)
-                
-                # Clean up
-                try:
-                    os.remove(alt_temp_path)
                 except:
                     pass
                 
                 return {
                     "success": True,
-                    "message": f"PostgreSQL dump completed successfully: {path}",
-                    "path": path
+                    "message": f"PostgreSQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {fallback_path}",
+                    "path": fallback_path
                 }
                 
-            except Exception as alt_error:
-                # If all else fails, provide a helpful error message
-                alternatives = _get_alternative_paths(path)
-                alt_paths_str = ", ".join(alternatives)
-                return {
-                    "success": False,
-                    "message": f"Unable to write to the specified location '{path}'. This may be due to file system restrictions. Please try one of these alternative paths: {alt_paths_str}. Original error: {error_msg}"
-                }
-        
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"PostgreSQL dump failed: {str(e)}"
-        }
-
-def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
-    """Dump MySQL database"""
-    try:
-        client = get_docker_client()
-        
-        # Ensure the path has a proper file extension
-        if not path.endswith('.sql'):
-            if path.endswith('/') or path.endswith('\\'):
-                # If path ends with directory separator, append filename
-                path = os.path.join(path, f"{params['database']}_dump.sql")
-            else:
-                # If no extension, append .sql
-                path = f"{path}.sql"
-        
-        # Get the filename from the path to preserve the original extension
-        filename = os.path.basename(path)
-        
-        # Validate that the filename is not empty or just a directory
-        if not filename or filename == '.' or filename == '..':
-            return {
-                "success": False,
-                "message": f"Invalid filename extracted from path: {path}"
-            }
-        
-        # Get the directory path for Docker volume mounting
-        dir_path = os.path.dirname(path)
-        
-        # Don't preemptively create directories - let the file copy operations handle this
-        # This avoids "Read-only file system" errors when the directory can't be created
-        
-        logger.info(f"MySQL dump: Using filename '{filename}' for path '{path}' in directory '{dir_path}'")
-        
-        # First, try to dump to a temporary location that Docker can definitely write to
-        temp_filename = f"temp_{filename}"
-        temp_path = os.path.join('/tmp', temp_filename)
-        
-        # Create mysqldump command
-        dump_cmd = f"mysqldump -h {params.get('host', 'localhost')} -P {params.get('port', 3306)} -u {params['username']} -p{params['password']} {params['database']} > /tmp/{temp_filename}"
-        
-        try:
-            # Run mysqldump in Docker container to temporary location
-            container = client.containers.run(
-                'mysql:8.0',
-                command=f'sh -c "{dump_cmd}"',
-                volumes={
-                    '/tmp': {'bind': '/tmp', 'mode': 'rw'}
-                },
-                working_dir=run_path if run_path else '/',
-                remove=True,
-                detach=False
-            )
-            
-            # If successful, copy the file to the desired location
-            import shutil
-            try:
-                # Try to create the directory if it doesn't exist
-                target_dir = os.path.dirname(path)
-                if target_dir:
-                    try:
-                        os.makedirs(target_dir, exist_ok=True)
-                    except (IOError, OSError) as dir_error:
-                        # If directory creation fails, this will be caught by the copy operation
-                        logger.warning(f"Could not create directory {target_dir}: {dir_error}")
-                
-                shutil.copy2(temp_path, path)
-                
-                # Clean up temporary file
+            except (IOError, OSError) as fallback_error:
+                # If even Downloads fails, try /tmp
+                final_path = os.path.join('/tmp', filename)
                 try:
-                    os.remove(temp_path)
-                except:
-                    pass  # Ignore cleanup errors
-                
-                return {
-                    "success": True,
-                    "message": f"MySQL dump completed successfully: {path}",
-                    "path": path
-                }
-                
-            except (IOError, OSError) as copy_error:
-                # If copy fails, try to copy to a writable location and inform user
-                logger.warning(f"Failed to copy to desired location: {copy_error}")
-                
-                # Try to copy to Downloads as fallback
-                fallback_path = os.path.join(os.path.expanduser('~/Downloads'), filename)
-                try:
-                    shutil.copy2(temp_path, fallback_path)
+                    shutil.copy2(temp_path, final_path)
                     
                     # Clean up temporary file
                     try:
@@ -363,35 +211,196 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
                     
                     return {
                         "success": True,
-                        "message": f"MySQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {fallback_path}",
-                        "path": fallback_path
+                        "message": f"PostgreSQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {final_path}",
+                        "path": final_path
                     }
                     
-                except (IOError, OSError) as fallback_error:
-                    # If even Downloads fails, try /tmp
-                    final_path = os.path.join('/tmp', filename)
+                except (IOError, OSError) as final_error:
+                    # If all copy operations fail, return the temp file location
+                    return {
+                        "success": True,
+                        "message": f"PostgreSQL dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: {temp_path}",
+                        "path": temp_path
+                    }
+        
+    except Exception as docker_error:
+        # If Docker operation fails, try alternative approach
+        error_msg = str(docker_error)
+        logger.warning(f"Docker operation failed: {error_msg}")
+        
+        # Try using a different temporary directory that might work better
+        try:
+            # Use a different approach - dump to a location that's definitely writable
+            alt_temp_path = os.path.join(os.path.expanduser('~/Downloads'), temp_filename)
+            
+            container = client.containers.run(
+                'postgres:16',
+                command=f'pg_dump -h {host} -p {port} -U {username} -d {database} -f /dump/{temp_filename}',
+                environment={'PGPASSWORD': password},
+                volumes={
+                    os.path.expanduser('~/Downloads'): {'bind': '/dump', 'mode': 'rw'}
+                },
+                working_dir=run_path if run_path else '/',
+                remove=True,
+                detach=False
+            )
+            
+            # Copy to desired location
+            import shutil
+            shutil.copy2(alt_temp_path, path)
+            
+            # Clean up
+            try:
+                os.remove(alt_temp_path)
+            except:
+                pass
+            
+            return {
+                "success": True,
+                "message": f"PostgreSQL dump completed successfully: {path}",
+                "path": path
+            }
+            
+        except Exception as alt_error:
+            # If all else fails, provide a helpful error message
+            alternatives = _get_alternative_paths(path)
+            alt_paths_str = ", ".join(alternatives)
+            return {
+                "success": False,
+                "message": f"Unable to write to the specified location '{path}'. This may be due to file system restrictions. Please try one of these alternative paths: {alt_paths_str}. Original error: {error_msg}"
+            }
+
+def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+    """Dump MySQL database"""
+    import os
+    client = get_docker_client()
+    # Ensure the path has a proper file extension
+    if not path.endswith('.sql'):
+        if path.endswith('/') or path.endswith('\\'):
+            path = os.path.join(path, f"{params['database']}_dump.sql")
+        else:
+            path = f"{path}.sql"
+    filename = os.path.basename(path)
+    if not filename or filename == '.' or filename == '..':
+        return {
+            "success": False,
+            "message": f"Invalid filename extracted from path: {path}"
+        }
+    dir_path = os.path.dirname(path)
+    dump_cmd = f"mysqldump -h {params.get('host', 'localhost')} -P {params.get('port', 3306)} -u {params['username']} -p{params['password']} {params['database']} > /dump/{filename}"
+    # If the user path is absolute and exists, mount it and write directly
+    if os.path.isabs(path) and os.path.exists(dir_path) and os.access(dir_path, os.W_OK):
+        try:
+            container = client.containers.run(
+                'mysql:8.0',
+                command=f'sh -c "{dump_cmd}"',
+                volumes={
+                    dir_path: {'bind': '/dump', 'mode': 'rw'}
+                },
+                working_dir=run_path if run_path else '/',
+                remove=True,
+                detach=False
+            )
+            return {
+                "success": True,
+                "message": f"MySQL dump completed successfully: {path}",
+                "path": path
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Failed to write dump to requested path: {path}. Error: {str(e)}"
+            }
+    # Fallback to /tmp as before
+    # First, try to dump to a temporary location that Docker can definitely write to
+    temp_filename = f"temp_{filename}"
+    temp_path = os.path.join('/tmp', temp_filename)
+    
+    try:
+        # Run mysqldump in Docker container to temporary location
+        container = client.containers.run(
+            'mysql:8.0',
+            command=f'sh -c "{dump_cmd}"',
+            volumes={
+                '/tmp': {'bind': '/tmp', 'mode': 'rw'}
+            },
+            working_dir=run_path if run_path else '/',
+            remove=True,
+            detach=False
+        )
+        
+        # If successful, try to copy the file to the desired location
+        import shutil
+        try:
+            # Try to create the directory if it doesn't exist
+            target_dir = os.path.dirname(path)
+            if target_dir:
+                try:
+                    os.makedirs(target_dir, exist_ok=True)
+                except (IOError, OSError) as dir_error:
+                    # If directory creation fails, this will be caught by the copy operation
+                    logger.warning(f"Could not create directory {target_dir}: {dir_error}")
+            
+            shutil.copy2(temp_path, path)
+            
+            # Clean up temporary file
+            try:
+                os.remove(temp_path)
+            except:
+                pass  # Ignore cleanup errors
+            
+            return {
+                "success": True,
+                "message": f"MySQL dump completed successfully: {path}",
+                "path": path
+            }
+            
+        except (IOError, OSError) as copy_error:
+            # If copy fails, try to copy to a writable location and inform user
+            logger.warning(f"Failed to copy to desired location: {copy_error}")
+            
+            # Try to copy to Downloads as fallback
+            fallback_path = os.path.join(os.path.expanduser('~/Downloads'), filename)
+            try:
+                shutil.copy2(temp_path, fallback_path)
+                
+                # Clean up temporary file
+                try:
+                    os.remove(temp_path)
+                except:
+                    pass
+                
+                return {
+                    "success": True,
+                    "message": f"MySQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {fallback_path}",
+                    "path": fallback_path
+                }
+                
+            except (IOError, OSError) as fallback_error:
+                # If even Downloads fails, try /tmp
+                final_path = os.path.join('/tmp', filename)
+                try:
+                    shutil.copy2(temp_path, final_path)
+                    
+                    # Clean up temporary file
                     try:
-                        shutil.copy2(temp_path, final_path)
-                        
-                        # Clean up temporary file
-                        try:
-                            os.remove(temp_path)
-                        except:
-                            pass
-                        
-                        return {
-                            "success": True,
-                            "message": f"MySQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {final_path}",
-                            "path": final_path
-                        }
-                        
-                    except (IOError, OSError) as final_error:
-                        # If all copy operations fail, return the temp file location
-                        return {
-                            "success": True,
-                            "message": f"MySQL dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: {temp_path}",
-                            "path": temp_path
-                        }
+                        os.remove(temp_path)
+                    except:
+                        pass
+                    
+                    return {
+                        "success": True,
+                        "message": f"MySQL dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {final_path}",
+                        "path": final_path
+                    }
+                    
+                except (IOError, OSError) as final_error:
+                    # If all copy operations fail, return the temp file location
+                    return {
+                        "success": True,
+                        "message": f"MySQL dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: {temp_path}",
+                        "path": temp_path
+                    }
             
         except Exception as docker_error:
             # If Docker operation fails, try alternative approach
@@ -448,140 +457,104 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
 
 def _dump_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
     """Dump MongoDB database"""
-    try:
-        client = get_docker_client()
-        
-        # For MongoDB, ensure the path is a directory
-        if not path.endswith('/') and not path.endswith('\\'):
-            # If no directory separator, treat as directory name and append separator
-            path = f"{path}/"
-        
-        # Check if the target path already exists as a file (which would cause issues)
-        if os.path.exists(path) and os.path.isfile(path):
+    import os
+    client = get_docker_client()
+    # For MongoDB, ensure the path is a directory
+    if not path.endswith('/') and not path.endswith('\\'):
+        path = f"{path}/"
+    if os.path.isabs(path) and os.path.exists(path) and os.access(path, os.W_OK):
+        try:
+            dump_cmd = f"mongodump --uri '{params['uri']}' --db {params['database']} --out /dump"
+            container = client.containers.run(
+                'mongo:6.0',
+                command=f'sh -c "{dump_cmd}"',
+                volumes={
+                    path: {'bind': '/dump', 'mode': 'rw'}
+                },
+                working_dir=run_path if run_path else '/',
+                remove=True,
+                detach=False
+            )
+            return {
+                "success": True,
+                "message": f"MongoDB dump completed successfully: {path}",
+                "path": path
+            }
+        except Exception as e:
             return {
                 "success": False,
-                "message": f"Path '{path}' already exists as a file. Please specify a different directory path."
+                "message": f"Failed to write dump to requested path: {path}. Error: {str(e)}"
             }
-        
-        # Don't preemptively create directories - let the Docker operation handle this
-        # This avoids "Read-only file system" errors when the directory can't be created
-        
-        logger.info(f"MongoDB dump: Using directory '{path}' for dump")
-        
-        # Create mongodump command
-        dump_cmd = f"mongodump --uri '{params['uri']}' --db {params['database']} --out /dump"
-        
+    # Fallback to /tmp as before
+    # First, try to dump to a temporary location that Docker can definitely write to
+    temp_filename = f"temp_{os.path.basename(path)}"
+    temp_path = os.path.join('/tmp', temp_filename)
+    
+    try:
+        # Run mongodump in Docker container to temporary location
         container = client.containers.run(
             'mongo:6.0',
-            command=f'sh -c "{dump_cmd}"',
+            command=f'mongodump --uri "{params["uri"]}" --db {params["database"]} --out /tmp/{temp_filename}',
             volumes={
-                path: {'bind': '/dump', 'mode': 'rw'}
+                '/tmp': {'bind': '/tmp', 'mode': 'rw'}
             },
             working_dir=run_path if run_path else '/',
             remove=True,
             detach=False
         )
         
-        return {
-            "success": True,
-            "message": f"MongoDB dump completed successfully: {path}",
-            "path": path
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"MongoDB dump failed: {str(e)}"
-        }
-
-def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
-    """Dump Redis database"""
-    try:
-        client = get_docker_client()
-        
-        # Ensure the path has a proper file extension
-        if not path.endswith('.rdb'):
-            if path.endswith('/') or path.endswith('\\'):
-                # If path ends with directory separator, append filename
-                path = os.path.join(path, f"redis_dump.rdb")
-            else:
-                # If no extension, append .rdb
-                path = f"{path}.rdb"
-        
-        # Get the filename from the path
-        filename = os.path.basename(path)
-        
-        # Validate that the filename is not empty or just a directory
-        if not filename or filename == '.' or filename == '..':
-            return {
-                "success": False,
-                "message": f"Invalid filename extracted from path: {path}"
-            }
-        
-        # Get the directory path for Docker volume mounting
-        dir_path = os.path.dirname(path)
-        
-        # Don't preemptively create directories - let the file copy operations handle this
-        # This avoids "Read-only file system" errors when the directory can't be created
-        
-        logger.info(f"Redis dump: Using filename '{filename}' for path '{path}' in directory '{dir_path}'")
-        
-        # First, try to dump to a temporary location that Docker can definitely write to
-        temp_filename = f"temp_{filename}"
-        temp_path = os.path.join('/tmp', temp_filename)
-        
-        # Create redis-cli command for RDB dump
-        redis_cmd = f"redis-cli -h {params.get('host', 'localhost')} -p {params.get('port', 6379)}"
-        if params.get('password'):
-            redis_cmd += f" -a {params['password']}"
-        redis_cmd += f" --rdb /tmp/{temp_filename}"
-        
+        # If successful, try to copy the file to the desired location
+        import shutil
         try:
-            # Run redis-cli in Docker container to temporary location
-            container = client.containers.run(
-                'redis:7.0',
-                command=f'sh -c "{redis_cmd}"',
-                volumes={
-                    '/tmp': {'bind': '/tmp', 'mode': 'rw'}
-                },
-                working_dir=run_path if run_path else '/',
-                remove=True,
-                detach=False
-            )
+            # Try to create the directory if it doesn't exist
+            target_dir = os.path.dirname(path)
+            if target_dir:
+                try:
+                    os.makedirs(target_dir, exist_ok=True)
+                except (IOError, OSError) as dir_error:
+                    # If directory creation fails, this will be caught by the copy operation
+                    logger.warning(f"Could not create directory {target_dir}: {dir_error}")
             
-            # If successful, copy the file to the desired location
-            import shutil
+            shutil.copy2(temp_path, path)
+            
+            # Clean up temporary file
             try:
-                # Try to create the directory if it doesn't exist
-                target_dir = os.path.dirname(path)
-                if target_dir:
-                    try:
-                        os.makedirs(target_dir, exist_ok=True)
-                    except (IOError, OSError) as dir_error:
-                        # If directory creation fails, this will be caught by the copy operation
-                        logger.warning(f"Could not create directory {target_dir}: {dir_error}")
-                
-                shutil.copy2(temp_path, path)
+                os.remove(temp_path)
+            except:
+                pass  # Ignore cleanup errors
+            
+            return {
+                "success": True,
+                "message": f"MongoDB dump completed successfully: {path}",
+                "path": path
+            }
+            
+        except (IOError, OSError) as copy_error:
+            # If copy fails, try to copy to a writable location and inform user
+            logger.warning(f"Failed to copy to desired location: {copy_error}")
+            
+            # Try to copy to Downloads as fallback
+            fallback_path = os.path.join(os.path.expanduser('~/Downloads'), temp_filename)
+            try:
+                shutil.copy2(temp_path, fallback_path)
                 
                 # Clean up temporary file
                 try:
                     os.remove(temp_path)
                 except:
-                    pass  # Ignore cleanup errors
+                    pass
                 
                 return {
                     "success": True,
-                    "message": f"Redis dump completed successfully: {path}",
-                    "path": path
+                    "message": f"MongoDB dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {fallback_path}",
+                    "path": fallback_path
                 }
                 
-            except (IOError, OSError) as copy_error:
-                # If copy fails, try to copy to a writable location and inform user
-                logger.warning(f"Failed to copy to desired location: {copy_error}")
-                
-                # Try to copy to Downloads as fallback
-                fallback_path = os.path.join(os.path.expanduser('~/Downloads'), filename)
+            except (IOError, OSError) as fallback_error:
+                # If even Downloads fails, try /tmp
+                final_path = os.path.join('/tmp', temp_filename)
                 try:
-                    shutil.copy2(temp_path, fallback_path)
+                    shutil.copy2(temp_path, final_path)
                     
                     # Clean up temporary file
                     try:
@@ -591,35 +564,203 @@ def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
                     
                     return {
                         "success": True,
-                        "message": f"Redis dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {fallback_path}",
-                        "path": fallback_path
+                        "message": f"MongoDB dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {final_path}",
+                        "path": final_path
                     }
                     
-                except (IOError, OSError) as fallback_error:
-                    # If even Downloads fails, try /tmp
-                    final_path = os.path.join('/tmp', filename)
+                except (IOError, OSError) as final_error:
+                    # If all copy operations fail, return the temp file location
+                    return {
+                        "success": True,
+                        "message": f"MongoDB dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: {temp_path}",
+                        "path": temp_path
+                    }
+            
+        except Exception as docker_error:
+            # If Docker operation fails, try alternative approach
+            error_msg = str(docker_error)
+            logger.warning(f"Docker operation failed: {error_msg}")
+            
+            # Try using a different temporary directory that might work better
+            try:
+                # Use a different approach - dump to a location that's definitely writable
+                alt_temp_path = os.path.join(os.path.expanduser('~/Downloads'), temp_filename)
+                alt_dump_cmd = f"mongodump --uri '{params['uri']}' --db {params['database']} --out /dump/{temp_filename}"
+                
+                container = client.containers.run(
+                    'mongo:6.0',
+                    command=f'sh -c "{alt_dump_cmd}"',
+                    volumes={
+                        os.path.expanduser('~/Downloads'): {'bind': '/dump', 'mode': 'rw'}
+                    },
+                    working_dir=run_path if run_path else '/',
+                    remove=True,
+                    detach=False
+                )
+                
+                # Copy to desired location
+                import shutil
+                shutil.copy2(alt_temp_path, path)
+                
+                # Clean up
+                try:
+                    os.remove(alt_temp_path)
+                except:
+                    pass
+                
+                return {
+                    "success": True,
+                    "message": f"MongoDB dump completed successfully: {path}",
+                    "path": path
+                }
+                
+            except Exception as alt_error:
+                # If all else fails, provide a helpful error message
+                alternatives = _get_alternative_paths(path)
+                alt_paths_str = ", ".join(alternatives)
+                return {
+                    "success": False,
+                    "message": f"Unable to write to the specified location '{path}'. This may be due to file system restrictions. Please try one of these alternative paths: {alt_paths_str}. Original error: {error_msg}"
+                }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"MongoDB dump failed: {str(e)}"
+        }
+
+def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+    """Dump Redis database"""
+    import os
+    client = get_docker_client()
+    if not path.endswith('.rdb'):
+        if path.endswith('/') or path.endswith('\\'):
+            path = os.path.join(path, f"redis_dump.rdb")
+        else:
+            path = f"{path}.rdb"
+    filename = os.path.basename(path)
+    if not filename or filename == '.' or filename == '..':
+        return {
+            "success": False,
+            "message": f"Invalid filename extracted from path: {path}"
+        }
+    dir_path = os.path.dirname(path)
+    redis_cmd = f"redis-cli -h {params.get('host', 'localhost')} -p {params.get('port', 6379)}"
+    if params.get('password'):
+        redis_cmd += f" -a {params['password']}"
+    redis_cmd += f" --rdb /dump/{filename}"
+    if os.path.isabs(path) and os.path.exists(dir_path) and os.access(dir_path, os.W_OK):
+        try:
+            container = client.containers.run(
+                'redis:7.0',
+                command=f'sh -c "{redis_cmd}"',
+                volumes={
+                    dir_path: {'bind': '/dump', 'mode': 'rw'}
+                },
+                working_dir=run_path if run_path else '/',
+                remove=True,
+                detach=False
+            )
+            return {
+                "success": True,
+                "message": f"Redis dump completed successfully: {path}",
+                "path": path
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Failed to write dump to requested path: {path}. Error: {str(e)}"
+            }
+    # Fallback to /tmp as before
+    # First, try to dump to a temporary location that Docker can definitely write to
+    temp_filename = f"temp_{filename}"
+    temp_path = os.path.join('/tmp', temp_filename)
+    
+    try:
+        # Run redis-cli in Docker container to temporary location
+        container = client.containers.run(
+            'redis:7.0',
+            command=f'sh -c "{redis_cmd}"',
+            volumes={
+                '/tmp': {'bind': '/tmp', 'mode': 'rw'}
+            },
+            working_dir=run_path if run_path else '/',
+            remove=True,
+            detach=False
+        )
+        
+        # If successful, try to copy the file to the desired location
+        import shutil
+        try:
+            # Try to create the directory if it doesn't exist
+            target_dir = os.path.dirname(path)
+            if target_dir:
+                try:
+                    os.makedirs(target_dir, exist_ok=True)
+                except (IOError, OSError) as dir_error:
+                    # If directory creation fails, this will be caught by the copy operation
+                    logger.warning(f"Could not create directory {target_dir}: {dir_error}")
+            
+            shutil.copy2(temp_path, path)
+            
+            # Clean up temporary file
+            try:
+                os.remove(temp_path)
+            except:
+                pass  # Ignore cleanup errors
+            
+            return {
+                "success": True,
+                "message": f"Redis dump completed successfully: {path}",
+                "path": path
+            }
+            
+        except (IOError, OSError) as copy_error:
+            # If copy fails, try to copy to a writable location and inform user
+            logger.warning(f"Failed to copy to desired location: {copy_error}")
+            
+            # Try to copy to Downloads as fallback
+            fallback_path = os.path.join(os.path.expanduser('~/Downloads'), temp_filename)
+            try:
+                shutil.copy2(temp_path, fallback_path)
+                
+                # Clean up temporary file
+                try:
+                    os.remove(temp_path)
+                except:
+                    pass
+                
+                return {
+                    "success": True,
+                    "message": f"Redis dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {fallback_path}",
+                    "path": fallback_path
+                }
+                
+            except (IOError, OSError) as fallback_error:
+                # If even Downloads fails, try /tmp
+                final_path = os.path.join('/tmp', temp_filename)
+                try:
+                    shutil.copy2(temp_path, final_path)
+                    
+                    # Clean up temporary file
                     try:
-                        shutil.copy2(temp_path, final_path)
-                        
-                        # Clean up temporary file
-                        try:
-                            os.remove(temp_path)
-                        except:
-                            pass
-                        
-                        return {
-                            "success": True,
-                            "message": f"Redis dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {final_path}",
-                            "path": final_path
-                        }
-                        
-                    except (IOError, OSError) as final_error:
-                        # If all copy operations fail, return the temp file location
-                        return {
-                            "success": True,
-                            "message": f"Redis dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: {temp_path}",
-                            "path": temp_path
-                        }
+                        os.remove(temp_path)
+                    except:
+                        pass
+                    
+                    return {
+                        "success": True,
+                        "message": f"Redis dump completed successfully, but could not write to '{path}' due to file system restrictions. File saved to: {final_path}",
+                        "path": final_path
+                    }
+                    
+                except (IOError, OSError) as final_error:
+                    # If all copy operations fail, return the temp file location
+                    return {
+                        "success": True,
+                        "message": f"Redis dump completed successfully, but could not copy to desired location due to file system restrictions. File is available at: {temp_path}",
+                        "path": temp_path
+                    }
             
         except Exception as docker_error:
             # If Docker operation fails, try alternative approach
