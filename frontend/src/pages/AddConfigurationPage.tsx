@@ -4,15 +4,11 @@ import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { 
   Database, 
-  Play, 
   Save, 
   Settings, 
   FolderOpen, 
   HardDrive, 
-  Zap,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
+
   ArrowLeft,
   Edit
 } from 'lucide-react';
@@ -21,7 +17,7 @@ import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/c
 import DatabaseTypeSelector from '../components/DatabaseTypeSelector';
 import DynamicFormFields from '../components/DynamicFormFields';
 import ConfigNameInput from '../components/ConfigNameInput';
-import SavedConfigsList from '../components/SavedConfigsList';
+
 import StartProcessButton from '../components/StartProcessButton';
 import Modal from '../components/Modal';
 
@@ -222,17 +218,11 @@ const AddConfigurationPage: React.FC = () => {
     setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
     
     try {
-      // For now, we'll use a default path since we removed path fields
-      // In a real implementation, you might want to prompt the user for the path
-      const defaultPath = operationType === 'dump' 
-        ? `/tmp/${config.name}_dump.sql` 
-        : `/tmp/${config.name}_restore.sql`;
-      
-      // Prepare the operation data
+      // Prepare the operation data with config_name instead of path
       const processData: DumpRequest | RestoreRequest = {
         db_type: config.db_type,
         params: config.params,
-        path: defaultPath,
+        config_name: config.name,
         run_path: config.run_path
       };
 
@@ -247,7 +237,16 @@ const AddConfigurationPage: React.FC = () => {
         const result = await api.startDump(processData as DumpRequest);
         if (result.data.success) {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
-          toast.success(`✅ ${result.data.message}`);
+          // Show simple message in toast
+          toast.success(`✅ ${operationType} successful`);
+          // Show detailed message in modal
+          setModal({
+            isOpen: true,
+            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Successful`,
+            message: result.data.message || 'Operation completed successfully',
+            type: 'success',
+            contentType: 'preformatted'
+          });
         } else {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
           // Show simple message in toast
@@ -256,7 +255,7 @@ const AddConfigurationPage: React.FC = () => {
           setModal({
             isOpen: true,
             title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
-            message: result.data.message,
+            message: result.data.message || 'Operation failed with unknown error',
             type: 'error',
             contentType: 'preformatted'
           });
@@ -265,7 +264,16 @@ const AddConfigurationPage: React.FC = () => {
         const result = await api.startRestore(processData as RestoreRequest);
         if (result.data.success) {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
-          toast.success(`✅ ${result.data.message}`);
+          // Show simple message in toast
+          toast.success(`✅ ${operationType} successful`);
+          // Show detailed message in modal
+          setModal({
+            isOpen: true,
+            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Successful`,
+            message: result.data.message || 'Operation completed successfully',
+            type: 'success',
+            contentType: 'preformatted'
+          });
         } else {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
           // Show simple message in toast
@@ -274,7 +282,7 @@ const AddConfigurationPage: React.FC = () => {
           setModal({
             isOpen: true,
             title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
-            message: result.data.message,
+            message: result.data.message || 'Operation failed with unknown error',
             type: 'error',
             contentType: 'preformatted'
           });

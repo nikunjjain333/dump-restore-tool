@@ -9,7 +9,7 @@ class DumpRequest(BaseModel):
     """Request schema for database dump operation"""
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
     params: Dict[str, Any] = Field(..., description="Database connection parameters")
-    path: str = Field(..., description="Path where to save the dump file")
+    config_name: str = Field(..., description="Configuration name for consistent file paths")
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     
     @validator('db_type')
@@ -19,17 +19,17 @@ class DumpRequest(BaseModel):
             raise ValueError(f'Database type must be one of: {allowed_types}')
         return v
     
-    @validator('path')
-    def validate_path(cls, v):
+    @validator('config_name')
+    def validate_config_name(cls, v):
         if not v:
-            raise ValueError('Path cannot be empty')
+            raise ValueError('Configuration name cannot be empty')
         return v
 
 class RestoreRequest(BaseModel):
     """Request schema for database restore operation"""
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
     params: Dict[str, Any] = Field(..., description="Database connection parameters")
-    path: str = Field(..., description="Path to the restore file")
+    config_name: str = Field(..., description="Configuration name for consistent file paths")
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     restore_password: str = Field(..., description="Required password for restore operations")
     local_database_name: Optional[str] = Field(default=None, description="Optional local database name for restore operations")
@@ -41,10 +41,10 @@ class RestoreRequest(BaseModel):
             raise ValueError(f'Database type must be one of: {allowed_types}')
         return v
     
-    @validator('path')
-    def validate_path(cls, v):
+    @validator('config_name')
+    def validate_config_name(cls, v):
         if not v:
-            raise ValueError('Path cannot be empty')
+            raise ValueError('Configuration name cannot be empty')
         return v
 
 class ConfigCreateRequest(BaseModel):

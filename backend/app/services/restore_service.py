@@ -1,17 +1,50 @@
 import os
 import logging
 import subprocess
+import re
+import time
 from typing import Dict, Any, Optional
 from .docker_service import get_docker_client
 
 logger = logging.getLogger(__name__)
 
-def run_restore(db_type: str, params: Dict[str, Any], path: str, restore_password: str, 
+def _get_consistent_path(config_name: str, db_type: str, operation: str = 'restore') -> str:
+    """Generate consistent file path for dump/restore operations"""
+    
+    # Clean config name to make it filesystem-safe
+    safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', config_name)
+    safe_name = re.sub(r'_+', '_', safe_name).strip('_')
+    
+    # Create unique filename based on config name, db type, and operation
+    timestamp = int(time.time())
+    filename = f"{safe_name}_{db_type}_{operation}_{timestamp}"
+    
+    # Add appropriate extension based on database type
+    if db_type == 'postgres' or db_type == 'mysql':
+        filename += '.sql'
+    elif db_type == 'mongodb':
+        filename += '.bson'
+    elif db_type == 'redis':
+        filename += '.rdb'
+    elif db_type == 'sqlite':
+        filename += '.db'
+    else:
+        filename += '.dump'
+    
+    # Use /tmp directory for consistency
+    return os.path.join('/tmp', filename)
+
+def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_password: str, 
                 run_path: Optional[str] = None, local_database_name: Optional[str] = None) -> Dict[str, Any]:
     """
-    Run database restore operation
+    Run database restore operation with consistent file path
     """
     try:
+        # Generate path to look for the dump file (not restore file)
+        path = _get_consistent_path(config_name, db_type, 'dump')
+        
+        logger.info(f"Starting restore operation for config '{config_name}' from path: {path}")
+        
         # Enforce restore on localhost
         params = dict(params)  # Make a copy to avoid mutating input
         
@@ -45,11 +78,12 @@ def run_restore(db_type: str, params: Dict[str, Any], path: str, restore_passwor
                 # fallback: just replace hostname
                 import re
                 params['uri'] = re.sub(r'//.*?:', '//localhost:', params['uri'])
+        
         # Check if restore file exists
         if not os.path.exists(path):
             return {
                 "success": False,
-                "message": f"Restore file not found: {path}"
+                "message": f"Restore file not found: {path}. Please ensure the dump file exists before attempting restore. You may need to run a dump operation first."
             }
         
         if db_type == 'postgres':

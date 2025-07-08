@@ -33,6 +33,7 @@ const ConfigurationsPage: React.FC = () => {
     title: string;
     message: string;
     type: 'success' | 'error' | 'info' | 'warning';
+    contentType?: 'text' | 'logs' | 'preformatted';
     onConfirm?: () => void;
   }>({
     isOpen: false,
@@ -128,15 +129,11 @@ const ConfigurationsPage: React.FC = () => {
   const handleStartOperation = async (config: Config, operationType: 'dump' | 'restore') => {
     setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
     try {
-      // For now, we'll use a default path since we removed path fields
-      const defaultPath = operationType === 'dump' 
-        ? `/tmp/${config.name}_dump.sql` 
-        : `/tmp/${config.name}_restore.sql`;
-      
+      // Prepare the operation data with config_name instead of path
       const processData = {
         db_type: config.db_type,
         params: config.params,
-        path: defaultPath,
+        config_name: config.name,
         run_path: config.run_path
       };
       
@@ -153,18 +150,49 @@ const ConfigurationsPage: React.FC = () => {
         result = await api.startRestore(restoreData);
       }
       if (result.data.success) {
-        toast.success(result.data.message || 'Operation completed successfully');
+        // Show simple message in toast
+        toast.success(`✅ ${operationType} successful`);
+        // Show detailed message in modal
+        setModal({
+          isOpen: true,
+          title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Successful`,
+          message: result.data.message || 'Operation completed successfully',
+          type: 'success',
+          contentType: 'preformatted'
+        });
         setTimeout(() => {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
         }, 2000);
       } else {
         setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-        toast.error(result.data.message || 'Operation failed');
+        // Show simple message in toast
+        toast.error(`❌ ${operationType} failed`);
+        // Show detailed error in modal
+        setModal({
+          isOpen: true,
+          title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
+          message: result.data.message || 'Operation failed with unknown error',
+          type: 'error',
+          contentType: 'preformatted'
+        });
       }
     } catch (error: any) {
       setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
       console.error('Failed to start operation:', error);
-      toast.error(error.response?.data?.detail || error.message || 'Failed to start operation');
+      
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to start operation';
+      
+      // Show simple message in toast
+      toast.error(`❌ ${operationType} failed`);
+      
+      // Show detailed error in modal
+      setModal({
+        isOpen: true,
+        title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
+        message: errorMessage,
+        type: 'error',
+        contentType: 'preformatted'
+      });
     }
   };
 
@@ -193,6 +221,7 @@ const ConfigurationsPage: React.FC = () => {
         title={modal.title}
         message={modal.message}
         type={modal.type}
+        contentType={modal.contentType}
         onConfirm={modal.onConfirm}
         confirmText="Delete"
         cancelText="Cancel"

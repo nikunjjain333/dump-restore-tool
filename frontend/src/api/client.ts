@@ -48,14 +48,14 @@ export interface ConfigCreate {
 export interface DumpRequest {
   db_type: string;
   params: Record<string, any>;
-  path: string;
+  config_name: string;
   run_path?: string;
 }
 
 export interface RestoreRequest {
   db_type: string;
   params: Record<string, any>;
-  path: string;
+  config_name: string;
   run_path?: string;
   restore_password: string;
   local_database_name?: string;
