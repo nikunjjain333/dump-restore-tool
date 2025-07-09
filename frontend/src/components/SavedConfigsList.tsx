@@ -161,7 +161,7 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
                         </>
                       ) : (
                         <>
-                          <ArrowUp />
+                          <ArrowUp className="icon" />
                           Dump
                         </>
                       )}
@@ -182,7 +182,7 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
                         </>
                       ) : (
                         <>
-                          <ArrowDown />
+                          <ArrowDown className="icon" />
                           Restore
                         </>
                       )}
