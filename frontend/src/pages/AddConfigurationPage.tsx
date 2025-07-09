@@ -17,7 +17,8 @@ import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/c
 import DatabaseTypeSelector from '../components/DatabaseTypeSelector';
 import DynamicFormFields from '../components/DynamicFormFields';
 import ConfigNameInput from '../components/ConfigNameInput';
-
+import DumpFileNameInput from '../components/DumpFileNameInput';
+import SavedConfigsList from '../components/SavedConfigsList';
 import StartProcessButton from '../components/StartProcessButton';
 import Modal from '../components/Modal';
 
@@ -27,6 +28,7 @@ interface FormData {
   runPath?: string;
   restore_password: string;
   local_database_name?: string;
+  dump_file_name?: string;
   [key: string]: any;
 }
 
@@ -55,7 +57,17 @@ const AddConfigurationPage: React.FC = () => {
   
   const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
+  const [formData, setFormData] = useState({
+    name: '',
+    db_type: '',
+    params: {} as Record<string, any>,
+    run_path: '',
+    restore_password: '',
+    local_database_name: '',
+    dump_file_name: ''
+  });
+
+  const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<FormData>();
 
   const dbType = watch('dbType') || '';
   const operation = watch('operation') || '';
@@ -98,6 +110,9 @@ const AddConfigurationPage: React.FC = () => {
         if (config.local_database_name) {
           setValue('local_database_name', config.local_database_name);
         }
+        if (config.dump_file_name) {
+          setValue('dump_file_name', config.dump_file_name);
+        }
       }, 100);
       
       toast.success(`Configuration "${config.name}" loaded!`);
@@ -139,49 +154,67 @@ const AddConfigurationPage: React.FC = () => {
   };
 
   const onSubmit = async (data: FormData) => {
-    setIsLoading(true);
-    let savedConfig: any = null;
     try {
-      const configData: ConfigCreate = {
+      // Extract database parameters from form data
+      const dbParams: Record<string, any> = {};
+      
+      // Extract database-specific parameters based on database type
+      if (data.dbType === 'postgres' || data.dbType === 'mysql') {
+        dbParams.host = data.host || 'localhost';
+        dbParams.port = data.port || (data.dbType === 'postgres' ? 5432 : 3306);
+        dbParams.database = data.database;
+        dbParams.username = data.username;
+        dbParams.password = data.password;
+      } else if (data.dbType === 'mongodb') {
+        dbParams.uri = data.uri;
+        dbParams.database = data.database;
+      } else if (data.dbType === 'redis') {
+        dbParams.host = data.host || 'localhost';
+        dbParams.port = data.port || 6379;
+        if (data.password) dbParams.password = data.password;
+        dbParams.db = data.db || 0;
+      } else if (data.dbType === 'sqlite') {
+        dbParams.database = data.database;
+      }
+      
+      const configData = {
         name: data.configName,
         db_type: data.dbType,
-        params: {
-          ...data,
-          configName: undefined,
-          dbType: undefined,
-          runPath: undefined,
-          restore_password: undefined,
-          local_database_name: undefined
-        },
-        run_path: data.runPath,
+        params: dbParams,
+        run_path: data.runPath || undefined,
         restore_password: data.restore_password,
-        local_database_name: data.local_database_name
+        local_database_name: data.local_database_name || undefined,
+        dump_file_name: data.dump_file_name || undefined
       };
 
       if (selectedConfig) {
-        // Edit mode: update existing config
-        savedConfig = await api.updateConfig(selectedConfig.id, configData);
-        toast.success('Configuration updated successfully!');
+        // Update existing config
+        await api.updateConfig(selectedConfig.id, configData);
+        toast.success('Configuration updated successfully');
       } else {
-        // Add mode: create new config
-        savedConfig = await api.createConfig(configData);
-        toast.success('Configuration added successfully!');
+        // Create new config
+        await api.createConfig(configData);
+        toast.success('Configuration saved successfully');
       }
-      // Navigate to configurations page
-      navigate('/configurations');
+      
+      // Reset form
+      reset();
+      setFormData({
+        name: '',
+        db_type: '',
+        params: {},
+        run_path: '',
+        restore_password: '',
+        local_database_name: '',
+        dump_file_name: ''
+      });
+      setSelectedConfig(null);
+      
+      // Reload configurations
+      loadSavedConfigs();
     } catch (error: any) {
       console.error('Failed to save configuration:', error);
-      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save configuration';
-      toast.error(errorMessage);
-      setModal({
-        isOpen: true,
-        title: 'Save Configuration Failed',
-        message: errorMessage,
-        type: 'error',
-        contentType: 'preformatted'
-      });
-    } finally {
-      setIsLoading(false);
+      toast.error(error.response?.data?.detail || 'Failed to save configuration');
     }
   };
 
@@ -206,6 +239,9 @@ const AddConfigurationPage: React.FC = () => {
       if (config.local_database_name) {
         setValue('local_database_name', config.local_database_name);
       }
+      if (config.dump_file_name) {
+        setValue('dump_file_name', config.dump_file_name);
+      }
     }, 100);
     
     // Reset the navigation flag and show toast for manual selection
@@ -223,7 +259,8 @@ const AddConfigurationPage: React.FC = () => {
         db_type: config.db_type,
         params: config.params,
         config_name: config.name,
-        run_path: config.run_path
+        run_path: config.run_path,
+        dump_file_name: config.dump_file_name
       };
 
       // Add restore-specific parameters for restore operations
@@ -385,10 +422,15 @@ const AddConfigurationPage: React.FC = () => {
               {errors.runPath && (
                 <div className="field-error">
                   <span className="error-icon">⚠</span>
-                  {errors.runPath.message}
+                  {errors.runPath.message?.toString() || 'This field is required'}
                 </div>
               )}
             </div>
+            <DumpFileNameInput 
+              value={watch('dump_file_name') || ''}
+              onChange={(value) => setValue('dump_file_name', value)}
+              error={errors.dump_file_name?.message?.toString() || undefined}
+            />
           </div>
 
           {/* <div className="form-section">

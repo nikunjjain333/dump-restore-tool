@@ -9,4 +9,5 @@ class Config(Base):
     params = Column(JSON, nullable=False)
     run_path = Column(String, nullable=True)  # Working directory for operations
     restore_password = Column(String, nullable=False)  # Required password for restore operations
-    local_database_name = Column(String, nullable=True)  # Optional local database name for restore operations 
+    local_database_name = Column(String, nullable=True)  # Optional local database name for restore operations
+    dump_file_name = Column(String, nullable=True)  # Custom filename for dump/restore operations 

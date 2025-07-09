@@ -98,7 +98,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
               {errors[name] && (
                 <div className="field-error">
                   <span className="error-icon">⚠</span>
-                  {errors[name]?.message || 'This field is required'}
+                  {errors[name]?.message?.toString() || 'This field is required'}
                 </div>
               )}
             </div>
@@ -134,7 +134,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
               {errors[name] && (
                 <div className="field-error">
                   <span className="error-icon">⚠</span>
-                  {errors[name]?.message || 'This field is required'}
+                  {errors[name]?.message?.toString() || 'This field is required'}
                 </div>
               )}
             </div>

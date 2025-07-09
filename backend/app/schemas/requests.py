@@ -11,6 +11,7 @@ class DumpRequest(BaseModel):
     params: Dict[str, Any] = Field(..., description="Database connection parameters")
     config_name: str = Field(..., description="Configuration name for consistent file paths")
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
+    dump_file_name: Optional[str] = Field(default=None, description="Custom filename for dump file (without extension)")
     
     @validator('db_type')
     def validate_db_type(cls, v):
@@ -33,6 +34,7 @@ class RestoreRequest(BaseModel):
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     restore_password: str = Field(..., description="Required password for restore operations")
     local_database_name: Optional[str] = Field(default=None, description="Optional local database name for restore operations")
+    dump_file_name: Optional[str] = Field(default=None, description="Custom filename for dump file (without extension)")
     
     @validator('db_type')
     def validate_db_type(cls, v):

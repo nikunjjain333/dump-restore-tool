@@ -29,7 +29,7 @@ const ConfigNameInput: React.FC<ConfigNameInputProps> = ({ register, errors }) =
       {errors.configName && (
         <div className="field-error">
           <span className="error-icon">⚠</span>
-          {errors.configName.message}
+          {errors.configName.message?.toString() || 'Configuration name is required'}
         </div>
       )}
     </div>

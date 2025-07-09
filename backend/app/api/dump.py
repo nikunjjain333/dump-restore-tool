@@ -9,7 +9,7 @@ router = APIRouter()
 @router.post("/")
 def run_dump_endpoint(request: DumpRequest):
     """Start database dump operation"""
-    result = run_dump(request.db_type, request.params, request.config_name, request.run_path)
+    result = run_dump(request.db_type, request.params, request.config_name, request.run_path, request.dump_file_name)
     
     if result["success"]:
         return {

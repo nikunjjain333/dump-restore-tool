@@ -8,16 +8,20 @@ from .docker_service import get_docker_client
 
 logger = logging.getLogger(__name__)
 
-def _get_consistent_path(config_name: str, db_type: str, operation: str = 'restore') -> str:
+def _get_consistent_path(config_name: str, db_type: str, dump_file_name: Optional[str] = None, operation: str = 'restore') -> str:
     """Generate consistent file path for dump/restore operations"""
     
-    # Clean config name to make it filesystem-safe
-    safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', config_name)
-    safe_name = re.sub(r'_+', '_', safe_name).strip('_')
-    
-    # Create unique filename based on config name, db type, and operation
-    timestamp = int(time.time())
-    filename = f"{safe_name}_{db_type}_{operation}_{timestamp}"
+    # Use custom filename if provided, otherwise use config name
+    if dump_file_name:
+        # Clean the custom filename to make it filesystem-safe
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', dump_file_name)
+        safe_name = re.sub(r'_+', '_', safe_name).strip('_')
+        filename = safe_name
+    else:
+        # Clean config name to make it filesystem-safe
+        safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', config_name)
+        safe_name = re.sub(r'_+', '_', safe_name).strip('_')
+        filename = safe_name
     
     # Add appropriate extension based on database type
     if db_type == 'postgres' or db_type == 'mysql':
@@ -35,13 +39,13 @@ def _get_consistent_path(config_name: str, db_type: str, operation: str = 'resto
     return os.path.join('/tmp', filename)
 
 def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_password: str, 
-                run_path: Optional[str] = None, local_database_name: Optional[str] = None) -> Dict[str, Any]:
+                run_path: Optional[str] = None, local_database_name: Optional[str] = None, dump_file_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Run database restore operation with consistent file path
     """
     try:
-        # Generate path to look for the dump file (not restore file)
-        path = _get_consistent_path(config_name, db_type, 'dump')
+        # Generate path to look for the dump file using custom filename
+        path = _get_consistent_path(config_name, db_type, dump_file_name, 'dump')
         
         logger.info(f"Starting restore operation for config '{config_name}' from path: {path}")
         

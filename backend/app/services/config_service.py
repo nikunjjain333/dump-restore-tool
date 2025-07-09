@@ -29,7 +29,7 @@ def create_config(db: Session, config: ConfigCreate):
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to create configuration: {e}")
-        raise 
+        raise
 
 def update_config(db: Session, config_id: int, config: ConfigCreate):
     """Update an existing configuration in database"""
@@ -46,6 +46,7 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
         db_config.run_path = config.run_path
         db_config.restore_password = config.restore_password
         db_config.local_database_name = config.local_database_name
+        db_config.dump_file_name = config.dump_file_name
         db.commit()
         db.refresh(db_config)
         return db_config
@@ -55,7 +56,7 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to update configuration: {e}")
-        raise 
+        raise
 
 def delete_config(db: Session, config_id: int):
     """Delete a configuration by ID"""
