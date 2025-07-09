@@ -150,7 +150,6 @@ const ConfigurationsPage: React.FC = () => {
           restore_username: config.restore_username,
           restore_host: config.restore_host,
           restore_port: config.restore_port,
-          restore_stack_name: config.restore_stack_name,
         };
         result = await api.startRestore(restoreData);
       }

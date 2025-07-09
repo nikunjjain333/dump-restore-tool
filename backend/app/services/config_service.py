@@ -21,7 +21,6 @@ def create_config(db: Session, config: ConfigCreate):
         db_config.restore_username = config.restore_username
         db_config.restore_host = config.restore_host
         db_config.restore_port = config.restore_port
-        db_config.restore_stack_name = config.restore_stack_name
         db.add(db_config)
         db.commit()
         db.refresh(db_config)
@@ -54,7 +53,6 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
         db_config.restore_username = config.restore_username
         db_config.restore_host = config.restore_host
         db_config.restore_port = config.restore_port
-        db_config.restore_stack_name = config.restore_stack_name
         db.commit()
         db.refresh(db_config)
         return db_config

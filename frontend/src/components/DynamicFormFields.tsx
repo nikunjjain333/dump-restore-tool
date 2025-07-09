@@ -60,7 +60,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
     
     // Add restore-specific fields for all database types
     baseFields.push(
-      { name: 'restore_stack_name', label: 'Docker Stack Name (Optional)', type: 'text', icon: Container, section: 'restore' },
+  
       { name: 'restore_host', label: 'Restore Host (Optional)', type: 'text', icon: Server, defaultValue: 'localhost', section: 'restore' },
       { name: 'restore_port', label: 'Restore Port (Optional)', type: 'number', icon: Key, section: 'restore' },
       { name: 'local_database_name', label: 'Local Database Name (Optional)', type: 'text', icon: Database, section: 'restore' },

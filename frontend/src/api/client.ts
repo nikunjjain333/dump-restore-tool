@@ -38,7 +38,6 @@ export interface Config {
   restore_username?: string;
   restore_host?: string;
   restore_port?: string;
-  restore_stack_name?: string;
 }
 
 export interface ConfigCreate {
@@ -52,7 +51,6 @@ export interface ConfigCreate {
   restore_username?: string;
   restore_host?: string;
   restore_port?: string;
-  restore_stack_name?: string;
 }
 
 export interface DumpRequest {
@@ -74,7 +72,6 @@ export interface RestoreRequest {
   restore_username?: string;
   restore_host?: string;
   restore_port?: string;
-  restore_stack_name?: string;
 }
 
 export interface OperationResponse {

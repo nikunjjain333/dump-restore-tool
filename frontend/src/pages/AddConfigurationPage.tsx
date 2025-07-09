@@ -32,7 +32,7 @@ interface FormData {
   restore_username?: string;
   restore_host?: string;
   restore_port?: string;
-  restore_stack_name?: string;
+
   [key: string]: any;
 }
 
@@ -191,8 +191,7 @@ const AddConfigurationPage: React.FC = () => {
         dump_file_name: data.dump_file_name || undefined,
         restore_username: data.restore_username || undefined,
         restore_host: data.restore_host || undefined,
-        restore_port: data.restore_port || undefined,
-        restore_stack_name: data.restore_stack_name || undefined
+        restore_port: data.restore_port || undefined
       };
 
       if (selectedConfig) {
@@ -259,9 +258,7 @@ const AddConfigurationPage: React.FC = () => {
       if (config.restore_port) {
         setValue('restore_port', config.restore_port);
       }
-      if (config.restore_stack_name) {
-        setValue('restore_stack_name', config.restore_stack_name);
-      }
+
     }, 100);
     
     // Reset the navigation flag and show toast for manual selection
@@ -290,7 +287,7 @@ const AddConfigurationPage: React.FC = () => {
         (processData as RestoreRequest).restore_username = config.restore_username;
         (processData as RestoreRequest).restore_host = config.restore_host;
         (processData as RestoreRequest).restore_port = config.restore_port;
-        (processData as RestoreRequest).restore_stack_name = config.restore_stack_name;
+
       }
 
       // Start the operation
