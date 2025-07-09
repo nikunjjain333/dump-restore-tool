@@ -21,14 +21,16 @@ class Settings:
     ]
     
     # Docker - Use appropriate socket path based on platform
-    def get_docker_host():
+    @staticmethod
+    def get_docker_host() -> str:
+        """Get Docker host based on platform"""
         system = platform.system().lower()
-        if system == "darwin":  # macOS
-            return os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
-        elif system == "windows":
-            return os.getenv("DOCKER_HOST", "npipe:////./pipe/docker_engine")
-        else:  # Linux
-            return os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+        default_hosts = {
+            "darwin": "unix:///var/run/docker.sock",  # macOS
+            "windows": "npipe:////./pipe/docker_engine",  # Windows
+            "linux": "unix:///var/run/docker.sock"  # Linux
+        }
+        return os.getenv("DOCKER_HOST", default_hosts.get(system, "unix:///var/run/docker.sock"))
     
     DOCKER_HOST: str = get_docker_host()
     

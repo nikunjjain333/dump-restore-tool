@@ -4,7 +4,6 @@ from app.api import configs, dump, restore, docker, docker_compose
 from app.core.db import engine, Base
 from sqlalchemy import text
 import logging
-import time
 import asyncio
 
 # Configure logging
@@ -61,8 +60,6 @@ async def on_startup():
         logging.info("Database tables created successfully")
     except Exception as e:
         logging.error(f"Failed to create database tables: {e}")
-        # Don't raise the exception to allow the app to start
-        # The health check will indicate if the database is working
 
 @app.get("/")
 def root():

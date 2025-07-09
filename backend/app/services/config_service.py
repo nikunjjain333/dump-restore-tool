@@ -18,16 +18,13 @@ def create_config(db: Session, config: ConfigCreate):
     """Create a new configuration in database"""
     try:
         db_config = Config(**config.dict())
-        db_config.restore_username = config.restore_username
-        db_config.restore_host = config.restore_host
-        db_config.restore_port = config.restore_port
         db.add(db_config)
         db.commit()
         db.refresh(db_config)
         return db_config
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        logger.error(f"Configuration with name '{config.name}' already exists: {e}")
+        logger.error(f"Configuration with name '{config.name}' already exists")
         raise ValueError(f"Configuration with name '{config.name}' already exists")
     except Exception as e:
         db.rollback()
@@ -40,19 +37,16 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
         db_config = db.query(Config).filter(Config.id == config_id).first()
         if not db_config:
             return None
+        
         # Check for name conflict (other than self)
-        if db.query(Config).filter(Config.name == config.name, Config.id != config_id).first():
+        existing = db.query(Config).filter(Config.name == config.name, Config.id != config_id).first()
+        if existing:
             raise ValueError(f"Configuration with name '{config.name}' already exists")
-        db_config.name = config.name
-        db_config.db_type = config.db_type
-        db_config.params = config.params
-        db_config.run_path = config.run_path
-        db_config.restore_password = config.restore_password
-        db_config.local_database_name = config.local_database_name
-        db_config.dump_file_name = config.dump_file_name
-        db_config.restore_username = config.restore_username
-        db_config.restore_host = config.restore_host
-        db_config.restore_port = config.restore_port
+        
+        # Update all fields
+        for field, value in config.dict().items():
+            setattr(db_config, field, value)
+        
         db.commit()
         db.refresh(db_config)
         return db_config

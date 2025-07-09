@@ -1,8 +1,5 @@
 import docker
 from docker.errors import DockerException
-import subprocess
-import os
-import platform
 import logging
 from typing import Dict, Any
 from app.core.config import settings
@@ -10,9 +7,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 def get_docker_status() -> Dict[str, Any]:
-    """
-    Get current Docker daemon status
-    """
+    """Get current Docker daemon status"""
     try:
         # Try to connect to Docker daemon using configured host
         client = docker.from_env(environment={'DOCKER_HOST': settings.DOCKER_HOST})
