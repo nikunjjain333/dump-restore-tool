@@ -61,7 +61,8 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
     // Add restore-specific fields for all database types
     baseFields.push(
       { name: 'restore_password', label: 'Restore Password', type: 'password', icon: Shield, required: true, section: 'restore' },
-      { name: 'local_database_name', label: 'Local Database Name (Optional)', type: 'text', icon: Home, section: 'restore' }
+      { name: 'local_database_name', label: 'Local Database Name (Optional)', type: 'text', icon: Home, section: 'restore' },
+      { name: 'restore_username', label: 'Restore Username (Optional)', type: 'text', icon: User, section: 'restore' }
     );
     
     return baseFields;

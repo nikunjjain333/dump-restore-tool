@@ -433,31 +433,7 @@ const AddConfigurationPage: React.FC = () => {
               onChange={(value) => setValue('dump_file_name', value)}
               error={errors.dump_file_name?.message?.toString() || undefined}
             />
-            <div className="form-group">
-              <label htmlFor="restore_username">Restore Username (optional)</label>
-              <input
-                id="restore_username"
-                type="text"
-                {...register('restore_username')}
-                placeholder="Enter restore username (if different)"
-                autoComplete="off"
-              />
-            </div>
           </div>
-
-          {/* <div className="form-section">
-            <div className="section__header">
-              <FolderOpen className="icon" />
-              <h2>Saved Configurations</h2>
-            </div>
-            <SavedConfigsList 
-              configs={savedConfigs}
-              onSelect={handleConfigSelect}
-              onStartOperation={handleStartOperation}
-              operationStatus={operationStatus}
-            />
-          </div> */}
-
           <div className="form-section">
             <div className="section__header">
               <HardDrive className="icon" />
