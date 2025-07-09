@@ -76,7 +76,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
     <div className="dynamic-form-fields">
       {/* Connection Fields */}
       <div className="fields-section">
-        <h3 className="section-title">Database Connection</h3>
+        <h3 className="section-title">Dump Database Connection</h3>
         <div className="fields-grid">
           {connectionFields.map(({ name, label, type, icon: Icon, defaultValue, required }) => (
             <div key={name} className="field-group">
@@ -109,7 +109,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
 
       {/* Restore Fields */}
       <div className="fields-section">
-        <h3 className="section-title">Restore Options</h3>
+        <h3 className="section-title">Restore Database Connection</h3>
         <p className="section-description">
           These fields are used specifically for restore operations. Restore password is required for authentication.
         </p>
