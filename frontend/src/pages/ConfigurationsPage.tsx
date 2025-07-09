@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { 
   Database, 
   Download, 
@@ -11,23 +11,19 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  Play,
   Loader2
 } from 'lucide-react';
 import './ConfigurationsPage.scss';
 import { api, Config, OperationResponse } from '../api/client';
 import type { AxiosResponse } from 'axios';
-import SavedConfigsList from '../components/SavedConfigsList';
 import Modal from '../components/Modal';
 
 const ConfigurationsPage: React.FC = () => {
   const navigate = useNavigate();
   const [configs, setConfigs] = useState<Config[]>([]);
-  const [filteredConfigs, setFilteredConfigs] = useState<Config[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [filterOperation, setFilterOperation] = useState('all');
   const [modal, setModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -43,33 +39,9 @@ const ConfigurationsPage: React.FC = () => {
   });
   const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
   const hasLoaded = useRef(false);
-  const [downloadLinks, setDownloadLinks] = useState<Record<number, string>>({});
 
-  useEffect(() => {
-    if (!hasLoaded.current) {
-      loadConfigurations();
-      hasLoaded.current = true;
-    }
-  }, []);
-
-  useEffect(() => {
-    filterConfigurations();
-  }, [configs, searchTerm, filterType, filterOperation]);
-
-  const loadConfigurations = async () => {
-    setIsLoading(true);
-    try {
-      const response = await api.getConfigs();
-      setConfigs(response.data);
-    } catch (error) {
-      console.error('Failed to load configurations:', error);
-      toast.error('Failed to load configurations');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const filterConfigurations = () => {
+  // Memoized filtered configurations
+  const filteredConfigs = useMemo(() => {
     let filtered = configs;
 
     // Search filter
@@ -85,17 +57,34 @@ const ConfigurationsPage: React.FC = () => {
       filtered = filtered.filter(config => config.db_type === filterType);
     }
 
-    // Note: Operation filtering removed since we no longer store operation in config
-    // Users can now perform both dump and restore operations on any config
+    return filtered;
+  }, [configs, searchTerm, filterType]);
 
-    setFilteredConfigs(filtered);
-  };
+  useEffect(() => {
+    if (!hasLoaded.current) {
+      loadConfigurations();
+      hasLoaded.current = true;
+    }
+  }, []);
 
-  const handleConfigSelect = (config: Config) => {
+  const loadConfigurations = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await api.getConfigs();
+      setConfigs(response.data);
+    } catch (error) {
+      console.error('Failed to load configurations:', error);
+      toast.error('Failed to load configurations');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleConfigSelect = useCallback((config: Config) => {
     navigate('/add-configuration', { state: { selectedConfig: config } });
-  };
+  }, [navigate]);
 
-  const handleConfigDelete = async (configId: number) => {
+  const handleConfigDelete = useCallback(async (configId: number) => {
     setModal({
       isOpen: true,
       title: 'Confirm Delete',
@@ -124,9 +113,9 @@ const ConfigurationsPage: React.FC = () => {
         }
       }
     });
-  };
+  }, []);
 
-  const handleStartOperation = async (config: Config, operationType: 'dump' | 'restore') => {
+  const handleStartOperation = useCallback(async (config: Config, operationType: 'dump' | 'restore') => {
     setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
     try {
       // Prepare the operation data with config_name instead of path
@@ -198,9 +187,9 @@ const ConfigurationsPage: React.FC = () => {
         contentType: 'preformatted'
       });
     }
-  };
+  }, []);
 
-  const getDatabaseIcon = (dbType: string) => {
+  const getDatabaseIcon = useCallback((dbType: string) => {
     switch (dbType) {
       case 'postgres':
       case 'mysql':
@@ -213,15 +202,63 @@ const ConfigurationsPage: React.FC = () => {
       default:
         return <Database className="config-icon" />;
     }
-  };
+  }, []);
 
-  // getOperationIcon function removed - no longer needed
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  }, []);
+
+  const handleFilterTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterType(e.target.value);
+  }, []);
+
+  const handleBackClick = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+
+  const handleAddNewClick = useCallback(() => {
+    navigate('/add-configuration');
+  }, [navigate]);
+
+  const handleCreateConfigClick = useCallback(() => {
+    navigate('/add-configuration');
+  }, [navigate]);
+
+  const closeModal = useCallback(() => {
+    setModal(prev => ({ ...prev, isOpen: false }));
+  }, []);
+
+  // Memoized toast options
+  const toastOptions = useMemo(() => ({
+    duration: 4000,
+    style: {
+      background: 'var(--bg-card)',
+      color: 'var(--text-primary)',
+      borderRadius: 'var(--radius-lg)',
+      padding: '1rem 1.5rem',
+      boxShadow: 'var(--shadow-xl)',
+      border: '1px solid var(--border-primary)',
+      zIndex: 9999,
+    },
+    success: {
+      iconTheme: {
+        primary: '#10b981',
+        secondary: '#fff',
+      },
+    },
+    error: {
+      iconTheme: {
+        primary: '#ef4444',
+        secondary: '#fff',
+      },
+    },
+  }), []);
 
   return (
     <div className="configurations-page">
       <Modal
         isOpen={modal.isOpen}
-        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        onClose={closeModal}
         title={modal.title}
         message={modal.message}
         type={modal.type}
@@ -232,39 +269,12 @@ const ConfigurationsPage: React.FC = () => {
         autoClose={modal.type === 'success'}
         autoCloseDelay={3000}
       />
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '1rem 1.5rem',
-            boxShadow: 'var(--shadow-xl)',
-            border: '1px solid var(--border-primary)',
-            zIndex: 9999,
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
       
       <div className="container">
         <div className="page-header">
           <button 
             className="btn btn--secondary"
-            onClick={() => navigate('/')}
+            onClick={handleBackClick}
           >
             <ArrowLeft />
             Back to Home
@@ -272,7 +282,7 @@ const ConfigurationsPage: React.FC = () => {
           <h1>All Configurations</h1>
           <button 
             className="btn btn--primary"
-            onClick={() => navigate('/add-configuration')}
+            onClick={handleAddNewClick}
           >
             <Plus />
             Add New
@@ -287,7 +297,7 @@ const ConfigurationsPage: React.FC = () => {
               type="text"
               placeholder="Search configurations..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="search-input"
             />
           </div>
@@ -297,7 +307,7 @@ const ConfigurationsPage: React.FC = () => {
               <label>Database Type:</label>
               <select 
                 value={filterType} 
-                onChange={(e) => setFilterType(e.target.value)}
+                onChange={handleFilterTypeChange}
                 className="filter-select"
               >
                 <option value="all">All Types</option>
@@ -308,8 +318,6 @@ const ConfigurationsPage: React.FC = () => {
                 <option value="sqlite">SQLite</option>
               </select>
             </div>
-            
-            {/* Operation filter removed - all configs can be used for both dump and restore */}
           </div>
         </div>
 
@@ -416,14 +424,14 @@ const ConfigurationsPage: React.FC = () => {
             <Database className="empty-icon" />
             <h3>No Configurations Found</h3>
             <p>
-              {searchTerm || filterType !== 'all' || filterOperation !== 'all' 
+              {searchTerm || filterType !== 'all'
                 ? 'Try adjusting your search or filters'
                 : 'Create your first configuration to get started'
               }
             </p>
             <button 
               className="btn btn--primary"
-              onClick={() => navigate('/add-configuration')}
+              onClick={handleCreateConfigClick}
             >
               <Plus />
               Create Configuration

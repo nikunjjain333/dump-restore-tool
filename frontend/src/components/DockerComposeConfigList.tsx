@@ -1,13 +1,253 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { api, DockerComposeConfig, DockerComposeOperationRequest } from '../api/client';
 import Modal from './Modal';
 import './DockerComposeConfigList.scss';
-import { Play, StopCircle, RefreshCw, LogOut, List, FileText, Hammer, Trash2, Layers } from 'lucide-react';
+import { Play, StopCircle, RefreshCw, List, FileText, Hammer, Trash2, Layers } from 'lucide-react';
 
 interface DockerComposeConfigListProps {
   onRefresh?: () => void;
   refreshKey?: number;
 }
+
+// Separate component for individual config card
+const ConfigCard: React.FC<{
+  config: DockerComposeConfig;
+  isOperating: boolean;
+  operatingOperation?: string;
+  containerStatuses: Array<{
+    service_name: string;
+    container_name: string;
+    status: string;
+  }>;
+  refreshingStatuses: Set<number>;
+  containerErrors: Map<number, Map<string, string>>;
+  onOperation: (configId: number, operation: string) => void;
+  onDelete: (configId: number) => void;
+  getContainerStatusIcon: (state: string | undefined) => string;
+  getContainerError: (configId: number, containerName: string) => string | undefined;
+  hasAnyRunningContainer: (configId: number) => boolean;
+}> = React.memo(({
+  config,
+  isOperating,
+  operatingOperation,
+  containerStatuses,
+  refreshingStatuses,
+  containerErrors,
+  onOperation,
+  onDelete,
+  getContainerStatusIcon,
+  getContainerError,
+  hasAnyRunningContainer
+}) => {
+  const handleOperation = useCallback((operation: string) => {
+    onOperation(config.id, operation);
+  }, [config.id, onOperation]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(config.id);
+  }, [config.id, onDelete]);
+
+  const isRefreshing = refreshingStatuses.has(config.id);
+
+  return (
+    <div className="config-card">
+      <div className="config-header">
+        <div className="config-title-section">
+          <span className="compose-icon-gradient"><Layers size={24} /></span>
+          <h4>{config.name}</h4>
+        </div>
+        <div className="config-actions">
+          <button
+            onClick={handleDelete}
+            className="btn btn-icon btn-danger"
+            title="Delete configuration"
+            disabled={isOperating}
+          >
+            <Trash2 className="compose-icon-gradient" />
+          </button>
+        </div>
+      </div>
+
+      <div className="config-details">
+        <div className="detail-item">
+          <div className="label-section">
+            <span className="label">Containers:</span>
+          </div>
+        </div>
+        <div className="containers-list">
+          <table style={{ width: '100%', fontSize: '0.95em', marginTop: 8 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Service</th>
+                <th style={{ textAlign: 'left' }}>Container</th>
+                <th style={{ textAlign: 'left' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {containerStatuses.length === 0 ? (
+                <tr>
+                  <td colSpan={3} style={{ color: '#888', fontStyle: 'italic' }}>No containers found</td>
+                </tr>
+              ) : (
+                containerStatuses.map((service, idx) => {
+                  const containerError = getContainerError(config.id, service.container_name);
+                  const hasError = !!containerError;
+                  
+                  let statusIcon, statusText;
+                  if (hasError) {
+                    statusIcon = '❌';
+                    statusText = 'Error';
+                  } else {
+                    statusIcon = getContainerStatusIcon(service.status);
+                    statusText = service.status || 'Unknown';
+                  }
+                  
+                  return (
+                    <tr key={idx}>
+                      <td>{service.service_name || '-'}</td>
+                      <td>{service.container_name || '-'}</td>
+                      <td>
+                        <span
+                          className={hasError ? 'status-with-tooltip error-status' : ''}
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}
+                        >
+                          {statusIcon}
+                          <span style={{ fontSize: '0.85em', color: hasError ? '#ef4444' : 'var(--text-secondary)' }}>
+                            {statusText}
+                            {isRefreshing && (
+                              <span style={{ marginLeft: '4px', fontSize: '0.8em', color: 'var(--text-accent)' }}>
+                                (refreshing...)
+                              </span>
+                            )}
+                          </span>
+                          {hasError && (
+                            <span className="status-tooltip">
+                              {containerError}
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="detail-item path-block">
+          <span className="label">Path:</span>
+          <span className="value">{config.path}</span>
+        </div>
+        
+        {config.service_name && (
+          <div className="detail-item">
+            <span className="label">Service:</span>
+            <span className="value">{config.service_name}</span>
+          </div>
+        )}
+        
+        {config.description && (
+          <div className="detail-item">
+            <span className="label">Description:</span>
+            <span className="value">{config.description}</span>
+          </div>
+        )}
+
+        {config.flags && Object.keys(config.flags).length > 0 && (
+          <div className="detail-item">
+            <span className="label">Flags:</span>
+            <span className="value">
+              {Object.entries(config.flags)
+                .filter(([_, value]) => value)
+                .map(([key, _]) => key)
+                .join(', ')}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="config-operations">
+        <div className="operation-buttons">
+          <button
+            onClick={() => handleOperation('up')}
+            className="btn btn-gradient"
+            disabled={isOperating}
+          >
+            {operatingOperation === 'up' ? (
+              <><Play className="compose-icon-gradient" size={18} /> Launching...</>
+            ) : (
+              <><Play className="compose-icon-gradient" size={18} /> Launch Stack</>
+            )}
+          </button>
+          
+          <button
+            onClick={() => handleOperation('down')}
+            className="btn btn-gradient"
+            disabled={isOperating}
+          >
+            {operatingOperation === 'down' ? (
+              <><StopCircle className="compose-icon-gradient" size={18} /> Stopping...</>
+            ) : (
+              <><StopCircle className="compose-icon-gradient" size={18} /> Stop Stack</>
+            )}
+          </button>
+          
+          <button
+            onClick={() => handleOperation('restart')}
+            className="btn btn-gradient"
+            disabled={isOperating || !hasAnyRunningContainer(config.id)}
+          >
+            {operatingOperation === 'restart' ? (
+              <><RefreshCw className="compose-icon-gradient" size={18} /> Restarting...</>
+            ) : (
+              <><RefreshCw className="compose-icon-gradient" size={18} /> Restart Stack</>
+            )}
+          </button>
+        </div>
+
+        <div className="secondary-operations">
+          <button
+            onClick={() => handleOperation('ps')}
+            className="btn btn-secondary btn-small"
+            disabled={isOperating}
+          >
+            {operatingOperation === 'ps' ? (
+              <><List className="compose-icon-gradient" size={16} /> Checking...</>
+            ) : (
+              <><List className="compose-icon-gradient" size={16} /> Show Status</>
+            )}
+          </button>
+          
+          <button
+            onClick={() => handleOperation('logs')}
+            className="btn btn-secondary btn-small"
+            disabled={isOperating}
+          >
+            {operatingOperation === 'logs' ? (
+              <><FileText className="compose-icon-gradient" size={16} /> Loading...</>
+            ) : (
+              <><FileText className="compose-icon-gradient" size={16} /> View Logs</>
+            )}
+          </button>
+          
+          <button
+            onClick={() => handleOperation('build')}
+            className="btn btn-secondary btn-small"
+            disabled={isOperating || !hasAnyRunningContainer(config.id)}
+          >
+            {operatingOperation === 'build' ? (
+              <><Hammer className="compose-icon-gradient" size={16} /> Building...</>
+            ) : (
+              <><Hammer className="compose-icon-gradient" size={16} /> Rebuild Images</>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+ConfigCard.displayName = 'ConfigCard';
 
 const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRefresh, refreshKey }) => {
   const [configs, setConfigs] = useState<DockerComposeConfig[]>([]);
@@ -40,7 +280,6 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     type: 'info'
   });
 
-  // Add isFetching state to prevent duplicate fetches
   const [isFetching, setIsFetching] = useState(false);
 
   useEffect(() => {
@@ -50,14 +289,13 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     }
   }, [refreshKey]);
 
-  const fetchConfigs = async () => {
-    if (isFetching) return; // Prevent duplicate fetches
+  const fetchConfigs = useCallback(async () => {
+    if (isFetching) return;
     setLoading(true);
     setError('');
     try {
       const response = await api.getDockerComposeConfigs();
       setConfigs(response.data);
-      // Fetch service statuses for all configs
       await fetchServiceStatuses(response.data);
     } catch (err) {
       setError('Failed to fetch Docker Compose configurations');
@@ -65,9 +303,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     } finally {
       setLoading(false);
     }
-  };
+  }, [isFetching]);
 
-  const fetchServiceStatuses = async (configsToCheck: DockerComposeConfig[], showRefreshing: boolean = false) => {
+  const fetchServiceStatuses = useCallback(async (configsToCheck: DockerComposeConfig[], showRefreshing: boolean = false) => {
     console.log(`Fetching service statuses for ${configsToCheck.length} configs, showRefreshing: ${showRefreshing}`);
     
     const statusMap = new Map<number, { 
@@ -80,7 +318,6 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       hasSpecificService: boolean;
     }>();
     
-    // Set refreshing state for configs being checked
     if (showRefreshing) {
       setRefreshingStatuses(prev => {
         const newSet = new Set(prev);
@@ -93,14 +330,11 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       try {
         const response = await api.getDockerComposeServices(config.id);
         if (response.data.success && response.data.services) {
-          
-          // Check for running services - look for various possible state values
           const runningServices = response.data.services.filter((service: any) => {
             const state = (service.status || service.State || '').toLowerCase();
             return state.includes('running') || state.includes('up') || state === 'started';
           });
           
-          // Preserve backend fields: service_name, container_name, status
           const validServices = response.data.services.map((service: any) => ({
             service_name: service.service_name || service.Service || service.Name || 'Unknown',
             container_name: service.container_name || service.Name || 'Unknown',
@@ -131,7 +365,6 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     
     setServiceStatuses(statusMap);
     
-    // Clear refreshing state
     if (showRefreshing) {
       setRefreshingStatuses(prev => {
         const newSet = new Set(prev);
@@ -139,9 +372,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
         return newSet;
       });
     }
-  };
+  }, []);
 
-  const handleOperation = async (configId: number, operation: string) => {
+  const handleOperation = useCallback(async (configId: number, operation: string) => {
     try {
       setOperatingConfigs(prev => new Set(prev).add(configId));
       setOperatingOperations(prev => new Map(prev).set(configId, operation));
@@ -154,7 +387,6 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       const response = await api.operateDockerCompose(configId, operationRequest);
       
       if (response.data.success) {
-        // For logs operation, show the logs directly
         if (operation === 'logs') {
           setModal({
             isOpen: true,
@@ -172,14 +404,12 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
             contentType: 'preformatted'
           });
         } else {
-          // Clear any previous errors for this config
           setContainerErrors(prev => {
             const newMap = new Map(prev);
             newMap.delete(configId);
             return newMap;
           });
           
-          // Show success message for other operations
           setModal({
             isOpen: true,
             title: 'Success',
@@ -187,58 +417,36 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
             type: 'success'
           });
           
-          // Refresh service status after successful operation with a small delay
           setTimeout(async () => {
             await fetchServiceStatuses(configs);
           }, 1000);
           
-          // For 'up' operation, refresh status again after 5 seconds to catch containers that take time to start
           if (operation === 'up') {
             setTimeout(async () => {
               console.log(`Refreshing status for config ${configId} after 5 seconds...`);
               const configToRefresh = configs.find(c => c.id === configId);
               if (configToRefresh) {
-                await fetchServiceStatuses([configToRefresh], true); // Show refreshing indicator
+                await fetchServiceStatuses([configToRefresh], true);
               }
             }, 5000);
           }
-          
-          if (onRefresh) onRefresh();
         }
       } else {
-        // Parse container-specific errors from the output
-        const errors = parseContainerErrors(response.data.output || '');
-        setContainerErrors(prev => {
-          const newMap = new Map(prev);
-          newMap.set(configId, errors);
-          return newMap;
-        });
-        
         setModal({
           isOpen: true,
-          title: 'Operation Failed',
-          message: `Docker Compose ${operation} failed: ${response.data.message}${response.data.output ? '\n\nOutput:\n' + response.data.output : ''}`,
+          title: 'Error',
+          message: `Docker Compose ${operation} failed: ${response.data.message || 'Unknown error'}`,
           type: 'error'
         });
-        
-        // Refresh service status even on failure to ensure UI consistency
-        setTimeout(async () => {
-          await fetchServiceStatuses(configs);
-        }, 1000);
       }
-    } catch (err) {
-      console.error(`Error performing ${operation}:`, err);
+    } catch (err: any) {
+      console.error(`Error performing ${operation} operation:`, err);
       setModal({
         isOpen: true,
         title: 'Error',
-        message: `Failed to perform ${operation} operation: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        message: `Docker Compose ${operation} failed: ${err.message || 'Unknown error'}`,
         type: 'error'
       });
-      
-      // Refresh service status even on error to ensure UI consistency
-      setTimeout(async () => {
-        await fetchServiceStatuses(configs);
-      }, 1000);
     } finally {
       setOperatingConfigs(prev => {
         const newSet = new Set(prev);
@@ -251,9 +459,9 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
         return newMap;
       });
     }
-  };
+  }, [configs, fetchServiceStatuses]);
 
-  const handleDelete = async (configId: number) => {
+  const handleDelete = useCallback(async (configId: number) => {
     setModal({
       isOpen: true,
       title: 'Confirm Delete',
@@ -262,185 +470,144 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       onConfirm: async () => {
         try {
           await api.deleteDockerComposeConfig(configId);
-          setConfigs(configs.filter(config => config.id !== configId));
+          setConfigs(prev => prev.filter(config => config.id !== configId));
           setModal({
-            isOpen: true,
-            title: 'Success',
-            message: 'Configuration deleted successfully!',
-            type: 'success'
+            isOpen: false,
+            title: '',
+            message: '',
+            type: 'info'
           });
-          if (onRefresh) onRefresh();
         } catch (err) {
           console.error('Error deleting config:', err);
           setModal({
-            isOpen: true,
-            title: 'Error',
-            message: 'Failed to delete configuration',
-            type: 'error'
+            isOpen: false,
+            title: '',
+            message: '',
+            type: 'info'
           });
         }
       }
     });
-  };
+  }, []);
 
-  const isOperating = (configId: number) => operatingConfigs.has(configId);
-  
-  const getOperatingOperation = (configId: number) => operatingOperations.get(configId);
-  
-  const isServiceRunning = (configId: number) => {
+  const isOperating = useCallback((configId: number) => operatingConfigs.has(configId), [operatingConfigs]);
+  const getOperatingOperation = useCallback((configId: number) => operatingOperations.get(configId), [operatingOperations]);
+  const isServiceRunning = useCallback((configId: number) => {
     const status = serviceStatuses.get(configId);
     return status?.isRunning || false;
-  };
-
-  const getContainerStatuses = (configId: number) => {
+  }, [serviceStatuses]);
+  const getContainerStatuses = useCallback((configId: number) => {
     const status = serviceStatuses.get(configId);
     return status?.services || [];
-  };
-
-  const hasSpecificService = (configId: number) => {
+  }, [serviceStatuses]);
+  const hasSpecificService = useCallback((configId: number) => {
     const status = serviceStatuses.get(configId);
     return status?.hasSpecificService || false;
-  };
+  }, [serviceStatuses]);
 
-  const getContainerStatusIcon = (state: string | undefined) => {
-    if (!state) return '🟡';
-    
-    const stateLower = state.toLowerCase();
-    if (stateLower.includes('running') || stateLower.includes('up') || stateLower === 'started') {
+  const getContainerStatusIcon = useCallback((state: string | undefined) => {
+    if (!state) return '❓';
+    const lowerState = state.toLowerCase();
+    if (lowerState.includes('running') || lowerState.includes('up') || lowerState === 'started') {
       return '🟢';
-    } else if (stateLower.includes('exited') || stateLower.includes('stopped') || stateLower.includes('down') || stateLower.includes('created')) {
+    } else if (lowerState.includes('stopped') || lowerState.includes('down') || lowerState === 'exited') {
       return '🔴';
-    } else if (stateLower.includes('starting') || stateLower.includes('stopping') || stateLower.includes('restarting') || stateLower.includes('paused')) {
-      return '🔄';
-    } else if (stateLower.includes('error') || stateLower.includes('failed')) {
-      return '❌';
-    } else {
+    } else if (lowerState.includes('paused') || lowerState.includes('pause')) {
       return '🟡';
+    } else if (lowerState.includes('restarting') || lowerState.includes('starting')) {
+      return '🔄';
+    } else if (lowerState.includes('created') || lowerState.includes('new')) {
+      return '⚪';
+    } else {
+      return '❓';
     }
-  };
+  }, []);
 
-  const getContainerName = (service: any) => {
-    // Try different possible container name fields
-    const name = service.Name || service.Container || service.Service;
-    return name || 'Container';
-  };
+  const getContainerName = useCallback((service: any) => {
+    return service.container_name || service.Name || service.Service || 'Unknown';
+  }, []);
 
-  const getContainerStatus = (service: any) => {
-    // Try different possible status fields
-    const status = service.State || service.Status;
-    return status || 'Stopped';
-  };
+  const getContainerStatus = useCallback((service: any) => {
+    return service.status || service.State || 'Unknown';
+  }, []);
 
-  const getOverallStatusIcon = (configId: number) => {
-    const containers = getContainerStatuses(configId);
-    if (containers.length === 0) return '🟡';
-    
-    const runningCount = containers.filter((s: any) => {
-      const state = getContainerStatus(s)?.toLowerCase() || '';
-      return state.includes('running') || state.includes('up');
-    }).length;
-    
-    if (runningCount === 0) return '🔴'; // All stopped
-    if (runningCount === containers.length) return '🟢'; // All running
-    return '🟡'; // Mixed state
-  };
+  const getOverallStatusIcon = useCallback((configId: number) => {
+    const status = serviceStatuses.get(configId);
+    if (!status) return '❓';
+    if (status.isRunning) return '🟢';
+    if (status.services.length === 0) return '⚪';
+    return '🔴';
+  }, [serviceStatuses]);
 
-  const getOverallStatusClass = (configId: number) => {
-    const containers = getContainerStatuses(configId);
-    if (containers.length === 0) return 'status-unknown';
-    
-    const runningCount = containers.filter((s: any) => {
-      const state = getContainerStatus(s)?.toLowerCase() || '';
-      return state.includes('running') || state.includes('up');
-    }).length;
-    
-    if (runningCount === 0) return 'status-stopped';
-    if (runningCount === containers.length) return 'status-running';
-    return 'status-mixed';
-  };
+  const getOverallStatusClass = useCallback((configId: number) => {
+    const status = serviceStatuses.get(configId);
+    if (!status) return 'status-unknown';
+    if (status.isRunning) return 'status-running';
+    if (status.services.length === 0) return 'status-stopped';
+    return 'status-error';
+  }, [serviceStatuses]);
 
-  const getOverallStatusTitle = (configId: number) => {
-    const containers = getContainerStatuses(configId);
-    if (containers.length === 0) return 'No containers found';
-    
-    const runningCount = containers.filter((s: any) => {
-      const state = getContainerStatus(s)?.toLowerCase() || '';
-      return state.includes('running') || state.includes('up');
-    }).length;
-    
-    if (runningCount === 0) return 'All containers stopped';
-    if (runningCount === containers.length) return 'All containers running';
-    return `${runningCount}/${containers.length} containers running`;
-  };
+  const getOverallStatusTitle = useCallback((configId: number) => {
+    const status = serviceStatuses.get(configId);
+    if (!status) return 'Status unknown';
+    if (status.isRunning) return 'Services running';
+    if (status.services.length === 0) return 'No services found';
+    return 'Services stopped';
+  }, [serviceStatuses]);
 
-  // Helper to check if any container is running for a config
-  const hasAnyRunningContainer = (configId: number) => {
-    const containers = getContainerStatuses(configId);
-    return containers.some((s: any) => {
-      const state = (s.status || '').toLowerCase();
-      return state.includes('running') || state.includes('up') || state === 'started';
-    });
-  };
+  const hasAnyRunningContainer = useCallback((configId: number) => {
+    const status = serviceStatuses.get(configId);
+    return status?.isRunning || false;
+  }, [serviceStatuses]);
 
-  // Parse error messages to extract container-specific errors
-  const parseContainerErrors = (output: string): Map<string, string> => {
+  const parseContainerErrors = useCallback((output: string): Map<string, string> => {
     const errorMap = new Map<string, string>();
-    
     if (!output) return errorMap;
     
     const lines = output.split('\n');
     let currentContainer = '';
+    let currentError = '';
     
     for (const line of lines) {
-      const trimmedLine = line.trim();
-      
-      // Look for container creation/operation lines
-      const containerMatch = trimmedLine.match(/Container\s+([^\s]+)\s+(Creating|Created|Starting|Started|Stopping|Stopped|Restarting|Restarted|Error|Failed)/);
-      if (containerMatch) {
-        currentContainer = containerMatch[1];
-        continue;
-      }
-      
-      // Look for error lines that follow container operations
-      if (trimmedLine.toLowerCase().includes('error') || 
-          trimmedLine.toLowerCase().includes('failed') ||
-          trimmedLine.toLowerCase().includes('bind for') ||
-          trimmedLine.toLowerCase().includes('port is already allocated') ||
-          trimmedLine.toLowerCase().includes('driver failed programming') ||
-          trimmedLine.toLowerCase().includes('cannot restart container')) {
-        
-        // First, try to extract container name from the error message itself
-        let errorContainer = '';
-        
-        // Look for endpoint pattern: "endpoint treezpay-postgres"
-        const endpointMatch = trimmedLine.match(/endpoint\s+([^\s]+)/);
-        if (endpointMatch) {
-          errorContainer = endpointMatch[1];
+      if (line.includes('Error response from daemon') || line.includes('ERROR:')) {
+        if (currentContainer && currentError) {
+          errorMap.set(currentContainer, currentError.trim());
         }
-        
-        // If we found a container in the error message, use that
-        if (errorContainer) {
-          errorMap.set(errorContainer, trimmedLine);
-        } else if (currentContainer) {
-          // Fallback to the last container mentioned
-          errorMap.set(currentContainer, trimmedLine);
+        currentError = line;
+      } else if (line.includes('container') && line.includes('not found')) {
+        const match = line.match(/container\s+([^\s]+)/);
+        if (match) {
+          currentContainer = match[1];
+          currentError = line;
         }
+      } else if (currentError && line.trim()) {
+        currentError += '\n' + line;
       }
     }
     
-    console.log('Parsed errors:', Object.fromEntries(errorMap));
+    if (currentContainer && currentError) {
+      errorMap.set(currentContainer, currentError.trim());
+    }
+    
     return errorMap;
-  };
+  }, []);
 
-  const getContainerError = (configId: number, containerName: string): string | undefined => {
+  const getContainerError = useCallback((configId: number, containerName: string): string | undefined => {
     const configErrors = containerErrors.get(configId);
     return configErrors?.get(containerName);
-  };
+  }, [containerErrors]);
+
+  const closeModal = useCallback(() => {
+    setModal(prev => ({ ...prev, isOpen: false }));
+  }, []);
 
   if (loading) {
     return (
       <div className="docker-compose-config-list">
-        <div className="loading">Loading Docker Compose configurations...</div>
+        <div className="loading-state">
+          <div className="loading-spinner"></div>
+          <p>Loading Docker Compose configurations...</p>
+        </div>
       </div>
     );
   }
@@ -469,7 +636,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     <div className="docker-compose-config-list">
       <Modal
         isOpen={modal.isOpen}
-        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        onClose={closeModal}
         title={modal.type === 'status' ? 'Container Status' : modal.title}
         message={modal.message}
         type={modal.type}
@@ -481,208 +648,20 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
       />
       <div className="configs-grid">
         {configs.map((config) => (
-          <div key={config.id} className="config-card">
-            <div className="config-header">
-              <div className="config-title-section">
-                <span className="compose-icon-gradient"><Layers size={24} /></span>
-                <h4>{config.name}</h4>
-              </div>
-              <div className="config-actions">
-                <button
-                  onClick={() => handleDelete(config.id)}
-                  className="btn btn-icon btn-danger"
-                  title="Delete configuration"
-                  disabled={isOperating(config.id)}
-                >
-                  <Trash2 className="compose-icon-gradient" />
-                </button>
-              </div>
-            </div>
-
-            <div className="config-details">
-              <div className="detail-item">
-                <div className="label-section">
-                  <span className="label">Containers:</span>
-                </div>
-              </div>
-              {/* Service Table - moved below the label-section block for correct alignment */}
-              <div className="containers-list">
-                <table style={{ width: '100%', fontSize: '0.95em', marginTop: 8 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ textAlign: 'left' }}>Service</th>
-                      <th style={{ textAlign: 'left' }}>Container</th>
-                      <th style={{ textAlign: 'left' }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(getContainerStatuses(config.id) as any[]).length === 0 ? (
-                      <tr>
-                        <td colSpan={3} style={{ color: '#888', fontStyle: 'italic' }}>No containers found</td>
-                      </tr>
-                    ) : (
-                      getContainerStatuses(config.id).map((service: any, idx: number) => {
-                        const containerError = getContainerError(config.id, service.container_name);
-                        const hasError = !!containerError;
-                        const isRefreshing = refreshingStatuses.has(config.id);
-                        
-                        // Debug logging
-                        if (hasError) {
-                          console.log(`Container ${service.container_name} has error:`, containerError);
-                        }
-                        
-                        // Determine status icon and text
-                        let statusIcon, statusText;
-                        if (hasError) {
-                          statusIcon = '❌';
-                          statusText = 'Error';
-                        } else {
-                          statusIcon = getContainerStatusIcon(service.status);
-                          statusText = service.status || 'Unknown';
-                        }
-                        
-                        return (
-                          <tr key={idx}>
-                            <td>{service.service_name || '-'}</td>
-                            <td>{service.container_name || '-'}</td>
-                            <td>
-                              <span
-                                className={hasError ? 'status-with-tooltip error-status' : ''}
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}
-                              >
-                                {statusIcon}
-                                <span style={{ fontSize: '0.85em', color: hasError ? '#ef4444' : 'var(--text-secondary)' }}>
-                                  {statusText}
-                                  {isRefreshing && (
-                                    <span style={{ marginLeft: '4px', fontSize: '0.8em', color: 'var(--text-accent)' }}>
-                                      (refreshing...)
-                                    </span>
-                                  )}
-                                </span>
-                                {hasError && (
-                                  <span className="status-tooltip">
-                                    {containerError}
-                                  </span>
-                                )}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="detail-item path-block">
-                <span className="label">Path:</span>
-                <span className="value">{config.path}</span>
-              </div>
-              
-              {config.service_name && (
-                <div className="detail-item">
-                  <span className="label">Service:</span>
-                  <span className="value">{config.service_name}</span>
-                </div>
-              )}
-              
-              {config.description && (
-                <div className="detail-item">
-                  <span className="label">Description:</span>
-                  <span className="value">{config.description}</span>
-                </div>
-              )}
-
-              {config.flags && Object.keys(config.flags).length > 0 && (
-                <div className="detail-item">
-                  <span className="label">Flags:</span>
-                  <span className="value">
-                    {Object.entries(config.flags)
-                      .filter(([_, value]) => value)
-                      .map(([key, _]) => key)
-                      .join(', ')}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="config-operations">
-              <div className="operation-buttons">
-                <button
-                  onClick={() => handleOperation(config.id, 'up')}
-                  className="btn btn-gradient"
-                  disabled={isOperating(config.id)}
-                >
-                  {getOperatingOperation(config.id) === 'up' ? (
-                    <><Play className="compose-icon-gradient" size={18} /> Launching...</>
-                  ) : (
-                    <><Play className="compose-icon-gradient" size={18} /> Launch Stack</>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => handleOperation(config.id, 'down')}
-                  className="btn btn-gradient"
-                  disabled={isOperating(config.id)}
-                >
-                  {getOperatingOperation(config.id) === 'down' ? (
-                    <><StopCircle className="compose-icon-gradient" size={18} /> Stopping...</>
-                  ) : (
-                    <><StopCircle className="compose-icon-gradient" size={18} /> Stop Stack</>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => handleOperation(config.id, 'restart')}
-                  className="btn btn-gradient"
-                  disabled={isOperating(config.id) || !hasAnyRunningContainer(config.id)}
-                >
-                  {getOperatingOperation(config.id) === 'restart' ? (
-                    <><RefreshCw className="compose-icon-gradient" size={18} /> Restarting...</>
-                  ) : (
-                    <><RefreshCw className="compose-icon-gradient" size={18} /> Restart Stack</>
-                  )}
-                </button>
-              </div>
-
-              <div className="secondary-operations">
-                <button
-                  onClick={() => handleOperation(config.id, 'ps')}
-                  className="btn btn-secondary btn-small"
-                  disabled={isOperating(config.id)}
-                >
-                  {getOperatingOperation(config.id) === 'ps' ? (
-                    <><List className="compose-icon-gradient" size={16} /> Checking...</>
-                  ) : (
-                    <><List className="compose-icon-gradient" size={16} /> Show Status</>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => handleOperation(config.id, 'logs')}
-                  className="btn btn-secondary btn-small"
-                  disabled={isOperating(config.id)}
-                >
-                  {getOperatingOperation(config.id) === 'logs' ? (
-                    <><FileText className="compose-icon-gradient" size={16} /> Loading...</>
-                  ) : (
-                    <><FileText className="compose-icon-gradient" size={16} /> View Logs</>
-                  )}
-                </button>
-                
-                <button
-                  onClick={() => handleOperation(config.id, 'build')}
-                  className="btn btn-secondary btn-small"
-                  disabled={isOperating(config.id) || !hasAnyRunningContainer(config.id)}
-                >
-                  {getOperatingOperation(config.id) === 'build' ? (
-                    <><Hammer className="compose-icon-gradient" size={16} /> Building...</>
-                  ) : (
-                    <><Hammer className="compose-icon-gradient" size={16} /> Rebuild Images</>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+          <ConfigCard
+            key={config.id}
+            config={config}
+            isOperating={isOperating(config.id)}
+            operatingOperation={getOperatingOperation(config.id)}
+            containerStatuses={getContainerStatuses(config.id)}
+            refreshingStatuses={refreshingStatuses}
+            containerErrors={containerErrors}
+            onOperation={handleOperation}
+            onDelete={handleDelete}
+            getContainerStatusIcon={getContainerStatusIcon}
+            getContainerError={getContainerError}
+            hasAnyRunningContainer={hasAnyRunningContainer}
+          />
         ))}
       </div>
     </div>

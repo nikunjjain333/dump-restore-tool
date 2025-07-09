@@ -1,19 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { 
   Database, 
   Save, 
-  Settings, 
-  FolderOpen, 
-  HardDrive, 
-
   ArrowLeft,
   Edit
 } from 'lucide-react';
 import './AddConfigurationPage.scss';
-import { api, Config, ConfigCreate, DumpRequest, RestoreRequest } from '../api/client';
+import { api, Config } from '../api/client';
 import DatabaseTypeSelector from '../components/DatabaseTypeSelector';
 import DynamicFormFields from '../components/DynamicFormFields';
 import ConfigNameInput from '../components/ConfigNameInput';
@@ -61,20 +57,9 @@ const AddConfigurationPage: React.FC = () => {
   
   const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
 
-  const [formData, setFormData] = useState({
-    name: '',
-    db_type: '',
-    params: {} as Record<string, any>,
-    run_path: '',
-    restore_password: '',
-    local_database_name: '',
-    dump_file_name: ''
-  });
-
-  const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<FormData>();
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
 
   const dbType = watch('dbType') || '';
-  const operation = watch('operation') || '';
 
   // Load configs only once on mount
   useEffect(() => {
@@ -124,7 +109,7 @@ const AddConfigurationPage: React.FC = () => {
     }
   }, [location.state, setValue]);
 
-  const loadSavedConfigs = async () => {
+  const loadSavedConfigs = useCallback(async () => {
     // Prevent multiple simultaneous calls
     if (isLoadingConfigs) {
       console.log('🚫 Config loading already in progress, skipping...');
@@ -155,9 +140,9 @@ const AddConfigurationPage: React.FC = () => {
         setIsLoadingConfigs(false);
       }
     }
-  };
+  }, [isLoadingConfigs]);
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = useCallback(async (data: FormData) => {
     try {
       // Extract database parameters from form data
       const dbParams: Record<string, any> = {};
@@ -201,31 +186,18 @@ const AddConfigurationPage: React.FC = () => {
       } else {
         // Create new config
         await api.createConfig(configData);
-        toast.success('Configuration saved successfully');
+        toast.success('Configuration created successfully');
       }
       
-      // Reset form
-      reset();
-      setFormData({
-        name: '',
-        db_type: '',
-        params: {},
-        run_path: '',
-        restore_password: '',
-        local_database_name: '',
-        dump_file_name: ''
-      });
-      setSelectedConfig(null);
-      
-      // Reload configurations
-      loadSavedConfigs();
+      navigate('/configurations');
     } catch (error: any) {
       console.error('Failed to save configuration:', error);
-      toast.error(error.response?.data?.detail || 'Failed to save configuration');
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to save configuration';
+      toast.error(errorMessage);
     }
-  };
+  }, [selectedConfig, navigate]);
 
-  const handleConfigSelect = (config: Config) => {
+  const handleConfigSelect = useCallback((config: Config) => {
     setSelectedConfig(config);
     setValue('dbType', config.db_type);
     setValue('configName', config.name);
@@ -249,113 +221,70 @@ const AddConfigurationPage: React.FC = () => {
       if (config.dump_file_name) {
         setValue('dump_file_name', config.dump_file_name);
       }
-      if (config.restore_username) {
-        setValue('restore_username', config.restore_username);
-      }
-      if (config.restore_host) {
-        setValue('restore_host', config.restore_host);
-      }
-      if (config.restore_port) {
-        setValue('restore_port', config.restore_port);
-      }
-
     }, 100);
     
-    // Reset the navigation flag and show toast for manual selection
-    configLoadedFromNavigation.current = false;
     toast.success(`Configuration "${config.name}" loaded!`);
-  };
+  }, [setValue]);
 
-  const handleStartOperation = async (config: Config, operationType: 'dump' | 'restore') => {
-    // Set status to running
+  const handleStartOperation = useCallback(async (config: Config, operationType: 'dump' | 'restore') => {
     setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
-    
     try {
       // Prepare the operation data with config_name instead of path
-      const processData: DumpRequest | RestoreRequest = {
+      const processData = {
         db_type: config.db_type,
         params: config.params,
         config_name: config.name,
         run_path: config.run_path,
         dump_file_name: config.dump_file_name
       };
-
-      // Add restore-specific parameters for restore operations
-      if (operationType === 'restore') {
-        (processData as RestoreRequest).restore_password = config.restore_password;
-        (processData as RestoreRequest).local_database_name = config.local_database_name;
-        (processData as RestoreRequest).restore_username = config.restore_username;
-        (processData as RestoreRequest).restore_host = config.restore_host;
-        (processData as RestoreRequest).restore_port = config.restore_port;
-
-      }
-
-      // Start the operation
+      
+      let result;
       if (operationType === 'dump') {
-        const result = await api.startDump(processData as DumpRequest);
-        if (result.data.success) {
-          setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
-          // Show simple message in toast
-          toast.success(`✅ ${operationType} successful`);
-          // Show detailed message in modal
-          setModal({
-            isOpen: true,
-            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Successful`,
-            message: result.data.message || 'Operation completed successfully',
-            type: 'success',
-            contentType: 'preformatted'
-          });
-        } else {
-          setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-          // Show simple message in toast
-          toast.error(`❌ ${operationType} failed`);
-          // Show detailed error in modal
-          setModal({
-            isOpen: true,
-            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
-            message: result.data.message || 'Operation failed with unknown error',
-            type: 'error',
-            contentType: 'preformatted'
-          });
-        }
+        result = await api.startDump(processData);
       } else {
-        const result = await api.startRestore(processData as RestoreRequest);
-        if (result.data.success) {
+        // Add restore-specific parameters for restore operations
+        const restoreData = {
+          ...processData,
+          restore_password: config.restore_password,
+          local_database_name: config.local_database_name,
+          restore_username: config.restore_username,
+          restore_host: config.restore_host,
+          restore_port: config.restore_port,
+        };
+        result = await api.startRestore(restoreData);
+      }
+      
+      if (result.data.success) {
+        toast.success(`✅ ${operationType} successful`);
+        setModal({
+          isOpen: true,
+          title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Successful`,
+          message: result.data.message || 'Operation completed successfully',
+          type: 'success',
+          contentType: 'preformatted'
+        });
+        setTimeout(() => {
           setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
-          // Show simple message in toast
-          toast.success(`✅ ${operationType} successful`);
-          // Show detailed message in modal
-          setModal({
-            isOpen: true,
-            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Successful`,
-            message: result.data.message || 'Operation completed successfully',
-            type: 'success',
-            contentType: 'preformatted'
-          });
-        } else {
-          setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
-          // Show simple message in toast
-          toast.error(`❌ ${operationType} failed`);
-          // Show detailed error in modal
-          setModal({
-            isOpen: true,
-            title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
-            message: result.data.message || 'Operation failed with unknown error',
-            type: 'error',
-            contentType: 'preformatted'
-          });
-        }
+        }, 2000);
+      } else {
+        setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+        toast.error(`❌ ${operationType} failed`);
+        setModal({
+          isOpen: true,
+          title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
+          message: result.data.message || 'Operation failed with unknown error',
+          type: 'error',
+          contentType: 'preformatted'
+        });
       }
     } catch (error: any) {
-      console.error('Failed to start operation:', error);
       setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+      console.error('Failed to start operation:', error);
       
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start operation';
       
-      // Show simple message in toast
       toast.error(`❌ ${operationType} failed`);
       
-      // Show detailed error in modal
       setModal({
         isOpen: true,
         title: `${operationType.charAt(0).toUpperCase() + operationType.slice(1)} Operation Failed`,
@@ -364,107 +293,125 @@ const AddConfigurationPage: React.FC = () => {
         contentType: 'preformatted'
       });
     }
-  };
+  }, []);
+
+  const handleBackClick = useCallback(() => {
+    navigate('/configurations');
+  }, [navigate]);
+
+  const closeModal = useCallback(() => {
+    setModal(prev => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const pageTitle = useMemo(() => {
+    return selectedConfig ? 'Edit Configuration' : 'Add New Configuration';
+  }, [selectedConfig]);
+
+  const submitButtonText = useMemo(() => {
+    return selectedConfig ? 'Update Configuration' : 'Create Configuration';
+  }, [selectedConfig]);
 
   return (
     <div className="add-configuration-page">
       <Modal
         isOpen={modal.isOpen}
-        onClose={() => setModal(prev => ({ ...prev, isOpen: false }))}
+        onClose={closeModal}
         title={modal.title}
         message={modal.message}
         type={modal.type}
         contentType={modal.contentType}
+        autoClose={modal.type === 'success'}
+        autoCloseDelay={3000}
       />
-
       
       <div className="container">
         <div className="page-header">
           <button 
             className="btn btn--secondary"
-            onClick={() => navigate('/')}
+            onClick={handleBackClick}
           >
             <ArrowLeft />
-            Back to Home
+            Back to Configurations
           </button>
-          <h1>Add Configuration</h1>
+          <h1>{pageTitle}</h1>
         </div>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="main-form">
-          <div className="form-section">
-            <div className="section__header">
-              <Database className="icon" />
-              <h2>Database Configuration</h2>
-            </div>
-            <DatabaseTypeSelector 
-              value={dbType} 
-              onChange={(value) => setValue('dbType', value)}
-              register={register}
-              errors={errors}
-            />
-          </div>
 
-          {dbType && (
-            <div className="form-section">
-              <div className="section__header">
-                <Settings className="icon" />
-                <h2>Database Parameters</h2>
-              </div>
-              <DynamicFormFields 
-                dbType={dbType}
-                register={register}
-                errors={errors}
-              />
-            </div>
-          )}
-
+        <div className="content-grid">
           <div className="form-section">
-            <div className="section__header">
-              <Save className="icon" />
-              <h2>Configuration</h2>
-            </div>
-            <ConfigNameInput 
-              register={register}
-              errors={errors}
-            />
-            <div className="run-path-input">
-              <label className="field-label">
-                <FolderOpen className="field-icon" />
-                Run Path (Microservice) - Optional
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type="text"
-                  {...register('runPath')}
-                  className={`field-input ${errors.runPath ? 'error' : ''}`}
-                  placeholder="e.g., /app or /var/www"
-                />
-              </div>
-              {errors.runPath && (
-                <div className="field-error">
-                  <span className="error-icon">⚠</span>
-                  {errors.runPath.message?.toString() || 'This field is required'}
+            <form onSubmit={handleSubmit(onSubmit)} className="configuration-form">
+              <div className="form-header">
+                <div className="header-icon">
+                  {selectedConfig ? <Edit /> : <Database />}
                 </div>
-              )}
-            </div>
-            <DumpFileNameInput 
-              value={watch('dump_file_name') || ''}
-              onChange={(value) => setValue('dump_file_name', value)}
-              error={errors.dump_file_name?.message?.toString() || undefined}
+                <div className="header-content">
+                  <h2>{pageTitle}</h2>
+                  <p>Configure your database connection settings</p>
+                </div>
+              </div>
+
+              <div className="form-sections">
+                {/* Configuration Name */}
+                <div className="form-section">
+                  <ConfigNameInput
+                    register={register}
+                    errors={errors}
+                  />
+                </div>
+
+                {/* Database Type Selection */}
+                <div className="form-section">
+                  <DatabaseTypeSelector
+                    value={dbType}
+                    onChange={(value) => setValue('dbType', value)}
+                    register={register}
+                    errors={errors}
+                  />
+                </div>
+
+                {/* Dynamic Form Fields */}
+                {dbType && (
+                  <div className="form-section">
+                    <DynamicFormFields
+                      dbType={dbType}
+                      register={register}
+                      errors={errors}
+                    />
+                  </div>
+                )}
+
+                {/* Dump File Name */}
+                {dbType && (
+                  <div className="form-section">
+                    <DumpFileNameInput
+                      value={watch('dump_file_name') || ''}
+                      onChange={(value) => setValue('dump_file_name', value)}
+                      error={errors.dump_file_name?.message?.toString()}
+                    />
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <div className="form-section">
+                  <StartProcessButton
+                    isLoading={isLoading}
+                    label={submitButtonText}
+                    icon={selectedConfig ? <Edit /> : <Save />}
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Saved Configurations Sidebar */}
+          <div className="sidebar-section">
+            <SavedConfigsList
+              configs={savedConfigs}
+              onSelect={handleConfigSelect}
+              onStartOperation={handleStartOperation}
+              operationStatus={operationStatus}
             />
           </div>
-          <div className="form-section">
-            <div className="section__header">
-              <HardDrive className="icon" />
-              <h2>{selectedConfig ? 'Update Configuration' : 'Add Configuration'}</h2>
-            </div>
-            <StartProcessButton 
-              isLoading={isLoading}
-              label={selectedConfig ? 'Update Configuration' : 'Add Configuration'}
-              icon={selectedConfig ? <Edit /> : <Save />}
-            />
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   );

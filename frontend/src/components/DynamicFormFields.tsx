@@ -1,5 +1,5 @@
-import React from 'react';
-import { Database, Server, Key, User, Lock, Globe, Container } from 'lucide-react';
+import React, { useMemo, useCallback } from 'react';
+import { Database, Server, Key, User, Lock, Globe } from 'lucide-react';
 import './DynamicFormFields.scss';
 
 interface FieldConfig {
@@ -18,12 +18,12 @@ interface DynamicFormFieldsProps {
   errors: any;
 }
 
-const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({ 
+const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({ 
   dbType, 
   register, 
   errors 
 }) => {
-  const getFieldsForDatabase = (): FieldConfig[] => {
+  const getFieldsForDatabase = useCallback((): FieldConfig[] => {
     const baseFields: FieldConfig[] = [];
     
     switch (dbType) {
@@ -60,7 +60,6 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
     
     // Add restore-specific fields for all database types
     baseFields.push(
-  
       { name: 'restore_host', label: 'Restore Host (Optional)', type: 'text', icon: Server, defaultValue: 'localhost', section: 'restore' },
       { name: 'restore_port', label: 'Restore Port (Optional)', type: 'number', icon: Key, section: 'restore' },
       { name: 'local_database_name', label: 'Local Database Name (Optional)', type: 'text', icon: Database, section: 'restore' },
@@ -69,11 +68,38 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
     );
     
     return baseFields;
-  };
+  }, [dbType]);
 
-  const fields = getFieldsForDatabase();
-  const connectionFields = fields.filter(field => field.section === 'connection');
-  const restoreFields = fields.filter(field => field.section === 'restore');
+  const fields = useMemo(() => getFieldsForDatabase(), [getFieldsForDatabase]);
+  const connectionFields = useMemo(() => fields.filter(field => field.section === 'connection'), [fields]);
+  const restoreFields = useMemo(() => fields.filter(field => field.section === 'restore'), [fields]);
+
+  const renderField = useCallback(({ name, label, type, icon: Icon, defaultValue, required }: FieldConfig) => (
+    <div key={name} className="field-group">
+      <label className="field-label">
+        <Icon className="field-icon" />
+        {label}
+        {required && <span className="required">*</span>}
+      </label>
+      <div className="input-wrapper">
+        <input
+          type={type}
+          {...register(name, { 
+            required: required ? `${label} is required` : false,
+            value: defaultValue || ''
+          })}
+          className={`field-input ${errors[name] ? 'error' : ''}`}
+          placeholder={`Enter ${label.toLowerCase()}`}
+        />
+      </div>
+      {errors[name] && (
+        <div className="field-error">
+          <span className="error-icon">⚠</span>
+          {errors[name]?.message?.toString() || 'This field is required'}
+        </div>
+      )}
+    </div>
+  ), [register, errors]);
 
   return (
     <div className="dynamic-form-fields">
@@ -81,32 +107,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
       <div className="fields-section">
         <h3 className="section-title">Dump Database Connection</h3>
         <div className="fields-grid">
-          {connectionFields.map(({ name, label, type, icon: Icon, defaultValue, required }) => (
-            <div key={name} className="field-group">
-              <label className="field-label">
-                <Icon className="field-icon" />
-                {label}
-                {required && <span className="required">*</span>}
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type={type}
-                  {...register(name, { 
-                    required: required ? `${label} is required` : false,
-                    value: defaultValue || ''
-                  })}
-                  className={`field-input ${errors[name] ? 'error' : ''}`}
-                  placeholder={`Enter ${label.toLowerCase()}`}
-                />
-              </div>
-              {errors[name] && (
-                <div className="field-error">
-                  <span className="error-icon">⚠</span>
-                  {errors[name]?.message?.toString() || 'This field is required'}
-                </div>
-              )}
-            </div>
-          ))}
+          {connectionFields.map(renderField)}
         </div>
       </div>
 
@@ -117,36 +118,13 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
           These fields are used specifically for restore operations. Restore password is required for authentication.
         </p>
         <div className="fields-grid">
-          {restoreFields.map(({ name, label, type, icon: Icon, defaultValue, required }) => (
-            <div key={name} className="field-group">
-              <label className="field-label">
-                <Icon className="field-icon" />
-                {label}
-                {required && <span className="required">*</span>}
-              </label>
-              <div className="input-wrapper">
-                <input
-                  type={type}
-                  {...register(name, { 
-                    required: required ? `${label} is required` : false,
-                    value: defaultValue || ''
-                  })}
-                  className={`field-input ${errors[name] ? 'error' : ''}`}
-                  placeholder={`Enter ${label.toLowerCase()}`}
-                />
-              </div>
-              {errors[name] && (
-                <div className="field-error">
-                  <span className="error-icon">⚠</span>
-                  {errors[name]?.message?.toString() || 'This field is required'}
-                </div>
-              )}
-            </div>
-          ))}
+          {restoreFields.map(renderField)}
         </div>
       </div>
     </div>
   );
-};
+});
+
+DynamicFormFields.displayName = 'DynamicFormFields';
 
 export default DynamicFormFields; 

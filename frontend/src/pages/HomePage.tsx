@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { 
   Plus, 
   Zap, 
@@ -11,9 +10,7 @@ import {
   FolderOpen, 
   HardDrive,
   ArrowRight,
-  Activity,
-  CheckCircle,
-  AlertCircle
+  Activity
 } from 'lucide-react';
 import './HomePage.scss';
 import { api, Config } from '../api/client';
@@ -37,7 +34,7 @@ interface HomePageProps {
   isCheckingStatus: boolean;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, isCheckingStatus }) => {
+const HomePage: React.FC<HomePageProps> = React.memo(({ dockerStatus, checkDockerStatus, isCheckingStatus }) => {
   const navigate = useNavigate();
   const [recentConfigs, setRecentConfigs] = useState<Config[]>([]);
   const [isLoadingConfigs, setIsLoadingConfigs] = useState(false);
@@ -51,7 +48,7 @@ const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, is
     }
   }, []);
 
-  const loadRecentConfigs = async () => {
+  const loadRecentConfigs = useCallback(async () => {
     setIsLoadingConfigs(true);
     try {
       const response = await api.getConfigs();
@@ -63,48 +60,61 @@ const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, is
     } finally {
       setIsLoadingConfigs(false);
     }
-  };
+  }, []);
 
-  const handleConfigSelect = (config: Config) => {
+  const handleConfigSelect = useCallback((config: Config) => {
     navigate('/add-configuration', { state: { selectedConfig: config } });
-  };
+  }, [navigate]);
+
+  const handleCreateNewConfig = useCallback(() => {
+    navigate('/add-configuration');
+  }, [navigate]);
+
+  const handleViewConfigurations = useCallback(() => {
+    navigate('/configurations');
+  }, [navigate]);
+
+  const handleQuickStart = useCallback(() => {
+    navigate('/add-configuration');
+  }, [navigate]);
+
+  // Memoized toast options
+  const toastOptions = useMemo(() => ({
+    position: "top-right" as const,
+    toastOptions: {
+      duration: 4000,
+      style: {
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '1rem 1.5rem',
+        boxShadow: 'var(--shadow-xl)',
+        border: '1px solid var(--border-primary)',
+        zIndex: 9999,
+      },
+      success: {
+        iconTheme: {
+          primary: '#10b981',
+          secondary: '#fff',
+        },
+      },
+      error: {
+        iconTheme: {
+          primary: '#ef4444',
+          secondary: '#fff',
+        },
+      },
+      loading: {
+        iconTheme: {
+          primary: 'var(--primary-blue)',
+          secondary: '#fff',
+        },
+      },
+    },
+  }), []);
 
   return (
     <div className="home-page">
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '1rem 1.5rem',
-            boxShadow: 'var(--shadow-xl)',
-            border: '1px solid var(--border-primary)',
-            zIndex: 9999,
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-          loading: {
-            iconTheme: {
-              primary: 'var(--primary-blue)',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
-      
       <div className="container">
         {/* Hero Section */}
         <div className="hero-section">
@@ -114,7 +124,7 @@ const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, is
             <div className="hero-actions">
               <button 
                 className="btn btn--highlight btn-lg"
-                onClick={() => navigate('/add-configuration')}
+                onClick={handleCreateNewConfig}
               >
                 <Plus />
                 Create New Configuration
@@ -167,21 +177,21 @@ const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, is
             <h2>Quick Actions</h2>
           </div>
           <div className="quick-actions">
-            <div className="action-card" onClick={() => navigate('/add-configuration')}>
+            <div className="action-card" onClick={handleCreateNewConfig}>
               <div className="action-icon">
                 <Plus />
               </div>
               <h3>Add Configuration</h3>
               <p>Create a new database configuration for dump or restore operations</p>
             </div>
-            <div className="action-card" onClick={() => navigate('/configurations')}>
+            <div className="action-card" onClick={handleViewConfigurations}>
               <div className="action-icon">
                 <FolderOpen />
               </div>
               <h3>View Configurations</h3>
               <p>Browse and manage all your saved database configurations</p>
             </div>
-            <div className="action-card">
+            <div className="action-card" onClick={handleQuickStart}>
               <div className="action-icon">
                 <HardDrive />
               </div>
@@ -205,30 +215,44 @@ const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, is
           ) : recentConfigs.length > 0 ? (
             <div className="recent-configs">
               {recentConfigs.map((config) => (
-                <div 
-                  key={config.id} 
-                  className="config-card-small"
-                  onClick={() => handleConfigSelect(config)}
-                >
-                  <div className="config-icon">
-                    <Database />
+                <div key={config.id} className="config-card" onClick={() => handleConfigSelect(config)}>
+                  <div className="card-header">
+                    <div className="config-icon-wrapper">
+                      <Database className="config-icon" />
+                    </div>
+                    <div className="config-info">
+                      <h3>{config.name}</h3>
+                      <div className="config-meta">
+                        <span className="db-type">{config.db_type.toUpperCase()}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="config-info">
-                    <h4>{config.name}</h4>
-                    <p>{config.db_type.toUpperCase()} • Database Config</p>
+                  <div className="card-content">
+                    <div className="config-params">
+                      {Object.entries(config.params).slice(0, 2).map(([key, value]) => (
+                        <div key={key} className="param-item">
+                          <span className="param-label">{key}:</span>
+                          <span className="param-value">{String(value)}</span>
+                        </div>
+                      ))}
+                      {Object.keys(config.params).length > 2 && (
+                        <div className="param-item">
+                          <span className="param-label">+{Object.keys(config.params).length - 2} more</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <ArrowRight className="arrow-icon" />
                 </div>
               ))}
             </div>
           ) : (
             <div className="empty-state">
               <Database className="empty-icon" />
-              <h3>No Configurations Yet</h3>
+              <h3>No Recent Configurations</h3>
               <p>Create your first configuration to get started</p>
               <button 
                 className="btn btn--primary"
-                onClick={() => navigate('/add-configuration')}
+                onClick={handleCreateNewConfig}
               >
                 <Plus />
                 Create Configuration
@@ -239,6 +263,8 @@ const HomePage: React.FC<HomePageProps> = ({ dockerStatus, checkDockerStatus, is
       </div>
     </div>
   );
-};
+});
+
+HomePage.displayName = 'HomePage';
 
 export default HomePage; 

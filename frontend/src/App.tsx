@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Home, Plus, Database, Container } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Home, Database, Container } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import './styles/App.scss';
@@ -7,7 +7,7 @@ import HomePage from './pages/HomePage';
 import AddConfigurationPage from './pages/AddConfigurationPage';
 import ConfigurationsPage from './pages/ConfigurationsPage';
 import DockerComposePage from './pages/DockerComposePage';
-import { api, DockerResponse } from './api/client';
+import { api } from './api/client';
 
 interface DockerStatus {
   isRunning: boolean;
@@ -21,7 +21,7 @@ interface DockerStatus {
   };
 }
 
-const Navigation: React.FC = () => {
+const Navigation: React.FC = React.memo(() => {
   const location = useLocation();
   
   return (
@@ -49,7 +49,9 @@ const Navigation: React.FC = () => {
       </NavLink>
     </nav>
   );
-};
+});
+
+Navigation.displayName = 'Navigation';
 
 const App: React.FC = () => {
   const [dockerStatus, setDockerStatus] = useState<DockerStatus>({
@@ -71,7 +73,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const checkDockerStatus = async () => {
+  const checkDockerStatus = useCallback(async () => {
     // Prevent multiple simultaneous calls
     if (isCheckingStatus) {
       return;
@@ -106,7 +108,41 @@ const App: React.FC = () => {
         setIsCheckingStatus(false);
       }
     }
-  };
+  }, [isCheckingStatus]);
+
+  const toasterOptions = useMemo(() => ({
+    position: "top-right" as const,
+    toastOptions: {
+      duration: 4000,
+      style: {
+        background: 'var(--bg-card)',
+        color: 'var(--text-primary)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '1rem 1.5rem',
+        boxShadow: 'var(--shadow-xl)',
+        border: '1px solid var(--border-primary)',
+        zIndex: 9999,
+      },
+      success: {
+        iconTheme: {
+          primary: '#10b981',
+          secondary: '#fff',
+        },
+      },
+      error: {
+        iconTheme: {
+          primary: '#ef4444',
+          secondary: '#fff',
+        },
+      },
+      loading: {
+        iconTheme: {
+          primary: 'var(--primary-blue)',
+          secondary: '#fff',
+        },
+      },
+    },
+  }), []);
 
   return (
     <Router>
@@ -128,39 +164,7 @@ const App: React.FC = () => {
             <Route path="/docker-compose" element={<DockerComposePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
           </Routes>
         </main>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: 'var(--bg-card)',
-              color: 'var(--text-primary)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1rem 1.5rem',
-              boxShadow: 'var(--shadow-xl)',
-              border: '1px solid var(--border-primary)',
-              zIndex: 9999,
-            },
-            success: {
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-            loading: {
-              iconTheme: {
-                primary: 'var(--primary-blue)',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
+        <Toaster {...toasterOptions} />
       </div>
     </Router>
   );
