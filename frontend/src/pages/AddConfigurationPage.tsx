@@ -29,6 +29,7 @@ interface FormData {
   restore_password: string;
   local_database_name?: string;
   dump_file_name?: string;
+  restore_username?: string;
   [key: string]: any;
 }
 
@@ -184,7 +185,8 @@ const AddConfigurationPage: React.FC = () => {
         run_path: data.runPath || undefined,
         restore_password: data.restore_password,
         local_database_name: data.local_database_name || undefined,
-        dump_file_name: data.dump_file_name || undefined
+        dump_file_name: data.dump_file_name || undefined,
+        restore_username: data.restore_username || undefined
       };
 
       if (selectedConfig) {
@@ -431,6 +433,16 @@ const AddConfigurationPage: React.FC = () => {
               onChange={(value) => setValue('dump_file_name', value)}
               error={errors.dump_file_name?.message?.toString() || undefined}
             />
+            <div className="form-group">
+              <label htmlFor="restore_username">Restore Username (optional)</label>
+              <input
+                id="restore_username"
+                type="text"
+                {...register('restore_username')}
+                placeholder="Enter restore username (if different)"
+                autoComplete="off"
+              />
+            </div>
           </div>
 
           {/* <div className="form-section">

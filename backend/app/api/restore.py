@@ -14,7 +14,8 @@ def run_restore_endpoint(request: RestoreRequest):
         request.restore_password,
         request.run_path,
         request.local_database_name,
-        request.dump_file_name
+        request.dump_file_name,
+        request.restore_username
     )
     
     if result["success"]:

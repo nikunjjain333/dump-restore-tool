@@ -82,6 +82,9 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = 
         
         filename = os.path.basename(path)
         
+        logger.info(f"Starting PostgreSQL dump to {filename}")
+        logger.info(f"Connecting to {host}:{port}, database: {database}, user: {username}")
+        
         # Run pg_dump in Docker container
         container = client.containers.run(
             'postgres:16',
@@ -95,12 +98,22 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = 
             detach=False
         )
         
-        return {
-            "success": True,
-            "message": f"PostgreSQL dump completed successfully: {path}",
-            "path": path
-        }
+        # Check if the file was actually created
+        if os.path.exists(path):
+            logger.info(f"PostgreSQL dump completed successfully: {path}")
+            return {
+                "success": True,
+                "message": f"PostgreSQL dump completed successfully: {path}",
+                "path": path
+            }
+        else:
+            logger.error(f"PostgreSQL dump failed: File not created at {path}")
+            return {
+                "success": False,
+                "message": f"PostgreSQL dump failed: File not created. Check database connectivity and permissions."
+            }
     except Exception as e:
+        logger.error(f"PostgreSQL dump failed with exception: {str(e)}")
         return {
             "success": False,
             "message": f"PostgreSQL dump failed: {str(e)}"

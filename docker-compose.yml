@@ -6,7 +6,7 @@ services:
       - ./backend/app:/app/app
       - /var/run/docker.sock:/var/run/docker.sock
       - /Users:/Users:ro  # Mount host filesystem for Docker Compose operations
-      - ./tmp:/tmp
+      - /tmp:/tmp  # Mount host /tmp to container /tmp for dump/restore file sharing
     env_file:
       - .env.example
     ports:

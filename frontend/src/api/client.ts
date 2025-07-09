@@ -35,6 +35,7 @@ export interface Config {
   restore_password: string;
   local_database_name?: string;
   dump_file_name?: string;
+  restore_username?: string;
 }
 
 export interface ConfigCreate {
@@ -45,6 +46,7 @@ export interface ConfigCreate {
   restore_password: string;
   local_database_name?: string;
   dump_file_name?: string;
+  restore_username?: string;
 }
 
 export interface DumpRequest {
@@ -63,6 +65,7 @@ export interface RestoreRequest {
   restore_password: string;
   local_database_name?: string;
   dump_file_name?: string;
+  restore_username?: string;
 }
 
 export interface OperationResponse {

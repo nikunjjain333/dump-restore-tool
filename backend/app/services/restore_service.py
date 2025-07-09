@@ -39,7 +39,7 @@ def _get_consistent_path(config_name: str, db_type: str, dump_file_name: Optiona
     return os.path.join('/tmp', filename)
 
 def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_password: str, 
-                run_path: Optional[str] = None, local_database_name: Optional[str] = None, dump_file_name: Optional[str] = None) -> Dict[str, Any]:
+                run_path: Optional[str] = None, local_database_name: Optional[str] = None, dump_file_name: Optional[str] = None, restore_username: Optional[str] = None) -> Dict[str, Any]:
     """
     Run database restore operation with consistent file path
     """
@@ -49,7 +49,7 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         
         logger.info(f"Starting restore operation for config '{config_name}' from path: {path}")
         
-        # Enforce restore on localhost
+        # Enforce restore on Docker Compose network
         params = dict(params)  # Make a copy to avoid mutating input
         
         # Use local database name if provided, otherwise use the original database name
@@ -61,8 +61,13 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         params['password'] = restore_password
         logger.info("Using restore password for restore operation")
         
+        # Use restore username if provided
+        if restore_username:
+            params['username'] = restore_username
+            logger.info(f"Using restore username for restore operation: {restore_username}")
+        
         if db_type in ['postgres', 'mysql', 'redis']:
-            params['host'] = 'localhost'
+            params['host'] = 'db'  # Use Docker Compose service name
         elif db_type == 'mongodb' and 'uri' in params:
             try:
                 from urllib.parse import urlparse, urlunparse
@@ -83,12 +88,16 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
                 import re
                 params['uri'] = re.sub(r'//.*?:', '//localhost:', params['uri'])
         
-        # Check if restore file exists
-        if not os.path.exists(path):
+        # Check if restore file exists in host /tmp directory
+        host_tmp_path = '/tmp/' + os.path.basename(path)
+        if not os.path.exists(host_tmp_path):
             return {
                 "success": False,
-                "message": f"Restore file not found: {path}. Please ensure the dump file exists before attempting restore. You may need to run a dump operation first."
+                "message": f"Restore file not found: {host_tmp_path}. Please ensure the dump file exists before attempting restore. You may need to run a dump operation first."
             }
+        
+        # Use the host path for the restore operation
+        path = host_tmp_path
         
         if db_type == 'postgres':
             return _restore_postgres(params, path, run_path)
@@ -133,7 +142,7 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str]
             command=f'psql -h {host} -p {port} -U {username} -d {database} -f /restore/{filename}',
             environment={'PGPASSWORD': password},  # Only set password as env var
             volumes={
-                os.path.dirname(path): {'bind': '/restore', 'mode': 'rw'}
+                '/tmp': {'bind': '/restore', 'mode': 'rw'}
             },
             working_dir=run_path if run_path else '/',
             remove=True,
@@ -166,7 +175,7 @@ def _restore_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = 
             'mysql:8.0',
             command=f'sh -c "{restore_cmd}"',
             volumes={
-                os.path.dirname(path): {'bind': '/restore', 'mode': 'rw'}
+                '/tmp': {'bind': '/restore', 'mode': 'rw'}
             },
             working_dir=run_path if run_path else '/',
             remove=True,
@@ -196,7 +205,7 @@ def _restore_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] 
             'mongo:6.0',
             command=f'sh -c "{restore_cmd}"',
             volumes={
-                os.path.dirname(path): {'bind': '/restore', 'mode': 'rw'}
+                '/tmp': {'bind': '/restore', 'mode': 'rw'}
             },
             working_dir=run_path if run_path else '/',
             remove=True,
@@ -232,7 +241,7 @@ def _restore_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = 
             'redis:7.0',
             command=f'sh -c "{redis_cmd}"',
             volumes={
-                os.path.dirname(path): {'bind': '/restore', 'mode': 'rw'},
+                '/tmp': {'bind': '/restore', 'mode': 'rw'},
                 '/var/lib/redis': {'bind': '/data', 'mode': 'rw'}
             },
             working_dir=run_path if run_path else '/',

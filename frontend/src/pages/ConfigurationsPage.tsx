@@ -146,7 +146,8 @@ const ConfigurationsPage: React.FC = () => {
         const restoreData = {
           ...processData,
           restore_password: config.restore_password,
-          local_database_name: config.local_database_name
+          local_database_name: config.local_database_name,
+          restore_username: config.restore_username,
         };
         result = await api.startRestore(restoreData);
       }

@@ -18,6 +18,7 @@ def create_config(db: Session, config: ConfigCreate):
     """Create a new configuration in database"""
     try:
         db_config = Config(**config.dict())
+        db_config.restore_username = config.restore_username
         db.add(db_config)
         db.commit()
         db.refresh(db_config)
@@ -47,6 +48,7 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
         db_config.restore_password = config.restore_password
         db_config.local_database_name = config.local_database_name
         db_config.dump_file_name = config.dump_file_name
+        db_config.restore_username = config.restore_username
         db.commit()
         db.refresh(db_config)
         return db_config
