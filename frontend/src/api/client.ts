@@ -36,6 +36,8 @@ export interface Config {
   local_database_name?: string;
   dump_file_name?: string;
   restore_username?: string;
+  restore_host?: string;
+  restore_port?: string;
 }
 
 export interface ConfigCreate {
@@ -47,6 +49,8 @@ export interface ConfigCreate {
   local_database_name?: string;
   dump_file_name?: string;
   restore_username?: string;
+  restore_host?: string;
+  restore_port?: string;
 }
 
 export interface DumpRequest {
@@ -66,6 +70,8 @@ export interface RestoreRequest {
   local_database_name?: string;
   dump_file_name?: string;
   restore_username?: string;
+  restore_host?: string;
+  restore_port?: string;
 }
 
 export interface OperationResponse {

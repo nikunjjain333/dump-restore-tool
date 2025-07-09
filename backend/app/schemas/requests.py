@@ -36,6 +36,8 @@ class RestoreRequest(BaseModel):
     local_database_name: Optional[str] = Field(default=None, description="Optional local database name for restore operations")
     dump_file_name: Optional[str] = Field(default=None, description="Custom filename for dump file (without extension)")
     restore_username: Optional[str] = Field(default=None, description="Optional restore username for restore operations")
+    restore_host: Optional[str] = Field(default=None, description="Optional restore host for restore operations")
+    restore_port: Optional[str] = Field(default=None, description="Optional restore port for restore operations")
     
     @validator('db_type')
     def validate_db_type(cls, v):

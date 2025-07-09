@@ -39,7 +39,7 @@ def _get_consistent_path(config_name: str, db_type: str, dump_file_name: Optiona
     return os.path.join('/tmp', filename)
 
 def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_password: str, 
-                run_path: Optional[str] = None, local_database_name: Optional[str] = None, dump_file_name: Optional[str] = None, restore_username: Optional[str] = None) -> Dict[str, Any]:
+                run_path: Optional[str] = None, local_database_name: Optional[str] = None, dump_file_name: Optional[str] = None, restore_username: Optional[str] = None, restore_host: Optional[str] = None, restore_port: Optional[str] = None) -> Dict[str, Any]:
     """
     Run database restore operation with consistent file path
     """
@@ -66,8 +66,24 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
             params['username'] = restore_username
             logger.info(f"Using restore username for restore operation: {restore_username}")
         
+        # Use restore host if provided, otherwise use localhost as default
+        if restore_host:
+            params['host'] = restore_host
+            logger.info(f"Using restore host for restore operation: {restore_host}")
+        else:
+            params['host'] = 'localhost'
+            logger.info("Using default localhost for restore operation")
+        
+        # Use restore port if provided, otherwise use the port from dump connection
+        if restore_port:
+            params['port'] = restore_port
+            logger.info(f"Using restore port for restore operation: {restore_port}")
+        # If no restore port provided, keep the original port from params
+        
         if db_type in ['postgres', 'mysql', 'redis']:
-            params['host'] = 'db'  # Use Docker Compose service name
+            # Only override host to 'db' if no restore_host was specified
+            if not restore_host:
+                params['host'] = 'db'  # Use Docker Compose service name
         elif db_type == 'mongodb' and 'uri' in params:
             try:
                 from urllib.parse import urlparse, urlunparse

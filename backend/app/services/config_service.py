@@ -19,6 +19,8 @@ def create_config(db: Session, config: ConfigCreate):
     try:
         db_config = Config(**config.dict())
         db_config.restore_username = config.restore_username
+        db_config.restore_host = config.restore_host
+        db_config.restore_port = config.restore_port
         db.add(db_config)
         db.commit()
         db.refresh(db_config)
@@ -49,6 +51,8 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
         db_config.local_database_name = config.local_database_name
         db_config.dump_file_name = config.dump_file_name
         db_config.restore_username = config.restore_username
+        db_config.restore_host = config.restore_host
+        db_config.restore_port = config.restore_port
         db.commit()
         db.refresh(db_config)
         return db_config

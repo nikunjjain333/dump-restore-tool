@@ -30,6 +30,8 @@ interface FormData {
   local_database_name?: string;
   dump_file_name?: string;
   restore_username?: string;
+  restore_host?: string;
+  restore_port?: string;
   [key: string]: any;
 }
 
@@ -186,7 +188,9 @@ const AddConfigurationPage: React.FC = () => {
         restore_password: data.restore_password,
         local_database_name: data.local_database_name || undefined,
         dump_file_name: data.dump_file_name || undefined,
-        restore_username: data.restore_username || undefined
+        restore_username: data.restore_username || undefined,
+        restore_host: data.restore_host || undefined,
+        restore_port: data.restore_port || undefined
       };
 
       if (selectedConfig) {
@@ -244,6 +248,15 @@ const AddConfigurationPage: React.FC = () => {
       if (config.dump_file_name) {
         setValue('dump_file_name', config.dump_file_name);
       }
+      if (config.restore_username) {
+        setValue('restore_username', config.restore_username);
+      }
+      if (config.restore_host) {
+        setValue('restore_host', config.restore_host);
+      }
+      if (config.restore_port) {
+        setValue('restore_port', config.restore_port);
+      }
     }, 100);
     
     // Reset the navigation flag and show toast for manual selection
@@ -269,6 +282,9 @@ const AddConfigurationPage: React.FC = () => {
       if (operationType === 'restore') {
         (processData as RestoreRequest).restore_password = config.restore_password;
         (processData as RestoreRequest).local_database_name = config.local_database_name;
+        (processData as RestoreRequest).restore_username = config.restore_username;
+        (processData as RestoreRequest).restore_host = config.restore_host;
+        (processData as RestoreRequest).restore_port = config.restore_port;
       }
 
       // Start the operation
