@@ -95,10 +95,16 @@ dump-restore-tool/
 #### Backend Setup
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Create virtual environment (if not already created)
+make venv
+# Install dependencies
+make install
+# Run database migrations
+make migrate
+# (Optional) Create a new migration after model changes
+make make_migration msg="your message here"
+# Start the backend server
+make run
 ```
 
 #### Frontend Setup
@@ -107,6 +113,13 @@ cd frontend
 npm install
 npm start
 ```
+
+#### Backend Makefile Commands
+- `make venv` — Create a Python virtual environment in backend/
+- `make install` — Install Python dependencies
+- `make migrate` — Apply all Alembic migrations
+- `make make_migration msg="message"` — Create a new Alembic migration (autogenerate)
+- `make run` — Start the FastAPI backend with Uvicorn (auto-reload)
 
 ## API Documentation
 
@@ -407,117 +420,6 @@ REACT_APP_API_URL=http://localhost:8000
 REACT_APP_ENV=development
 ```
 
-## Implementation Details
-
-### Backend Services
-
-#### Docker Service
-- Checks Docker daemon status
-- Provides Docker client connections
-- Handles Docker container operations
-
-#### Dump Service
-- Supports all database types
-- Uses Docker containers for database tools
-- Handles file path management
-- Provides detailed error reporting
-
-#### Restore Service
-- Supports all database types
-- Validates restore file existence
-- Uses Docker containers for database tools
-- Provides detailed error reporting
-
-#### Configuration Service
-- Manages saved configurations
-- Handles database CRUD operations
-- Provides validation and error handling
-
-### Frontend Components
-
-#### DockerButton
-- Checks Docker daemon status
-- Shows loading state
-- Handles errors gracefully
-
-#### DatabaseTypeSelector
-- Dropdown for database selection
-- Supports all database types
-- Form validation integration
-
-#### OperationSelector
-- Radio buttons for dump/restore
-- Form validation integration
-- Clear visual feedback
-
-#### DynamicFormFields
-- Renders database-specific fields
-- Form validation
-- Default values for common settings
-
-#### ConfigNameInput
-- Configuration naming
-- Validation (min length, uniqueness)
-- Error display
-
-#### PathInput
-- File path input
-- Path validation
-- Error display
-
-#### SavedConfigsList
-- Displays saved configurations
-- Click to load configuration
-- Card-based layout
-
-#### StartProcessButton
-- Starts dump/restore operations
-- Loading state management
-- Disabled state handling
-
-## Error Handling
-
-### Backend
-- Comprehensive exception handling
-- Detailed error messages
-- HTTP status codes
-- Logging for debugging
-
-### Frontend
-- API error handling
-- Form validation errors
-- User-friendly error messages
-- Loading states
-
-## Security Considerations
-
-1. **Environment Variables**: Store sensitive data in environment variables
-2. **Input Validation**: All inputs are validated using Pydantic
-3. **SQL Injection**: Using SQLAlchemy ORM prevents SQL injection
-4. **File Path Validation**: Paths are validated to prevent directory traversal
-5. **Docker Security**: Containers run with minimal privileges
-
-## Production Deployment
-
-### Docker Compose
-```bash
-# Production environment
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-### Environment Variables
-Set all required environment variables in production:
-```bash
-export DATABASE_URL="postgresql://user:pass@host:5432/db"
-export SECRET_KEY="your-secure-secret-key"
-export LOG_LEVEL="WARNING"
-```
-
-### Reverse Proxy
-Use Nginx or similar for:
-- SSL termination
-- Rate limiting
-- Static file serving
 
 ## Contributing
 
