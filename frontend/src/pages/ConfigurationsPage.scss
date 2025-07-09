@@ -120,6 +120,7 @@
         
         .filter-select {
           padding: 0.5rem 0.75rem;
+          padding-right: 2rem; // Add extra padding for dropdown arrow
           background: var(--bg-input);
           border: 1px solid var(--border-primary);
           border-radius: var(--radius-md);
@@ -127,6 +128,11 @@
           font-size: 0.875rem;
           cursor: pointer;
           transition: all 0.2s ease-in-out;
+          appearance: none; // Remove default browser styling
+          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+          background-position: right 0.5rem center;
+          background-repeat: no-repeat;
+          background-size: 1.5em 1.5em;
           
           &:focus {
             outline: none;
@@ -137,6 +143,12 @@
           option {
             background: var(--bg-input);
             color: var(--text-primary);
+            padding: 0.5rem;
+          }
+          
+          // Fix for Firefox
+          &::-ms-expand {
+            display: none;
           }
         }
       }
