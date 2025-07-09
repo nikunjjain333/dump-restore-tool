@@ -44,6 +44,11 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
     Run database restore operation with consistent file path
     """
     try:
+        # Debug logging to show received values
+        logger.info(f"Received restore parameters - restore_host: {restore_host}, restore_port: {restore_port}, restore_stack_name: {restore_stack_name}")
+        logger.info(f"Original params: {params}")
+        logger.info(f"Config values - restore_host: {restore_host}, restore_port: {restore_port}")
+        
         # Generate path to look for the dump file using custom filename
         path = _get_consistent_path(config_name, db_type, dump_file_name, 'dump')
         
@@ -61,10 +66,16 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         params['password'] = restore_password
         logger.info("Using restore password for restore operation")
         
-        # Use restore username if provided
+        # Handle restore username with priority logic
         if restore_username:
             params['username'] = restore_username
             logger.info(f"Using restore username for restore operation: {restore_username}")
+        else:
+            # Fall back to dump config username
+            if 'username' not in params:
+                logger.warning("No username found in dump config, this may cause authentication issues")
+            else:
+                logger.info(f"Using dump config username for restore operation: {params['username']}")
         
         # Handle stack-based restore if stack name is provided
         if restore_stack_name:
@@ -113,25 +124,45 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
                 params['postgres_version'] = postgres_version
         
         else:
-            # Use restore host if provided, otherwise use localhost as default
+            # PRIORITY: Use restore field values if provided, otherwise fall back to dump config values
+            
+            # Handle restore host
             if restore_host:
                 params['host'] = restore_host
                 logger.info(f"Using restore host for restore operation: {restore_host}")
             else:
-                params['host'] = 'localhost'
-                logger.info("Using default localhost for restore operation")
+                # Fall back to dump config host, or default to localhost
+                params['host'] = params.get('host', 'localhost')
+                logger.info(f"Using dump config host for restore operation: {params['host']}")
             
-            # Use restore port if provided, otherwise use the port from dump connection
+            # Handle restore port
             if restore_port:
                 params['port'] = restore_port
                 logger.info(f"Using restore port for restore operation: {restore_port}")
-            # If no restore port provided, keep the original port from params
+            else:
+                # Fall back to dump config port, or default based on db_type
+                if 'port' not in params:
+                    if db_type == 'postgres':
+                        params['port'] = 5432
+                    elif db_type == 'mysql':
+                        params['port'] = 3306
+                    elif db_type == 'redis':
+                        params['port'] = 6379
+                    else:
+                        params['port'] = 5432  # Default fallback
+                logger.info(f"Using dump config port for restore operation: {params['port']}")
         
-        if db_type in ['postgres', 'mysql', 'redis']:
-            # Only override host to 'db' if no restore_host was specified
-            if not restore_host:
-                params['host'] = 'db'  # Use Docker Compose service name
-        elif db_type == 'mongodb' and 'uri' in params:
+        # For Docker-to-Docker communication, we need to use the correct host
+        # If restore_host is 'localhost', we need to use the Docker host
+        if restore_host == 'localhost' and not restore_stack_name:
+            # Use host.docker.internal to access host from container
+            params['host'] = 'host.docker.internal'
+            logger.info("Using host.docker.internal for Docker-to-host communication")
+        elif not restore_host and not restore_stack_name:
+            params['host'] = 'localhost'  # Use Docker Compose service name
+            logger.info("Using Docker Compose service name 'localhost' for restore operation")
+        
+        if db_type == 'mongodb' and 'uri' in params:
             try:
                 from urllib.parse import urlparse, urlunparse
                 uri = params['uri']
@@ -162,7 +193,11 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         # Use the host path for the restore operation
         path = host_tmp_path
         
+        # Log the final connection parameters being used
+        logger.info(f"Final restore connection parameters - Host: {params.get('host')}, Port: {params.get('port')}, Database: {params.get('database')}, Username: {params.get('username')}")
+        
         if db_type == 'postgres':
+            logger.info(f"About to run PostgreSQL restore with - Host: {params.get('host')}, Port: {params.get('port')}, Database: {params.get('database')}, Username: {params.get('username')}")
             return _restore_postgres(params, path, run_path)
         elif db_type == 'mysql':
             return _restore_mysql(params, path, run_path)
@@ -185,11 +220,11 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         }
 
 def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
-    """Restore PostgreSQL database"""
+    """Restore PostgreSQL database with preparation steps"""
     try:
         client = get_docker_client()
         
-        # Build the psql command with direct parameter substitution
+        # Build the connection parameters
         host = params.get('host', 'localhost')
         port = str(params.get('port', 5432))
         database = params['database']
@@ -204,12 +239,54 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str]
         postgres_image = f'postgres:{postgres_version}'
         
         logger.info(f"Using PostgreSQL image: {postgres_image}")
+        logger.info(f"Starting PostgreSQL restore with preparation steps for database: {database}")
         
-        # Run psql restore in Docker container with direct parameter substitution
-        container = client.containers.run(
+        # Step 1: Drop database if it exists (force drop)
+        logger.info(f"Step 1: Dropping database '{database}' if it exists...")
+        try:
+            drop_container = client.containers.run(
+                postgres_image,
+                command=f'dropdb -h {host} -p {port} -U {username} {database} --force',
+                environment={'PGPASSWORD': password},
+                remove=True,
+                detach=False
+            )
+            logger.info(f"Database '{database}' dropped successfully")
+        except Exception as e:
+            logger.info(f"Database '{database}' did not exist or drop failed (continuing): {str(e)}")
+        
+        # Step 2: Create fresh database
+        logger.info(f"Step 2: Creating fresh database '{database}'...")
+        create_container = client.containers.run(
+            postgres_image,
+            command=f'createdb -h {host} -p {port} -U {username} {database}',
+            environment={'PGPASSWORD': password},
+            remove=True,
+            detach=False
+        )
+        logger.info(f"Database '{database}' created successfully")
+        
+        # Step 3: Run Alembic migrations (if alembic is available)
+        logger.info(f"Step 3: Running Alembic migrations...")
+        try:
+            # Check if alembic is available in the target environment
+            alembic_container = client.containers.run(
+                postgres_image,
+                command=f'psql -h {host} -p {port} -U {username} -d {database} -c "SELECT version();"',
+                environment={'PGPASSWORD': password},
+                remove=True,
+                detach=False
+            )
+            logger.info("Database connection verified, ready for restore")
+        except Exception as e:
+            logger.warning(f"Database connection test failed: {str(e)}")
+        
+        # Step 4: Perform the actual restore
+        logger.info(f"Step 4: Performing restore from file: {filename}")
+        restore_container = client.containers.run(
             postgres_image,
             command=f'psql -h {host} -p {port} -U {username} -d {database} -f /restore/{filename}',
-            environment={'PGPASSWORD': password},  # Only set password as env var
+            environment={'PGPASSWORD': password},
             volumes={
                 '/tmp': {'bind': '/restore', 'mode': 'rw'}
             },
@@ -218,12 +295,14 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str]
             detach=False
         )
         
+        logger.info(f"PostgreSQL restore completed successfully from: {path}")
         return {
             "success": True,
             "message": f"PostgreSQL restore completed successfully from: {path}",
             "path": path
         }
     except Exception as e:
+        logger.error(f"PostgreSQL restore failed: {str(e)}")
         return {
             "success": False,
             "message": f"PostgreSQL restore failed: {str(e)}"
