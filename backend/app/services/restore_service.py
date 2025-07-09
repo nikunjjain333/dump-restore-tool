@@ -39,7 +39,7 @@ def _get_consistent_path(config_name: str, db_type: str, dump_file_name: Optiona
     return os.path.join('/tmp', filename)
 
 def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_password: str, 
-                run_path: Optional[str] = None, local_database_name: Optional[str] = None, dump_file_name: Optional[str] = None, restore_username: Optional[str] = None, restore_host: Optional[str] = None, restore_port: Optional[str] = None) -> Dict[str, Any]:
+                run_path: Optional[str] = None, local_database_name: Optional[str] = None, dump_file_name: Optional[str] = None, restore_username: Optional[str] = None, restore_host: Optional[str] = None, restore_port: Optional[str] = None, restore_stack_name: Optional[str] = None) -> Dict[str, Any]:
     """
     Run database restore operation with consistent file path
     """
@@ -66,19 +66,66 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
             params['username'] = restore_username
             logger.info(f"Using restore username for restore operation: {restore_username}")
         
-        # Use restore host if provided, otherwise use localhost as default
-        if restore_host:
-            params['host'] = restore_host
-            logger.info(f"Using restore host for restore operation: {restore_host}")
-        else:
-            params['host'] = 'localhost'
-            logger.info("Using default localhost for restore operation")
+        # Handle stack-based restore if stack name is provided
+        if restore_stack_name:
+            logger.info(f"Using stack-based restore for stack: {restore_stack_name}")
+            
+            # Get stack database information
+            from .docker_compose_service import get_stack_database_info
+            stack_info = get_stack_database_info(restore_stack_name)
+            
+            if not stack_info["success"]:
+                return {
+                    "success": False,
+                    "message": f"Failed to get stack database info: {stack_info['message']}"
+                }
+            
+            container_info = stack_info["container"]
+            detected_db_type = container_info["db_type"]
+            
+            # Verify the detected database type matches the expected type
+            if detected_db_type != db_type:
+                return {
+                    "success": False,
+                    "message": f"Database type mismatch: Expected {db_type}, but found {detected_db_type} in stack '{restore_stack_name}'"
+                }
+            
+            # Use the container name as host (Docker Compose networking)
+            params['host'] = container_info['name'].replace('/', '')  # Remove leading slash
+            logger.info(f"Using container host for restore: {params['host']}")
+            
+            # Extract port from container info if available
+            if not restore_port:
+                ports = container_info.get('ports', '')
+                if ports:
+                    # Extract port from Docker port mapping (e.g., "0.0.0.0:5432->5432/tcp")
+                    import re
+                    port_match = re.search(r'(\d+)->\d+/', ports)
+                    if port_match:
+                        params['port'] = port_match.group(1)
+                        logger.info(f"Using detected port for restore: {params['port']}")
+            
+            # For PostgreSQL, use the detected version
+            if detected_db_type == 'postgres' and stack_info.get('postgres_version'):
+                postgres_version = stack_info['postgres_version']
+                logger.info(f"Using PostgreSQL version {postgres_version} from stack")
+                # Store the version for use in restore functions
+                params['postgres_version'] = postgres_version
         
-        # Use restore port if provided, otherwise use the port from dump connection
-        if restore_port:
-            params['port'] = restore_port
-            logger.info(f"Using restore port for restore operation: {restore_port}")
-        # If no restore port provided, keep the original port from params
+        else:
+            # Use restore host if provided, otherwise use localhost as default
+            if restore_host:
+                params['host'] = restore_host
+                logger.info(f"Using restore host for restore operation: {restore_host}")
+            else:
+                params['host'] = 'localhost'
+                logger.info("Using default localhost for restore operation")
+            
+            # Use restore port if provided, otherwise use the port from dump connection
+            if restore_port:
+                params['port'] = restore_port
+                logger.info(f"Using restore port for restore operation: {restore_port}")
+            # If no restore port provided, keep the original port from params
         
         if db_type in ['postgres', 'mysql', 'redis']:
             # Only override host to 'db' if no restore_host was specified
@@ -152,9 +199,15 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str]
         # Get the filename from the path
         filename = os.path.basename(path)
         
+        # Use detected PostgreSQL version if available, otherwise default to 16
+        postgres_version = params.get('postgres_version', '16')
+        postgres_image = f'postgres:{postgres_version}'
+        
+        logger.info(f"Using PostgreSQL image: {postgres_image}")
+        
         # Run psql restore in Docker container with direct parameter substitution
         container = client.containers.run(
-            'postgres:16',
+            postgres_image,
             command=f'psql -h {host} -p {port} -U {username} -d {database} -f /restore/{filename}',
             environment={'PGPASSWORD': password},  # Only set password as env var
             volumes={

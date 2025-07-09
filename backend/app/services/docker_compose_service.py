@@ -241,3 +241,84 @@ def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
             "success": False,
             "message": f"Failed to get services: {str(e)}"
         } 
+
+def get_stack_database_info(stack_name: str) -> Dict[str, Any]:
+    """Get database container information from a Docker Compose stack"""
+    try:
+        # Get all containers in the stack
+        result = subprocess.run(
+            ["docker", "ps", "--filter", f"label=com.docker.compose.project={stack_name}", "--format", "json"],
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            return {
+                "success": False,
+                "message": f"Failed to get containers for stack '{stack_name}': {result.stderr}"
+            }
+        
+        containers = []
+        try:
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    import json
+                    containers.append(json.loads(line))
+        except json.JSONDecodeError:
+            return {
+                "success": False,
+                "message": f"Failed to parse container information for stack '{stack_name}'"
+            }
+        
+        # Find database containers (postgres, mysql, etc.)
+        db_containers = []
+        for container in containers:
+            image = container.get('Image', '')
+            name = container.get('Names', '')
+            
+            # Check for database images
+            if any(db_type in image.lower() for db_type in ['postgres', 'mysql', 'mongodb', 'redis']):
+                db_containers.append({
+                    'name': name,
+                    'image': image,
+                    'id': container.get('ID', ''),
+                    'status': container.get('Status', ''),
+                    'ports': container.get('Ports', ''),
+                    'db_type': 'postgres' if 'postgres' in image.lower() else
+                              'mysql' if 'mysql' in image.lower() else
+                              'mongodb' if 'mongodb' in image.lower() else
+                              'redis' if 'redis' in image.lower() else 'unknown'
+                })
+        
+        if not db_containers:
+            return {
+                "success": False,
+                "message": f"No database containers found in stack '{stack_name}'"
+            }
+        
+        # For now, return the first database container found
+        # In the future, you could add logic to select specific containers
+        db_container = db_containers[0]
+        
+        # Extract PostgreSQL version from image
+        postgres_version = None
+        if db_container['db_type'] == 'postgres':
+            import re
+            version_match = re.search(r'postgres:(\d+)', db_container['image'])
+            if version_match:
+                postgres_version = version_match.group(1)
+        
+        return {
+            "success": True,
+            "message": f"Found database container in stack '{stack_name}'",
+            "container": db_container,
+            "postgres_version": postgres_version,
+            "stack_name": stack_name
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get stack database info: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to get stack database info: {str(e)}"
+        } 

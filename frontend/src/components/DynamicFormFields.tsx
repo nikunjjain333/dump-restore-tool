@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, Server, Key, User, Lock, Globe} from 'lucide-react';
+import { Database, Server, Key, User, Lock, Globe, Container } from 'lucide-react';
 import './DynamicFormFields.scss';
 
 interface FieldConfig {
@@ -60,6 +60,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = ({
     
     // Add restore-specific fields for all database types
     baseFields.push(
+      { name: 'restore_stack_name', label: 'Docker Stack Name (Optional)', type: 'text', icon: Container, section: 'restore' },
       { name: 'restore_host', label: 'Restore Host (Optional)', type: 'text', icon: Server, defaultValue: 'localhost', section: 'restore' },
       { name: 'restore_port', label: 'Restore Port (Optional)', type: 'number', icon: Key, section: 'restore' },
       { name: 'local_database_name', label: 'Local Database Name (Optional)', type: 'text', icon: Database, section: 'restore' },

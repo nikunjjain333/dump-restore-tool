@@ -17,7 +17,8 @@ def run_restore_endpoint(request: RestoreRequest):
         request.dump_file_name,
         request.restore_username,
         request.restore_host,
-        request.restore_port
+        request.restore_port,
+        request.restore_stack_name
     )
     
     if result["success"]:

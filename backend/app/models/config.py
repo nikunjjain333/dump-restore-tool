@@ -13,4 +13,5 @@ class Config(Base):
     dump_file_name = Column(String, nullable=True)  # Custom filename for dump/restore operations
     restore_username = Column(String, nullable=True)  # Optional restore username for restore operations
     restore_host = Column(String, nullable=True)  # Optional restore host for restore operations
-    restore_port = Column(String, nullable=True)  # Optional restore port for restore operations 
+    restore_port = Column(String, nullable=True)  # Optional restore port for restore operations
+    restore_stack_name = Column(String, nullable=True)  # Optional Docker Compose stack name for restore operations 
