@@ -40,17 +40,23 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     type: 'info'
   });
 
+  // Add isFetching state to prevent duplicate fetches
+  const [isFetching, setIsFetching] = useState(false);
+
   useEffect(() => {
-    fetchConfigs();
+    if (!isFetching) {
+      setIsFetching(true);
+      fetchConfigs().finally(() => setIsFetching(false));
+    }
   }, [refreshKey]);
 
   const fetchConfigs = async () => {
+    if (isFetching) return; // Prevent duplicate fetches
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      setError('');
       const response = await api.getDockerComposeConfigs();
       setConfigs(response.data);
-      
       // Fetch service statuses for all configs
       await fetchServiceStatuses(response.data);
     } catch (err) {
