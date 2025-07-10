@@ -17,6 +17,7 @@ import DumpFileNameInput from '../components/DumpFileNameInput';
 import SavedConfigsList from '../components/SavedConfigsList';
 import StartProcessButton from '../components/StartProcessButton';
 import Modal from '../components/Modal';
+import { useOperationStatus } from '../contexts/OperationStatusContext';
 
 interface FormData {
   dbType: string;
@@ -55,7 +56,7 @@ const AddConfigurationPage: React.FC = () => {
     type: 'info'
   });
   
-  const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
+  const { setOperationStatus } = useOperationStatus();
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
 
@@ -245,7 +246,7 @@ const AddConfigurationPage: React.FC = () => {
   }, [setValue]);
 
   const handleStartOperation = useCallback(async (config: Config, operationType: 'dump' | 'restore') => {
-    setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
+    setOperationStatus(config.id, 'running');
     try {
       // Prepare the operation data with config_name instead of path
       const processData = {
@@ -282,10 +283,10 @@ const AddConfigurationPage: React.FC = () => {
           contentType: 'preformatted'
         });
         setTimeout(() => {
-          setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
+          setOperationStatus(config.id, 'success');
         }, 2000);
       } else {
-        setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+        setOperationStatus(config.id, 'error');
         toast.error(`❌ ${operationType} failed`);
         setModal({
           isOpen: true,
@@ -296,7 +297,7 @@ const AddConfigurationPage: React.FC = () => {
         });
       }
     } catch (error: any) {
-      setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+      setOperationStatus(config.id, 'error');
       console.error('Failed to start operation:', error);
       
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start operation';
@@ -311,7 +312,7 @@ const AddConfigurationPage: React.FC = () => {
         contentType: 'preformatted'
       });
     }
-  }, []);
+  }, [setOperationStatus]);
 
   const handleBackClick = useCallback(() => {
     navigate('/configurations');
@@ -426,7 +427,6 @@ const AddConfigurationPage: React.FC = () => {
               configs={savedConfigs}
               onSelect={handleConfigSelect}
               onStartOperation={handleStartOperation}
-              operationStatus={operationStatus}
             />
           </div>
         </div>

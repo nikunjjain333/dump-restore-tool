@@ -17,6 +17,7 @@ import './ConfigurationsPage.scss';
 import { api, Config, OperationResponse } from '../api/client';
 import type { AxiosResponse } from 'axios';
 import Modal from '../components/Modal';
+import { useOperationStatus } from '../contexts/OperationStatusContext';
 
 const ConfigurationsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const ConfigurationsPage: React.FC = () => {
     message: '',
     type: 'info'
   });
-  const [operationStatus, setOperationStatus] = useState<Record<number, 'idle' | 'running' | 'success' | 'error'>>({});
+  const { operationStatus, setOperationStatus } = useOperationStatus();
   const hasLoaded = useRef(false);
 
   // Memoized filtered configurations
@@ -116,7 +117,7 @@ const ConfigurationsPage: React.FC = () => {
   }, []);
 
   const handleStartOperation = useCallback(async (config: Config, operationType: 'dump' | 'restore') => {
-    setOperationStatus(prev => ({ ...prev, [config.id]: 'running' }));
+    setOperationStatus(config.id, 'running');
     try {
       // Prepare the operation data with config_name instead of path
       const processData = {
@@ -154,10 +155,10 @@ const ConfigurationsPage: React.FC = () => {
           contentType: 'preformatted'
         });
         setTimeout(() => {
-          setOperationStatus(prev => ({ ...prev, [config.id]: 'success' }));
+          setOperationStatus(config.id, 'success');
         }, 2000);
       } else {
-        setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+        setOperationStatus(config.id, 'error');
         // Show simple message in toast
         toast.error(`❌ ${operationType} failed`);
         // Show detailed error in modal
@@ -170,7 +171,7 @@ const ConfigurationsPage: React.FC = () => {
         });
       }
     } catch (error: any) {
-      setOperationStatus(prev => ({ ...prev, [config.id]: 'error' }));
+      setOperationStatus(config.id, 'error');
       console.error('Failed to start operation:', error);
       
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to start operation';
@@ -187,7 +188,7 @@ const ConfigurationsPage: React.FC = () => {
         contentType: 'preformatted'
       });
     }
-  }, []);
+  }, [setOperationStatus]);
 
   const getDatabaseIcon = useCallback((dbType: string) => {
     switch (dbType) {

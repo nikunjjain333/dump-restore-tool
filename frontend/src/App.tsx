@@ -8,6 +8,7 @@ import AddConfigurationPage from './pages/AddConfigurationPage';
 import ConfigurationsPage from './pages/ConfigurationsPage';
 import DockerComposePage from './pages/DockerComposePage';
 import { api } from './api/client';
+import { OperationStatusProvider } from './contexts/OperationStatusContext';
 
 interface DockerStatus {
   isRunning: boolean;
@@ -146,26 +147,28 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="app">
-        <header className="app-header">
-          <div className="header-content">
-            <div className="logo-section">
-              <Database className="logo-icon" />
-              <h1>DB Dump & Restore Tool</h1>
+      <OperationStatusProvider>
+        <div className="app">
+          <header className="app-header">
+            <div className="header-content">
+              <div className="logo-section">
+                <Database className="logo-icon" />
+                <h1>DB Dump & Restore Tool</h1>
+              </div>
+              <Navigation />
             </div>
-            <Navigation />
-          </div>
-        </header>
-        <main className="app-main">
-          <Routes>
-            <Route path="/" element={<HomePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
-            <Route path="/add-configuration" element={<AddConfigurationPage />} />
-            <Route path="/configurations" element={<ConfigurationsPage />} />
-            <Route path="/docker-compose" element={<DockerComposePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
-          </Routes>
-        </main>
-        <Toaster {...toasterOptions} />
-      </div>
+          </header>
+          <main className="app-main">
+            <Routes>
+              <Route path="/" element={<HomePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
+              <Route path="/add-configuration" element={<AddConfigurationPage />} />
+              <Route path="/configurations" element={<ConfigurationsPage />} />
+              <Route path="/docker-compose" element={<DockerComposePage dockerStatus={dockerStatus} checkDockerStatus={checkDockerStatus} isCheckingStatus={isCheckingStatus} />} />
+            </Routes>
+          </main>
+          <Toaster {...toasterOptions} />
+        </div>
+      </OperationStatusProvider>
     </Router>
   );
 };

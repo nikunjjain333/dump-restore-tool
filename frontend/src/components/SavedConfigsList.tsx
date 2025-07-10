@@ -14,20 +14,20 @@ import {
 } from 'lucide-react';
 import { Config } from '../api/client';
 import './SavedConfigsList.scss';
+import { useOperationStatus } from '../contexts/OperationStatusContext';
 
 interface SavedConfigsListProps {
   configs: Config[];
   onSelect: (config: Config) => void;
   onStartOperation?: (config: Config, operationType: 'dump' | 'restore') => void;
-  operationStatus?: Record<number, 'idle' | 'running' | 'success' | 'error'>;
 }
 
 const SavedConfigsList: React.FC<SavedConfigsListProps> = ({ 
   configs, 
   onSelect, 
-  onStartOperation,
-  operationStatus = {}
+  onStartOperation
 }) => {
+  const { operationStatus } = useOperationStatus();
   const getDatabaseIcon = (dbType: string) => {
     switch (dbType) {
       case 'postgres':

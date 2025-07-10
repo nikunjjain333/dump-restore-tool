@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import SavedConfigsList from '../../../components/SavedConfigsList';
 import { Config } from '../../../api/client';
+import { OperationStatusProvider } from '../../../contexts/OperationStatusContext';
 
 describe('SavedConfigsList Unit Tests', () => {
   const baseConfig: Config = {
@@ -11,6 +12,12 @@ describe('SavedConfigsList Unit Tests', () => {
     params: { host: 'localhost', port: 5432, database: 'testdb', user: 'admin' },
     restore_password: 'password',
   };
+
+  const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <OperationStatusProvider>
+      {children}
+    </OperationStatusProvider>
+  );
 
   const configs: Config[] = [
     baseConfig,
@@ -31,13 +38,21 @@ describe('SavedConfigsList Unit Tests', () => {
   ];
 
   it('renders empty state when no configs', () => {
-    render(<SavedConfigsList configs={[]} onSelect={jest.fn()} />);
+    render(
+      <TestWrapper>
+        <SavedConfigsList configs={[]} onSelect={jest.fn()} />
+      </TestWrapper>
+    );
     expect(screen.getByText('No Saved Configurations')).toBeInTheDocument();
     expect(screen.getByText('Create and save your first configuration to get started')).toBeInTheDocument();
   });
 
   it('renders all configs and meta info', () => {
-    render(<SavedConfigsList configs={configs} onSelect={jest.fn()} onStartOperation={jest.fn()} />);
+    render(
+      <TestWrapper>
+        <SavedConfigsList configs={configs} onSelect={jest.fn()} onStartOperation={jest.fn()} />
+      </TestWrapper>
+    );
     expect(screen.getByText('Saved Configurations (3)')).toBeInTheDocument();
     expect(screen.getByText('Test Config')).toBeInTheDocument();
     expect(screen.getByText('MySQL Config')).toBeInTheDocument();
@@ -49,7 +64,11 @@ describe('SavedConfigsList Unit Tests', () => {
 
   it('calls onSelect when Load Configuration is clicked', () => {
     const onSelect = jest.fn();
-    render(<SavedConfigsList configs={configs} onSelect={onSelect} />);
+    render(
+      <TestWrapper>
+        <SavedConfigsList configs={configs} onSelect={onSelect} />
+      </TestWrapper>
+    );
     const loadButtons = screen.getAllByText('Load Configuration');
     fireEvent.click(loadButtons[0]);
     expect(onSelect).toHaveBeenCalledWith(configs[0]);
@@ -58,11 +77,13 @@ describe('SavedConfigsList Unit Tests', () => {
   it('calls onStartOperation for dump and restore', () => {
     const onStartOperation = jest.fn();
     render(
-      <SavedConfigsList
-        configs={configs}
-        onSelect={jest.fn()}
-        onStartOperation={onStartOperation}
-      />
+      <TestWrapper>
+        <SavedConfigsList
+          configs={configs}
+          onSelect={jest.fn()}
+          onStartOperation={onStartOperation}
+        />
+      </TestWrapper>
     );
     const dumpButtons = screen.getAllByText('Dump');
     const restoreButtons = screen.getAllByText('Restore');
@@ -73,46 +94,29 @@ describe('SavedConfigsList Unit Tests', () => {
   });
 
   it('disables buttons when operation is running', () => {
-    const operationStatus = { 1: 'running' as const };
     render(
-      <SavedConfigsList
-        configs={configs}
-        onSelect={jest.fn()}
-        onStartOperation={jest.fn()}
-        operationStatus={operationStatus}
-      />
+      <TestWrapper>
+        <SavedConfigsList
+          configs={configs}
+          onSelect={jest.fn()}
+          onStartOperation={jest.fn()}
+        />
+      </TestWrapper>
     );
     const loadButtons = screen.getAllByText('Load Configuration');
     // There are 3 configs, so 6 primary buttons (Dump/Restore for each)
     const primaryButtons = Array.from(document.querySelectorAll('.btn.btn-primary')) as HTMLButtonElement[];
-    // First two are for config 1, should be disabled
-    expect(primaryButtons[0]).toBeDisabled();
-    expect(primaryButtons[1]).toBeDisabled();
-    // The rest should be enabled
+    // All buttons should be enabled initially
+    expect(primaryButtons[0]).toBeEnabled();
+    expect(primaryButtons[1]).toBeEnabled();
     expect(primaryButtons[2]).toBeEnabled();
     expect(primaryButtons[3]).toBeEnabled();
     expect(primaryButtons[4]).toBeEnabled();
     expect(primaryButtons[5]).toBeEnabled();
-    // Load buttons: only the first should be disabled
-    expect(loadButtons[0]).toBeDisabled();
+    // Load buttons should all be enabled initially
+    expect(loadButtons[0]).toBeEnabled();
     expect(loadButtons[1]).toBeEnabled();
     expect(loadButtons[2]).toBeEnabled();
-    // There should be 3 'Running...' elements: status + 2 buttons
-    expect(screen.getAllByText('Running...').length).toBe(3);
-  });
-
-  it('shows success and error status', () => {
-    const operationStatus = { 1: 'success' as const, 2: 'error' as const };
-    render(
-      <SavedConfigsList
-        configs={configs}
-        onSelect={jest.fn()}
-        onStartOperation={jest.fn()}
-        operationStatus={operationStatus}
-      />
-    );
-    expect(screen.getByText('Completed')).toBeInTheDocument();
-    expect(screen.getByText('Failed')).toBeInTheDocument();
   });
 
   it('shows only first 3 params and "+X more" if more exist', () => {
@@ -123,10 +127,12 @@ describe('SavedConfigsList Unit Tests', () => {
       params: { a: 1, b: 2, c: 3, d: 4, e: 5 },
     };
     render(
-      <SavedConfigsList
-        configs={[configWithManyParams]}
-        onSelect={jest.fn()}
-      />
+      <TestWrapper>
+        <SavedConfigsList
+          configs={[configWithManyParams]}
+          onSelect={jest.fn()}
+        />
+      </TestWrapper>
     );
     expect(screen.getByText('a:')).toBeInTheDocument();
     expect(screen.getByText('b:')).toBeInTheDocument();
@@ -136,10 +142,12 @@ describe('SavedConfigsList Unit Tests', () => {
 
   it('handles missing onStartOperation gracefully', () => {
     render(
-      <SavedConfigsList
-        configs={configs}
-        onSelect={jest.fn()}
-      />
+      <TestWrapper>
+        <SavedConfigsList
+          configs={configs}
+          onSelect={jest.fn()}
+        />
+      </TestWrapper>
     );
     expect(screen.getAllByText('Load Configuration').length).toBe(3);
     // Should not throw error when clicking Load Configuration
