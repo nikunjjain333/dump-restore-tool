@@ -1,9 +1,10 @@
 import os
 import logging
+import subprocess
+import shlex
 from typing import Dict, Any, Optional
-from .docker_service import get_docker_client
 from app.core.utils import (
-    get_consistent_path, validate_db_type, get_db_image, get_db_default_port,
+    get_consistent_path, validate_db_type, get_db_default_port,
     format_error_response, format_success_response, get_dump_directory
 )
 
@@ -19,6 +20,40 @@ def ensure_dump_directory_exists():
     except Exception as e:
         logger.error(f"Failed to ensure dump directory exists: {e}")
         return False
+
+def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optional[str] = None) -> subprocess.CompletedProcess:
+    """Run a command on the host system"""
+    try:
+        # Parse command safely
+        args = shlex.split(cmd)
+        
+        # Set up environment
+        process_env = os.environ.copy()
+        if env:
+            process_env.update(env)
+        
+        logger.info(f"Running host command: {cmd}")
+        result = subprocess.run(
+            args,
+            env=process_env,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode != 0:
+            logger.error(f"Command failed with return code {result.returncode}")
+            logger.error(f"stdout: {result.stdout}")
+            logger.error(f"stderr: {result.stderr}")
+        
+        return result
+    except subprocess.TimeoutExpired:
+        logger.error("Command timed out after 5 minutes")
+        raise Exception("Command timed out after 5 minutes")
+    except Exception as e:
+        logger.error(f"Failed to run command: {e}")
+        raise
 
 def _prepare_restore_params(params: Dict[str, Any], db_type: str, restore_password: str,
                            local_database_name: Optional[str] = None, restore_username: Optional[str] = None,
@@ -125,132 +160,172 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         return format_error_response(f"Restore operation failed: {str(e)}")
 
 def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
-    """Restore PostgreSQL database with preparation steps"""
+    """Restore PostgreSQL database using host psql"""
     try:
-        client = get_docker_client()
-        filename = os.path.basename(path)
-        
         host = params.get('host', 'localhost')
         port = str(params.get('port', 5432))
         database = params['database']
         username = params['username']
         password = params['password']
         
-        postgres_version = params.get('postgres_version', '16')
-        postgres_image = f'postgres:{postgres_version}'
+        # Clean up host parameter - remove port if it's included in the host
+        if ':' in host:
+            host_parts = host.split(':')
+            if len(host_parts) == 2 and host_parts[1].isdigit():
+                host = host_parts[0]
+                port = host_parts[1]
+                logger.info(f"Extracted host '{host}' and port '{port}' from combined host parameter")
         
         logger.info(f"PostgreSQL restore: {host}:{port}, database: {database}, user: {username}")
         
+        # Set environment for password
+        env = {'PGPASSWORD': password}
+        
         # Step 1: Drop database if it exists
         try:
-            client.containers.run(
-                postgres_image,
-                command=f'dropdb -h {host} -p {port} -U {username} {database} --force',
-                environment={'PGPASSWORD': password},
-                remove=True,
-                detach=False
-            )
-            logger.info(f"Database '{database}' dropped successfully")
+            drop_cmd = f"dropdb -h {host} -p {port} -U {username} {database} --force"
+            result = _run_host_command(drop_cmd, env=env, cwd=run_path)
+            if result.returncode == 0:
+                logger.info(f"Database '{database}' dropped successfully")
+            else:
+                logger.info(f"Database '{database}' did not exist or drop failed (continuing)")
         except Exception as e:
             logger.info(f"Database '{database}' did not exist or drop failed (continuing): {str(e)}")
         
         # Step 2: Create fresh database
-        client.containers.run(
-            postgres_image,
-            command=f'createdb -h {host} -p {port} -U {username} {database}',
-            environment={'PGPASSWORD': password},
-            remove=True,
-            detach=False
-        )
+        create_cmd = f"createdb -h {host} -p {port} -U {username} {database}"
+        result = _run_host_command(create_cmd, env=env, cwd=run_path)
+        if result.returncode != 0:
+            error_msg = f"Failed to create database '{database}': {result.stderr}"
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+        
         logger.info(f"Database '{database}' created successfully")
         
         # Step 3: Perform the actual restore
-        dump_dir = get_dump_directory()
-        client.containers.run(
-            postgres_image,
-            command=f'psql -h {host} -p {port} -U {username} -d {database} -f /restore/{filename}',
-            environment={'PGPASSWORD': password},
-            volumes={dump_dir: {'bind': '/restore', 'mode': 'rw'}},
-            working_dir=run_path or '/',
-            remove=True,
-            detach=False
-        )
+        restore_cmd = f"psql -h {host} -p {port} -U {username} -d {database} -f {path}"
+        result = _run_host_command(restore_cmd, env=env, cwd=run_path)
         
-        logger.info(f"PostgreSQL restore completed: {path}")
-        return format_success_response(f"PostgreSQL restore completed successfully from: {path}", path=path)
+        if result.returncode == 0:
+            logger.info(f"PostgreSQL restore completed: {path}")
+            return format_success_response(f"PostgreSQL restore completed successfully from: {path}", path=path)
+        else:
+            error_msg = f"PostgreSQL restore failed: {result.stderr}"
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+            
     except Exception as e:
         logger.error(f"PostgreSQL restore failed: {str(e)}")
         return format_error_response(f"PostgreSQL restore failed: {str(e)}")
 
 def _restore_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
-    """Restore MySQL database"""
+    """Restore MySQL database using host mysql"""
     try:
-        client = get_docker_client()
-        filename = os.path.basename(path)
+        host = params.get('host', 'localhost')
+        port = str(params.get('port', 3306))
+        database = params['database']
+        username = params['username']
+        password = params['password']
         
-        restore_cmd = (f"mysql -h {params.get('host', 'localhost')} "
-                      f"-P {params.get('port', 3306)} -u {params['username']} "
-                      f"-p{params['password']} {params['database']} < /restore/{filename}")
+        # Clean up host parameter - remove port if it's included in the host
+        if ':' in host:
+            host_parts = host.split(':')
+            if len(host_parts) == 2 and host_parts[1].isdigit():
+                host = host_parts[0]
+                port = host_parts[1]
+                logger.info(f"Extracted host '{host}' and port '{port}' from combined host parameter")
         
-        dump_dir = get_dump_directory()
-        client.containers.run(
-            get_db_image('mysql'),
-            command=f'sh -c "{restore_cmd}"',
-            volumes={dump_dir: {'bind': '/restore', 'mode': 'rw'}},
-            working_dir=run_path or '/',
-            remove=True,
-            detach=False
-        )
+        logger.info(f"MySQL restore: {host}:{port}, database: {database}, user: {username}")
         
-        return format_success_response(f"MySQL restore completed successfully from: {path}", path=path)
+        # Build mysql command to restore from file
+        restore_cmd = f"mysql -h {host} -P {port} -u {username} -p{password} {database} < {path}"
+        
+        # Run the command
+        result = _run_host_command(restore_cmd, cwd=run_path)
+        
+        if result.returncode == 0:
+            logger.info(f"MySQL restore completed: {path}")
+            return format_success_response(f"MySQL restore completed successfully from: {path}", path=path)
+        else:
+            error_msg = f"MySQL restore failed: {result.stderr}"
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+            
     except Exception as e:
+        logger.error(f"MySQL restore failed: {str(e)}")
         return format_error_response(f"MySQL restore failed: {str(e)}")
 
 def _restore_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
-    """Restore MongoDB database"""
+    """Restore MongoDB database using host mongorestore"""
     try:
-        client = get_docker_client()
+        uri = params.get('uri')
+        database = params['database']
         
-        restore_cmd = f"mongorestore --uri '{params['uri']}' --db {params['database']} /restore/{params['database']}"
+        if not uri:
+            return format_error_response("MongoDB URI is required")
         
-        dump_dir = get_dump_directory()
-        client.containers.run(
-            get_db_image('mongodb'),
-            command=f'sh -c "{restore_cmd}"',
-            volumes={dump_dir: {'bind': '/restore', 'mode': 'rw'}},
-            working_dir=run_path or '/',
-            remove=True,
-            detach=False
+        logger.info(f"MongoDB restore: database: {database}")
+        
+        # For now, return an error since mongorestore is not installed
+        # TODO: Install MongoDB tools in the container or use a different approach
+        return format_error_response(
+            "MongoDB restore is not currently supported. Please install mongorestore tools in the container or use a different approach."
         )
         
-        return format_success_response(f"MongoDB restore completed successfully from: {path}", path=path)
+        # Build mongorestore command
+        restore_cmd = f"mongorestore --uri '{uri}' --db {database} {path}"
+        
+        # Run the command
+        result = _run_host_command(restore_cmd, cwd=run_path)
+        
+        if result.returncode == 0:
+            logger.info(f"MongoDB restore completed: {path}")
+            return format_success_response(f"MongoDB restore completed successfully from: {path}", path=path)
+        else:
+            error_msg = f"MongoDB restore failed: {result.stderr}"
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+            
     except Exception as e:
+        logger.error(f"MongoDB restore failed: {str(e)}")
         return format_error_response(f"MongoDB restore failed: {str(e)}")
 
 def _restore_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
-    """Restore Redis database"""
+    """Restore Redis database using host redis-cli"""
     try:
-        client = get_docker_client()
-        filename = os.path.basename(path)
+        host = params.get('host', 'localhost')
+        port = str(params.get('port', 6379))
+        password = params.get('password')
         
-        # Copy the RDB file to Redis data directory
-        redis_cmd = f"cp /restore/{filename} /data/dump.rdb"
+        # Clean up host parameter - remove port if it's included in the host
+        if ':' in host:
+            host_parts = host.split(':')
+            if len(host_parts) == 2 and host_parts[1].isdigit():
+                host = host_parts[0]
+                port = host_parts[1]
+                logger.info(f"Extracted host '{host}' and port '{port}' from combined host parameter")
         
-        dump_dir = get_dump_directory()
-        client.containers.run(
-            get_db_image('redis'),
-            command=f'sh -c "{redis_cmd}"',
-            volumes={
-                dump_dir: {'bind': '/restore', 'mode': 'rw'},
-                '/var/lib/redis': {'bind': '/data', 'mode': 'rw'}
-            },
-            working_dir=run_path or '/',
-            remove=True,
-            detach=False
-        )
+        logger.info(f"Redis restore: {host}:{port}")
         
-        return format_success_response(f"Redis restore completed successfully from: {path}", path=path)
+        # Build redis-cli command to restore from file
+        restore_cmd = f"redis-cli -h {host} -p {port}"
+        if password:
+            restore_cmd += f" -a {password}"
+        restore_cmd += f" --pipe < {path}"
+        
+        # Run the command
+        result = _run_host_command(restore_cmd, cwd=run_path)
+        
+        if result.returncode == 0:
+            logger.info(f"Redis restore completed: {path}")
+            return format_success_response(f"Redis restore completed successfully from: {path}", path=path)
+        else:
+            error_msg = f"Redis restore failed: {result.stderr}"
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+            
     except Exception as e:
+        logger.error(f"Redis restore failed: {str(e)}")
         return format_error_response(f"Redis restore failed: {str(e)}")
 
 def _restore_sqlite(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
