@@ -55,7 +55,7 @@ def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optio
         logger.error(f"Failed to run command: {e}")
         raise
 
-def _prepare_restore_params(params: Dict[str, Any], db_type: str, restore_password: str,
+def _prepare_restore_params(params: Dict[str, Any], db_type: str, restore_password: Optional[str],
                            local_database_name: Optional[str] = None, restore_username: Optional[str] = None,
                            restore_host: Optional[str] = None, restore_port: Optional[str] = None) -> Dict[str, Any]:
     """Prepare parameters for restore operation"""
@@ -66,8 +66,12 @@ def _prepare_restore_params(params: Dict[str, Any], db_type: str, restore_passwo
         params['database'] = local_database_name
         logger.info(f"Using local database name for restore: {local_database_name}")
     
-    # Use restore password (required)
-    params['password'] = restore_password
+    # Use restore password if provided
+    if restore_password:
+        params['password'] = restore_password
+        logger.info("Using restore password for authentication")
+    else:
+        logger.info("No restore password provided, using original connection parameters")
     
     # Handle restore username with priority logic
     if restore_username:
@@ -114,7 +118,7 @@ def _prepare_restore_params(params: Dict[str, Any], db_type: str, restore_passwo
     
     return params
 
-def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_password: str,
+def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_password: Optional[str],
                 run_path: Optional[str] = None, local_database_name: Optional[str] = None,
                 dump_file_name: Optional[str] = None, restore_username: Optional[str] = None,
                 restore_host: Optional[str] = None, restore_port: Optional[str] = None) -> Dict[str, Any]:

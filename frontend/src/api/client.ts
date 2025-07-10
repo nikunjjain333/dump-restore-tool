@@ -38,7 +38,7 @@ export interface Config {
   db_type: string;
   params: Record<string, any>;
   run_path?: string;
-  restore_password: string;
+  restore_password?: string;
   local_database_name?: string;
   dump_file_name?: string;
   restore_username?: string;
@@ -51,7 +51,7 @@ export interface ConfigCreate {
   db_type: string;
   params: Record<string, any>;
   run_path?: string;
-  restore_password: string;
+  restore_password?: string;
   local_database_name?: string;
   dump_file_name?: string;
   restore_username?: string;
@@ -72,7 +72,7 @@ export interface RestoreRequest {
   params: Record<string, any>;
   config_name: string;
   run_path?: string;
-  restore_password: string;
+  restore_password?: string;
   local_database_name?: string;
   dump_file_name?: string;
   restore_username?: string;

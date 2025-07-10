@@ -64,7 +64,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({
       { name: 'restore_port', label: 'Restore Port (Optional)', type: 'number', icon: Key, section: 'restore' },
       { name: 'local_database_name', label: 'Local Database Name (Optional)', type: 'text', icon: Database, section: 'restore' },
       { name: 'restore_username', label: 'Restore Username (Optional)', type: 'text', icon: User, section: 'restore' },
-      { name: 'restore_password', label: 'Restore Password', type: 'password', icon: Lock, required: true, section: 'restore' }
+      { name: 'restore_password', label: 'Restore Password (Optional)', type: 'password', icon: Lock, section: 'restore' }
     );
     
     return baseFields;
@@ -119,7 +119,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({
       <div className="fields-section">
         <h3 className="section-title">Restore Database Connection</h3>
         <p className="section-description">
-          These fields are used specifically for restore operations. Restore password is required for authentication.
+          These fields are used specifically for restore operations. Restore password is optional for authentication.
         </p>
         <div className="fields-grid">
           {restoreFields.map(renderField)}

@@ -32,7 +32,7 @@ class RestoreRequest(BaseModel):
     params: Dict[str, Any] = Field(..., description="Database connection parameters")
     config_name: str = Field(..., description="Configuration name for consistent file paths")
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
-    restore_password: str = Field(..., description="Required password for restore operations")
+    restore_password: Optional[str] = Field(default=None, description="Optional password for restore operations")
     local_database_name: Optional[str] = Field(default=None, description="Optional local database name for restore operations")
     dump_file_name: Optional[str] = Field(default=None, description="Custom filename for dump file (without extension)")
     restore_username: Optional[str] = Field(default=None, description="Optional restore username for restore operations")
