@@ -402,13 +402,6 @@ DOCKER_HOST=unix:///var/run/docker.sock
 
 # Logging
 LOG_LEVEL=INFO
-
-# Security
-SECRET_KEY=your-secret-key-change-in-production
-
-# File paths
-DUMP_BASE_PATH=/tmp/dumps
-RESTORE_BASE_PATH=/tmp/restores
 ```
 
 ### Frontend

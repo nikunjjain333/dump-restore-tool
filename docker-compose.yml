@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   backend:
     build: ./backend
@@ -6,15 +5,15 @@ services:
       - ./backend/app:/app/app
       - /var/run/docker.sock:/var/run/docker.sock
       - $HOME:/home:rw  # Mount host home directory for cross-platform compatibility
-      - /tmp:/tmp  # Mount host /tmp to container /tmp for dump/restore file sharing
     env_file:
-      - .env.example
+      - .env
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
+
   frontend:
     image: node:18
     working_dir: /app
@@ -30,6 +29,7 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
   db:
     image: postgres:16-alpine
     restart: always
@@ -47,6 +47,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
 volumes:
   pgdata:
   frontend_node_modules:

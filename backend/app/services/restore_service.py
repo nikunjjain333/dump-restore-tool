@@ -5,20 +5,20 @@ import shlex
 from typing import Dict, Any, Optional
 from app.core.utils import (
     get_consistent_path, validate_db_type, get_db_default_port,
-    format_error_response, format_success_response, get_dump_directory
+    format_error_response, format_success_response, get_restore_directory, get_restore_path
 )
 
 logger = logging.getLogger(__name__)
 
-def ensure_dump_directory_exists():
-    """Ensure the dump directory exists and is accessible"""
+def ensure_restore_directory_exists():
+    """Ensure the restore directory exists and is accessible"""
     try:
-        dump_dir = get_dump_directory()
-        os.makedirs(dump_dir, exist_ok=True)
-        logger.info(f"Dump directory is ready: {dump_dir}")
+        restore_dir = get_restore_directory()
+        os.makedirs(restore_dir, exist_ok=True)
+        logger.info(f"Restore directory is ready: {restore_dir}")
         return True
     except Exception as e:
-        logger.error(f"Failed to ensure dump directory exists: {e}")
+        logger.error(f"Failed to ensure restore directory exists: {e}")
         return False
 
 def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optional[str] = None) -> subprocess.CompletedProcess:
@@ -123,9 +123,9 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         if not validate_db_type(db_type):
             return format_error_response(f"Unsupported database type: {db_type}")
         
-        # Ensure dump directory exists
-        if not ensure_dump_directory_exists():
-            return format_error_response("Failed to create or access dump directory")
+        # Ensure restore directory exists
+        if not ensure_restore_directory_exists():
+            return format_error_response("Failed to create or access restore directory")
         
         # Prepare parameters for restore
         params = _prepare_restore_params(params, db_type, restore_password, local_database_name,

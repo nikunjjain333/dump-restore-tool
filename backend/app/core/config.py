@@ -13,12 +13,7 @@ class Settings:
     API_PORT: int = int(os.getenv("API_PORT", "8000"))
     
     # CORS
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8080",
-        "http://127.0.0.1:8080"
-    ]
+    CORS_ORIGINS: List[str] = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
     
     # Docker - Use appropriate socket path based on platform
     @staticmethod
@@ -41,7 +36,7 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
     
     # File paths
-    DUMP_BASE_PATH: str = os.getenv("DUMP_BASE_PATH", "/tmp/dumps")
-    RESTORE_BASE_PATH: str = os.getenv("RESTORE_BASE_PATH", "/tmp/restores")
+    DUMP_BASE_PATH: str = os.getenv("DUMP_BASE_PATH", "~/Downloads/Database-dumps")
+    RESTORE_BASE_PATH: str = os.getenv("RESTORE_BASE_PATH", "~/Downloads/Database-dumps")
 
 settings = Settings() 

@@ -2,6 +2,7 @@ import re
 import os
 from typing import Dict, Any, Optional
 from pathlib import Path
+from app.core.config import settings
 
 # Database type configurations
 DB_CONFIGS = {
@@ -18,18 +19,17 @@ def sanitize_filename(filename: str) -> str:
     return re.sub(r'_+', '_', safe_name).strip('_')
 
 def get_dump_directory() -> str:
-    """Get the cross-platform dump directory path"""
+    """Get the dump directory path from configuration"""
     try:
-        # Check if we're in a Docker container and use the mounted home directory
-        if os.path.exists('/home') and os.path.isdir('/home'):
-            # We're in a container with host home mounted
-            home_dir = Path('/home')
-        else:
-            # We're on the host, use the actual home directory
-            home_dir = Path.home()
+        # Use configured dump path
+        dump_path = settings.DUMP_BASE_PATH
         
-        # Create Downloads/Database-dumps path
-        dump_dir = home_dir / "Downloads" / "Database-dumps"
+        # Expand ~ to home directory
+        if dump_path.startswith('~'):
+            dump_path = os.path.expanduser(dump_path)
+        
+        # Convert to Path object
+        dump_dir = Path(dump_path)
         
         # Create the directory if it doesn't exist
         dump_dir.mkdir(parents=True, exist_ok=True)
@@ -40,7 +40,8 @@ def get_dump_directory() -> str:
             test_file.touch()
             test_file.unlink()  # Remove test file
         except (PermissionError, OSError) as e:
-            # If we can't write to Downloads, fall back to home directory
+            # If we can't write to configured path, fall back to home directory
+            home_dir = Path.home()
             dump_dir = home_dir / "Database-dumps"
             dump_dir.mkdir(parents=True, exist_ok=True)
         
@@ -49,7 +50,31 @@ def get_dump_directory() -> str:
         # Fallback to /tmp if everything else fails
         import logging
         logger = logging.getLogger(__name__)
-        logger.warning(f"Could not create dump directory in Downloads, falling back to /tmp: {e}")
+        logger.warning(f"Could not create dump directory in configured path, falling back to /tmp: {e}")
+        return "/tmp"
+
+def get_restore_directory() -> str:
+    """Get the restore directory path from configuration"""
+    try:
+        # Use configured restore path
+        restore_path = settings.RESTORE_BASE_PATH
+        
+        # Expand ~ to home directory
+        if restore_path.startswith('~'):
+            restore_path = os.path.expanduser(restore_path)
+        
+        # Convert to Path object
+        restore_dir = Path(restore_path)
+        
+        # Create the directory if it doesn't exist
+        restore_dir.mkdir(parents=True, exist_ok=True)
+        
+        return str(restore_dir)
+    except Exception as e:
+        # Fallback to /tmp if everything else fails
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Could not create restore directory in configured path, falling back to /tmp: {e}")
         return "/tmp"
 
 def get_consistent_path(config_name: str, db_type: str, dump_file_name: Optional[str] = None) -> str:
@@ -57,10 +82,20 @@ def get_consistent_path(config_name: str, db_type: str, dump_file_name: Optional
     filename = sanitize_filename(dump_file_name or config_name)
     extension = DB_CONFIGS.get(db_type, {}).get('extension', '.dump')
     
-    # Use the cross-platform dump directory
+    # Use the configured dump directory
     dump_dir = get_dump_directory()
     
     return os.path.join(dump_dir, f"{filename}{extension}")
+
+def get_restore_path(file_path: str) -> str:
+    """Get the full path for restore operations"""
+    # If file_path is already absolute, return as is
+    if os.path.isabs(file_path):
+        return file_path
+    
+    # Otherwise, assume it's relative to the restore directory
+    restore_dir = get_restore_directory()
+    return os.path.join(restore_dir, file_path)
 
 def validate_db_type(db_type: str) -> bool:
     """Validate if database type is supported"""
