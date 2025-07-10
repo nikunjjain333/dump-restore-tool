@@ -21,8 +21,12 @@ def sanitize_filename(filename: str) -> str:
 def get_dump_directory() -> str:
     """Get the dump directory path from configuration"""
     try:
-        # Use configured dump path
-        dump_path = settings.DUMP_BASE_PATH
+        # First try to use configured dump path if available
+        try:
+            dump_path = settings.DUMP_BASE_PATH
+        except AttributeError:
+            # If DUMP_BASE_PATH is not configured, use home directory
+            dump_path = "/home/Downloads/Database-dumps"
         
         # Expand ~ to home directory
         if dump_path.startswith('~'):
@@ -56,8 +60,12 @@ def get_dump_directory() -> str:
 def get_restore_directory() -> str:
     """Get the restore directory path from configuration"""
     try:
-        # Use configured restore path
-        restore_path = settings.RESTORE_BASE_PATH
+        # First try to use configured restore path if available
+        try:
+            restore_path = settings.RESTORE_BASE_PATH
+        except AttributeError:
+            # If RESTORE_BASE_PATH is not configured, use home directory
+            restore_path = "/home/Downloads/Database-dumps"
         
         # Expand ~ to home directory
         if restore_path.startswith('~'):
