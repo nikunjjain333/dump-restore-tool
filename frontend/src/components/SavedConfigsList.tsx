@@ -1,42 +1,45 @@
-import React from 'react';
-import { 
-  Database, 
-  Download, 
-  Upload, 
-  Settings, 
+import React from "react";
+import {
+  Database,
+  Download,
+  Upload,
+  Settings,
   Loader2,
   FolderOpen,
   Clock,
   ArrowUp,
   ArrowDown,
   CheckCircle,
-  AlertCircle
-} from 'lucide-react';
-import { Config } from '../api/client';
-import './SavedConfigsList.scss';
-import { useOperationStatus } from '../contexts/OperationStatusContext';
+  AlertCircle,
+} from "lucide-react";
+import { Config } from "../api/client";
+import "./SavedConfigsList.scss";
+import { useOperationStatus } from "../contexts/OperationStatusContext";
 
 interface SavedConfigsListProps {
   configs: Config[];
   onSelect: (config: Config) => void;
-  onStartOperation?: (config: Config, operationType: 'dump' | 'restore') => void;
+  onStartOperation?: (
+    config: Config,
+    operationType: "dump" | "restore"
+  ) => void;
 }
 
-const SavedConfigsList: React.FC<SavedConfigsListProps> = ({ 
-  configs, 
-  onSelect, 
-  onStartOperation
+const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
+  configs,
+  onSelect,
+  onStartOperation,
 }) => {
   const { operationStatus } = useOperationStatus();
   const getDatabaseIcon = (dbType: string) => {
     switch (dbType) {
-      case 'postgres':
-      case 'mysql':
-      case 'mongodb':
+      case "postgres":
+      case "mysql":
+      case "mongodb":
         return <Database className="config-icon" />;
-      case 'redis':
+      case "redis":
         return <Settings className="config-icon" />;
-      case 'sqlite':
+      case "sqlite":
         return <Database className="config-icon" />;
       default:
         return <Database className="config-icon" />;
@@ -46,11 +49,11 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
   const getStatusIcon = (configId: number) => {
     const status = operationStatus[configId];
     switch (status) {
-      case 'running':
+      case "running":
         return <Loader2 className="status-icon running" />;
-      case 'success':
+      case "success":
         return <CheckCircle className="status-icon success" />;
-      case 'error':
+      case "error":
         return <AlertCircle className="status-icon error" />;
       default:
         return null;
@@ -60,14 +63,14 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
   const getStatusText = (configId: number) => {
     const status = operationStatus[configId];
     switch (status) {
-      case 'running':
-        return 'Running...';
-      case 'success':
-        return 'Completed';
-      case 'error':
-        return 'Failed';
+      case "running":
+        return "Running...";
+      case "success":
+        return "Completed";
+      case "error":
+        return "Failed";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -92,10 +95,13 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
       <div className="configs-grid">
         {configs.map((config) => {
           const status = operationStatus[config.id];
-          const isRunning = status === 'running';
-          
+          const isRunning = status === "running";
+
           return (
-            <div key={config.id} className={`config-card ${status ? `status-${status}` : ''}`}>
+            <div
+              key={config.id}
+              className={`config-card ${status ? `status-${status}` : ""}`}
+            >
               <div className="card-header">
                 <div className="config-icon-wrapper">
                   {getDatabaseIcon(config.db_type)}
@@ -103,36 +109,44 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
                 <div className="config-info">
                   <h4>{config.name}</h4>
                   <div className="config-meta">
-                    <span className="db-type">{config.db_type.toUpperCase()}</span>
+                    <span className="db-type">
+                      {config.db_type.toUpperCase()}
+                    </span>
                   </div>
                 </div>
                 {status && (
                   <div className="status-indicator">
                     {getStatusIcon(config.id)}
-                    <span className="status-text">{getStatusText(config.id)}</span>
+                    <span className="status-text">
+                      {getStatusText(config.id)}
+                    </span>
                   </div>
                 )}
               </div>
-              
+
               <div className="card-content">
                 <div className="config-params">
-                  {Object.entries(config.params).slice(0, 3).map(([key, value]) => (
-                    <div key={key} className="param-item">
-                      <span className="param-label">{key}:</span>
-                      <span className="param-value">{String(value)}</span>
-                    </div>
-                  ))}
+                  {Object.entries(config.params)
+                    .slice(0, 3)
+                    .map(([key, value]) => (
+                      <div key={key} className="param-item">
+                        <span className="param-label">{key}:</span>
+                        <span className="param-value">{String(value)}</span>
+                      </div>
+                    ))}
                   {Object.keys(config.params).length > 3 && (
                     <div className="param-item">
-                      <span className="param-label">+{Object.keys(config.params).length - 3} more</span>
+                      <span className="param-label">
+                        +{Object.keys(config.params).length - 3} more
+                      </span>
                     </div>
                   )}
                 </div>
               </div>
-              
+
               <div className="card-actions">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn btn-secondary"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -145,33 +159,12 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
                 </button>
                 {onStartOperation && (
                   <>
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       className="btn btn-primary"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onStartOperation(config, 'dump');
-                      }}
-                      disabled={isRunning}
-                    >
-                      {isRunning ? (
-                        <>
-                          <Loader2 className="spinner" />
-                          Running...
-                        </>
-                      ) : (
-                        <>
-                          <ArrowUp className="icon" />
-                          Dump
-                        </>
-                      )}
-                    </button>
-                    <button 
-                      type="button" 
-                      className="btn btn-primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStartOperation(config, 'restore');
+                        onStartOperation(config, "dump");
                       }}
                       disabled={isRunning}
                     >
@@ -183,6 +176,27 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
                       ) : (
                         <>
                           <ArrowDown className="icon" />
+                          Dump
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStartOperation(config, "restore");
+                      }}
+                      disabled={isRunning}
+                    >
+                      {isRunning ? (
+                        <>
+                          <Loader2 className="spinner" />
+                          Running...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowUp className="icon" />
                           Restore
                         </>
                       )}
@@ -198,4 +212,4 @@ const SavedConfigsList: React.FC<SavedConfigsListProps> = ({
   );
 };
 
-export default SavedConfigsList; 
+export default SavedConfigsList;
