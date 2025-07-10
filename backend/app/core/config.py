@@ -34,9 +34,5 @@ class Settings:
     
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
-    
-    # File paths
-    DUMP_BASE_PATH: str = os.getenv("DUMP_BASE_PATH", "~/Downloads/Database-dumps")
-    RESTORE_BASE_PATH: str = os.getenv("RESTORE_BASE_PATH", "~/Downloads/Database-dumps")
 
 settings = Settings() 
