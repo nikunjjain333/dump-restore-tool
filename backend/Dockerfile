@@ -2,12 +2,23 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system dependencies only if not already installed
+# Step 1: Install lsb-release, wget, and gnupg first
 RUN apt-get update && \
-    (dpkg -l | grep -q curl || apt-get install -y curl) && \
-    (dpkg -l | grep -q gnupg || apt-get install -y gnupg) && \
-    (dpkg -l | grep -q lsb-release || apt-get install -y lsb-release) && \
+    apt-get install -y lsb-release wget gnupg ca-certificates && \
     rm -rf /var/lib/apt/lists/*
+
+# Step 2: Add PostgreSQL 16 repository
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+
+# Step 3: Install database tools
+RUN apt-get update && \
+    apt-get install -y \
+        curl \
+        postgresql-client-16 \
+        default-mysql-client \
+        redis-tools \
+        && rm -rf /var/lib/apt/lists/*
 
 # Install Docker CLI only if not already installed
 RUN if ! command -v docker > /dev/null 2>&1; then \
