@@ -102,6 +102,15 @@ const AddConfigurationPage: React.FC = () => {
         if (config.dump_file_name) {
           setValue('dump_file_name', config.dump_file_name);
         }
+        if (config.restore_username) {
+          setValue('restore_username', config.restore_username);
+        }
+        if (config.restore_host) {
+          setValue('restore_host', config.restore_host);
+        }
+        if (config.restore_port) {
+          setValue('restore_port', config.restore_port);
+        }
       }, 100);
       
       toast.success(`Configuration "${config.name}" loaded!`);
@@ -220,6 +229,15 @@ const AddConfigurationPage: React.FC = () => {
       }
       if (config.dump_file_name) {
         setValue('dump_file_name', config.dump_file_name);
+      }
+      if (config.restore_username) {
+        setValue('restore_username', config.restore_username);
+      }
+      if (config.restore_host) {
+        setValue('restore_host', config.restore_host);
+      }
+      if (config.restore_port) {
+        setValue('restore_port', config.restore_port);
       }
     }, 100);
     
