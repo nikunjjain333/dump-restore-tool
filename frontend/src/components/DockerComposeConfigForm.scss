@@ -78,6 +78,50 @@
       margin-top: 4px;
       display: block;
     }
+
+    .path-conversion-info {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: var(--radius-md);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+
+      strong {
+        color: #3b82f6;
+        font-weight: 600;
+      }
+
+      em {
+        color: var(--text-secondary);
+        font-style: italic;
+      }
+    }
+
+    .path-help-text {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      border-radius: var(--radius-md);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+
+      strong {
+        color: #22c55e;
+        font-weight: 600;
+      }
+
+      code {
+        background: var(--bg-secondary);
+        padding: 2px 4px;
+        border-radius: var(--radius-sm);
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.75rem;
+        color: var(--text-primary);
+      }
+    }
   }
 
   .flags-grid {

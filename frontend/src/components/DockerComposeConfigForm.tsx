@@ -25,18 +25,45 @@ interface FormData {
   };
 }
 
+// Function to convert host path to container path
+const convertHostPathToContainerPath = (hostPath: string): string => {
+  // Remove leading slash if present
+  const cleanPath = hostPath.startsWith('/') ? hostPath.slice(1) : hostPath;
+  
+  // If path starts with Users/username, convert to /home
+  if (cleanPath.startsWith('Users/')) {
+    const parts = cleanPath.split('/');
+    if (parts.length >= 3) {
+      // Remove 'Users' and username, keep the rest
+      const remainingPath = parts.slice(2).join('/');
+      return `/home/${remainingPath}`;
+    }
+  }
+  
+  // If it's already a container path (starts with /home), return as is
+  if (cleanPath.startsWith('home/')) {
+    return `/${cleanPath}`;
+  }
+  
+  // For other paths, assume they should be prefixed with /home
+  return `/home/${cleanPath}`;
+};
+
 const DockerComposeConfigForm: React.FC<DockerComposeConfigFormProps> = ({
   onSubmit,
   onCancel,
   loading = false
 }) => {
   const [error, setError] = useState<string>('');
+  const [pathValue, setPathValue] = useState<string>('');
+  const [convertedPath, setConvertedPath] = useState<string>('');
   
   const {
     control,
     handleSubmit,
     formState: { errors },
-    reset
+    reset,
+    setValue
   } = useForm<FormData>({
     defaultValues: {
       name: '',
@@ -55,6 +82,18 @@ const DockerComposeConfigForm: React.FC<DockerComposeConfigFormProps> = ({
     }
   });
 
+  const handlePathChange = (value: string) => {
+    setPathValue(value);
+    const containerPath = convertHostPathToContainerPath(value);
+    setConvertedPath(containerPath);
+    setValue('path', containerPath);
+    
+    // Clear any existing path errors when user starts typing
+    if (errors.path) {
+      setValue('path', containerPath);
+    }
+  };
+
   const onFormSubmit = async (data: FormData) => {
     try {
       setError('');
@@ -72,6 +111,8 @@ const DockerComposeConfigForm: React.FC<DockerComposeConfigFormProps> = ({
 
       onSubmit(config);
       reset();
+      setPathValue('');
+      setConvertedPath('');
     } catch (err) {
       setError('Failed to create configuration');
     }
@@ -108,21 +149,33 @@ const DockerComposeConfigForm: React.FC<DockerComposeConfigFormProps> = ({
 
         <div className="form-group">
           <label htmlFor="path">Docker Compose Path *</label>
-          <Controller
-            name="path"
-            control={control}
-            rules={{ required: 'Path is required' }}
-            render={({ field }) => (
-              <input
-                {...field}
-                type="text"
-                id="path"
-                placeholder="/path/to/docker-compose.yml directory"
-                disabled={loading}
-              />
-            )}
+          <input
+            type="text"
+            id="path"
+            placeholder="e.g., /Documents/mso-treez-pay"
+            value={pathValue}
+            onChange={(e) => handlePathChange(e.target.value)}
+            disabled={loading}
+            className={errors.path ? 'error' : ''}
+            required
           />
+          {convertedPath && (
+            <div className="path-conversion-info">
+              <small>
+                <strong>Container path:</strong> {convertedPath}
+                <br />
+                <em>This path will be used inside the Docker container</em>
+              </small>
+            </div>
+          )}
           {errors.path && <span className="error">{errors.path.message}</span>}
+          <div className="path-help-text">
+            <small>
+              <strong>Tip:</strong> Enter the relative path from your home directory. 
+              For example, if your docker-compose.yml is at <code>/Users/username/Documents/my-project/</code>, 
+              just enter <code>/Documents/my-project</code>
+            </small>
+          </div>
         </div>
 
         <div className="form-group">

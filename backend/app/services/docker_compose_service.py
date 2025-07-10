@@ -89,9 +89,22 @@ def delete_docker_compose_config(db: Session, config_id: int) -> bool:
 def _validate_compose_path(config_path: str) -> Dict[str, Any]:
     """Validate Docker Compose path and file existence"""
     if not os.path.exists(config_path):
+        # Provide helpful error message with container path suggestion
+        error_msg = f"Path does not exist: {config_path}. Please check the configuration path."
+        
+        # If it looks like a host path, suggest the container path
+        if config_path.startswith('/Users/') or config_path.startswith('/home/'):
+            # Extract the path after the username
+            path_parts = config_path.split('/')
+            if len(path_parts) >= 4 and path_parts[1] in ['Users', 'home']:
+                # Skip 'Users'/'home' and username, keep the rest
+                remaining_path = '/'.join(path_parts[3:])
+                suggested_path = f"/home/{remaining_path}"
+                error_msg += f"\n\nSuggestion: Try using the container path: {suggested_path}"
+        
         return {
             "success": False,
-            "message": f"Path does not exist: {config_path}. Please check the configuration path."
+            "message": error_msg
         }
     
     compose_file = os.path.join(config_path, "docker-compose.yml")
