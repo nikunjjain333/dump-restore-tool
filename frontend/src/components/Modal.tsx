@@ -71,7 +71,12 @@ const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className={`modal-content${contentType === 'logs' ? ' modal-content-logs' : ''}${type === 'status' ? ' modal-content-status' : ''}${type === 'error' ? ' modal-content-error' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`modal-content${contentType === 'logs' ? ' modal-content-logs' : ''}${type === 'status' ? ' modal-content-status' : ''}${type === 'error' ? ' modal-content-error' : ''}`}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className={`modal-header modal-${type}`}>
           <div className="modal-icon">{getIcon()}</div>
           <h3 className="modal-title">{title}</h3>

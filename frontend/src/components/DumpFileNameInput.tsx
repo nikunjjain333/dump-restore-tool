@@ -27,11 +27,12 @@ const DumpFileNameInput: React.FC<DumpFileNameInputProps> = ({
 
   return (
     <div className="dump-filename-input">
-      <label className="input-label">
+      <label className="input-label" htmlFor="dump-filename-input">
         Dump File Name (Optional)
         <span className="input-hint">Enter a custom filename without extension</span>
       </label>
       <input
+        id="dump-filename-input"
         type="text"
         value={value}
         onChange={handleChange}

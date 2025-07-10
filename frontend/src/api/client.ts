@@ -2,12 +2,18 @@ import axios, { AxiosResponse } from 'axios';
 
 const API_BASE_URL = (process.env.REACT_APP_API_URL as string) || 'http://localhost:8000';
 
-const apiClient = axios.create({
+// Export apiClient as a variable for testability
+export let apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Allow tests to override apiClient
+export const setApiClient = (client: typeof apiClient) => {
+  apiClient = client;
+};
 
 // TypeScript interfaces
 export interface DockerInfo {
@@ -150,6 +156,4 @@ export const api = {
     apiClient.post<DockerComposeOperationResponse>(`/docker-compose/${id}/operate`, operation),
   getDockerComposeServices: (id: number): Promise<AxiosResponse<{success: boolean, services?: Record<string, any>[], message?: string}>> => 
     apiClient.get(`/docker-compose/${id}/services`),
-};
-
-export default apiClient; 
+}; 

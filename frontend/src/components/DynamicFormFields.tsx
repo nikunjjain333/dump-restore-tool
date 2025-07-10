@@ -74,32 +74,36 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({
   const connectionFields = useMemo(() => fields.filter(field => field.section === 'connection'), [fields]);
   const restoreFields = useMemo(() => fields.filter(field => field.section === 'restore'), [fields]);
 
-  const renderField = useCallback(({ name, label, type, icon: Icon, defaultValue, required }: FieldConfig) => (
-    <div key={name} className="field-group">
-      <label className="field-label">
-        <Icon className="field-icon" />
-        {label}
-        {required && <span className="required">*</span>}
-      </label>
-      <div className="input-wrapper">
-        <input
-          type={type}
-          {...register(name, { 
-            required: required ? `${label} is required` : false,
-            value: defaultValue || ''
-          })}
-          className={`field-input ${errors[name] ? 'error' : ''}`}
-          placeholder={`Enter ${label.toLowerCase()}`}
-        />
-      </div>
-      {errors[name] && (
-        <div className="field-error">
-          <span className="error-icon">⚠</span>
-          {errors[name]?.message?.toString() || 'This field is required'}
+  const renderField = useCallback(({ name, label, type, icon: Icon, defaultValue, required }: FieldConfig) => {
+    const inputId = `${name}-input`;
+    return (
+      <div key={name} className="field-group">
+        <label className="field-label" htmlFor={inputId}>
+          <Icon className="field-icon" />
+          {label}
+          {required && <span className="required">*</span>}
+        </label>
+        <div className="input-wrapper">
+          <input
+            id={inputId}
+            type={type}
+            {...register(name, { 
+              required: required ? `${label} is required` : false,
+              value: defaultValue || ''
+            })}
+            className={`field-input ${errors[name] ? 'error' : ''}`}
+            placeholder={`Enter ${label.toLowerCase()}`}
+          />
         </div>
-      )}
-    </div>
-  ), [register, errors]);
+        {errors[name] && (
+          <div className="field-error">
+            <span className="error-icon">⚠</span>
+            {errors[name]?.message?.toString() || 'This field is required'}
+          </div>
+        )}
+      </div>
+    );
+  }, [register, errors]);
 
   return (
     <div className="dynamic-form-fields">
