@@ -6,3 +6,12 @@ docker
 python-dotenv
 alembic
 pydantic
+
+# Testing
+pytest
+pytest-asyncio
+
+# Linting and formatting
+flake8
+black
+isort

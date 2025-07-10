@@ -45,6 +45,7 @@ dump-restore-tool/
 │   │   ├── services/      # Business logic
 │   │   └── main.py        # FastAPI entry point
 │   ├── Dockerfile
+│   ├── Makefile           # Development commands
 │   └── requirements.txt
 ├── frontend/
 │   ├── public/
@@ -58,17 +59,20 @@ dump-restore-tool/
 │   ├── package.json
 │   └── tsconfig.json
 ├── docker-compose.yml
+├── start.sh               # Quick start script
+├── stop.sh                # Quick stop script
 └── README.md
 ```
 
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ (for local development)
-- Python 3.11+ (for local development)
+- **Docker and Docker Compose** (required for containerized setup)
+- **Node.js 18+** (for local development)
+- **Python 3.11+** (for local development)
+- **Git** (for cloning the repository)
 
-### Using Docker Compose (Recommended)
+### Option 1: Docker Compose Setup (Recommended)
 
 1. **Clone the repository**
    ```bash
@@ -82,27 +86,38 @@ dump-restore-tool/
    ./start.sh
    
    # Option 2: Manual startup
-   docker-compose up --build
+   docker-compose up --build -d
    ```
 
 3. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
+   - **Frontend**: http://localhost:3000
+   - **Backend API**: http://localhost:8000
+   - **API Documentation**: http://localhost:8000/docs
 
-### Local Development
+4. **Stop the application**
+   ```bash
+   # Option 1: Use the stop script
+   ./stop.sh
+   
+   # Option 2: Manual stop
+   docker-compose down
+   ```
+
+### Option 2: Local Development Setup
 
 #### Backend Setup
 ```bash
 cd backend
-# Create virtual environment (if not already created)
+
+# Create virtual environment
 make venv
+
 # Install dependencies
 make install
+
 # Run database migrations
 make migrate
-# (Optional) Create a new migration after model changes
-make make_migration msg="your message here"
+
 # Start the backend server
 make run
 ```
@@ -110,16 +125,128 @@ make run
 #### Frontend Setup
 ```bash
 cd frontend
+
+# Install dependencies
 npm install
+
+# Start development server
 npm start
 ```
 
 #### Backend Makefile Commands
-- `make venv` — Create a Python virtual environment in backend/
-- `make install` — Install Python dependencies
-- `make migrate` — Apply all Alembic migrations
-- `make make_migration msg="message"` — Create a new Alembic migration (autogenerate)
-- `make run` — Start the FastAPI backend with Uvicorn (auto-reload)
+```bash
+# Development commands
+make venv                    # Create Python virtual environment
+make install                 # Install Python dependencies
+make migrate                 # Apply all Alembic migrations
+make make_migration msg="message"  # Create new migration
+make run                     # Start FastAPI server with auto-reload
+make test                    # Run backend tests
+make lint                    # Run code linting
+```
+
+## Database Setup and Commands
+
+### Database Migrations
+
+The application uses Alembic for database migrations. Here are the key commands:
+
+```bash
+cd backend
+
+# Apply all pending migrations
+make migrate
+
+# Create a new migration after model changes
+make make_migration msg="Add new field to configs"
+
+# View migration history
+alembic history
+
+# Downgrade to a specific migration
+alembic downgrade <revision_id>
+
+# Upgrade to latest migration
+alembic upgrade head
+```
+
+### Database Reset
+
+If you need to reset the database:
+
+```bash
+cd backend
+
+# Drop and recreate database (PostgreSQL)
+make reset_db
+
+# Or manually:
+# 1. Connect to PostgreSQL
+psql -U postgres -h localhost
+
+# 2. Drop and recreate database
+DROP DATABASE IF EXISTS dump_restore;
+CREATE DATABASE dump_restore;
+
+# 3. Run migrations
+make migrate
+```
+
+### Database Backup and Restore
+
+#### Backup the application database:
+```bash
+# Backup PostgreSQL database
+pg_dump -U postgres -h localhost dump_restore > backup.sql
+
+# Restore PostgreSQL database
+psql -U postgres -h localhost dump_restore < backup.sql
+```
+
+## Docker Commands
+
+### Container Management
+```bash
+# View running containers
+docker ps
+
+# View all containers (including stopped)
+docker ps -a
+
+# View logs for a specific service
+docker-compose logs backend
+docker-compose logs frontend
+
+# Restart a specific service
+docker-compose restart backend
+
+# Rebuild and restart services
+docker-compose up --build
+
+# Stop all services
+docker-compose down
+
+# Remove all containers and volumes
+docker-compose down -v
+```
+
+### Docker Compose Operations
+
+The application supports Docker Compose operations through the UI:
+
+1. **Add Docker Compose Configuration**
+   - Navigate to Docker Compose page
+   - Click "Add Configuration"
+   - Enter path relative to home directory (e.g., `/Documents/my-project`)
+   - The system automatically converts to container path (`/home/Documents/my-project`)
+
+2. **Common Operations**
+   - **Launch Stack**: `docker-compose up -d`
+   - **Stop Stack**: `docker-compose down`
+   - **Restart Stack**: `docker-compose restart`
+   - **View Status**: `docker-compose ps`
+   - **View Logs**: `docker-compose logs`
+   - **Rebuild Images**: `docker-compose build`
 
 ## API Documentation
 
@@ -131,210 +258,37 @@ http://localhost:8000
 ### Authentication
 Currently, the API doesn't require authentication. In production, implement proper authentication.
 
-### Endpoints
+### Key Endpoints
 
 #### Health Check
 ```http
 GET /health
 ```
-**Response:**
-```json
-{
-  "status": "healthy",
-  "database": "connected"
-}
-```
 
 #### Docker Operations
-
-**Check Docker Status**
 ```http
 GET /docker/status
 ```
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Docker daemon is running",
-  "status": "running",
-  "info": {
-    "containers": 5,
-    "images": 12,
-    "version": "24.0.5",
-    "os": "linux",
-    "architecture": "x86_64"
-  }
-}
-```
 
 #### Docker Compose Operations
-
-**List Docker Compose Configurations**
 ```http
 GET /docker-compose/
-```
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "name": "My App Stack",
-    "path": "/path/to/docker-compose.yml",
-    "service_name": "web",
-    "flags": {
-      "detach": true,
-      "build": false
-    },
-    "description": "Production web application stack",
-    "is_active": true
-  }
-]
-```
-
-**Create Docker Compose Configuration**
-```http
 POST /docker-compose/
-```
-**Request Body:**
-```json
-{
-  "name": "My App Stack",
-  "path": "/path/to/docker-compose.yml",
-  "service_name": "web",
-  "flags": {
-    "detach": true,
-    "build": false
-  },
-  "description": "Production web application stack"
-}
-```
-
-**Perform Docker Compose Operation**
-```http
 POST /docker-compose/{config_id}/operate
-```
-**Request Body:**
-```json
-{
-  "config_id": 1,
-  "operation": "up",
-  "service_name": "web",
-  "flags": {
-    "detach": true,
-    "build": true
-  }
-}
-```
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Docker Compose up completed successfully",
-  "output": "Starting myapp_web_1 ... done"
-}
 ```
 
 #### Configuration Management
-
-**List Configurations**
 ```http
 GET /configs
-```
-**Response:**
-```json
-[
-  {
-    "id": 1,
-    "name": "Production PostgreSQL",
-    "db_type": "postgres",
-    "params": {
-      "host": "localhost",
-      "port": 5432,
-      "database": "myapp",
-      "username": "postgres",
-      "password": "password"
-    }
-  }
-]
-```
-
-**Create Configuration**
-```http
 POST /configs
-```
-**Request Body:**
-```json
-{
-  "name": "Production PostgreSQL",
-  "db_type": "postgres",
-  "params": {
-    "host": "localhost",
-    "port": 5432,
-    "database": "myapp",
-    "username": "postgres",
-    "password": "password"
-  }
-}
+PUT /configs/{config_id}
+DELETE /configs/{config_id}
 ```
 
 #### Database Operations
-
-**Start Dump Operation**
 ```http
 POST /dump
-```
-**Request Body:**
-```json
-{
-  "db_type": "postgres",
-  "params": {
-    "host": "localhost",
-    "port": 5432,
-    "database": "myapp",
-    "username": "postgres",
-    "password": "password"
-  },
-  "path": "/tmp/dumps/myapp_backup.sql",
-  "run_path": "/app"
-}
-```
-**Response:**
-```json
-{
-  "success": true,
-  "message": "PostgreSQL dump completed successfully: /tmp/dumps/myapp_backup.sql",
-  "path": "/tmp/dumps/myapp_backup.sql"
-}
-```
-
-> **Note:** The backend will attempt to write the dump file to the path you specify. If the path is not writable due to file system restrictions, the backend will suggest alternative writable paths (such as `/tmp`, `~/Downloads`, or `~/Desktop`). There is no download endpoint; you should use a writable path accessible from your host system.
-
-**Start Restore Operation**
-```http
 POST /restore
-```
-**Request Body:**
-```json
-{
-  "db_type": "postgres",
-  "params": {
-    "host": "localhost",
-    "port": 5432,
-    "database": "myapp",
-    "username": "postgres",
-    "password": "password"
-  },
-  "path": "/tmp/dumps/myapp_backup.sql",
-  "run_path": "/app"
-}
-```
-**Response:**
-```json
-{
-  "success": true,
-  "message": "PostgreSQL restore completed successfully from: /tmp/dumps/myapp_backup.sql",
-  "path": "/tmp/dumps/myapp_backup.sql"
-}
 ```
 
 ## Database Support
@@ -413,6 +367,71 @@ REACT_APP_API_URL=http://localhost:8000
 REACT_APP_ENV=development
 ```
 
+## Troubleshooting
+
+### Common Issues
+
+1. **Docker not accessible**
+   ```bash
+   # Check Docker daemon status
+   docker info
+   
+   # Start Docker Desktop (macOS/Windows)
+   # Or start Docker service (Linux)
+   sudo systemctl start docker
+   ```
+
+2. **Database connection issues**
+   ```bash
+   # Check if PostgreSQL is running
+   docker-compose logs db
+   
+   # Restart database service
+   docker-compose restart db
+   ```
+
+3. **Port conflicts**
+   ```bash
+   # Check what's using port 3000 or 8000
+   lsof -i :3000
+   lsof -i :8000
+   
+   # Kill process if needed
+   kill -9 <PID>
+   ```
+
+4. **Permission issues with Docker**
+   ```bash
+   # Add user to docker group (Linux)
+   sudo usermod -aG docker $USER
+   
+   # Logout and login again
+   ```
+
+### Development Issues
+
+1. **Frontend build errors**
+   ```bash
+   cd frontend
+   rm -rf node_modules package-lock.json
+   npm install
+   npm start
+   ```
+
+2. **Backend import errors**
+   ```bash
+   cd backend
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+3. **Database migration issues**
+   ```bash
+   cd backend
+   make migrate
+   # If that fails, try:
+   alembic upgrade head
+   ```
 
 ## Contributing
 
