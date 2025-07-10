@@ -12,7 +12,7 @@ module.exports = {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(react-router-dom|@testing-library)/)',
+    'node_modules/(?!(react-router-dom|@testing-library|axios)/)',
   ],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
