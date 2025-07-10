@@ -5,10 +5,28 @@ import shlex
 from typing import Dict, Any, Optional
 from app.core.utils import (
     get_consistent_path, validate_db_type,
-    format_error_response, format_success_response
+    format_error_response, format_success_response, get_dump_directory
 )
 
 logger = logging.getLogger(__name__)
+
+def ensure_dump_directory_exists():
+    """Ensure the dump directory exists and is writable"""
+    try:
+        dump_dir = get_dump_directory()
+        os.makedirs(dump_dir, exist_ok=True)
+        
+        # Test write access
+        test_file = os.path.join(dump_dir, ".test_write")
+        with open(test_file, 'w') as f:
+            f.write("test")
+        os.remove(test_file)
+        
+        logger.info(f"Dump directory is ready: {dump_dir}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to ensure dump directory exists: {e}")
+        return False
 
 def run_dump(db_type: str, params: Dict[str, Any], config_name: str, 
              run_path: Optional[str] = None, dump_file_name: Optional[str] = None) -> Dict[str, Any]:
@@ -17,7 +35,13 @@ def run_dump(db_type: str, params: Dict[str, Any], config_name: str,
         if not validate_db_type(db_type):
             return format_error_response(f"Unsupported database type: {db_type}")
         
+        # Ensure dump directory exists
+        if not ensure_dump_directory_exists():
+            return format_error_response("Failed to create or access dump directory")
+        
         path = get_consistent_path(config_name, db_type, dump_file_name)
+        dump_dir = get_dump_directory()
+        logger.info(f"Dump directory: {dump_dir}")
         logger.info(f"Starting {db_type} dump operation for config '{config_name}' to path: {path}")
         
         dump_functions = {

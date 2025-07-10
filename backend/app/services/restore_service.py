@@ -4,10 +4,21 @@ from typing import Dict, Any, Optional
 from .docker_service import get_docker_client
 from app.core.utils import (
     get_consistent_path, validate_db_type, get_db_image, get_db_default_port,
-    format_error_response, format_success_response
+    format_error_response, format_success_response, get_dump_directory
 )
 
 logger = logging.getLogger(__name__)
+
+def ensure_dump_directory_exists():
+    """Ensure the dump directory exists and is accessible"""
+    try:
+        dump_dir = get_dump_directory()
+        os.makedirs(dump_dir, exist_ok=True)
+        logger.info(f"Dump directory is ready: {dump_dir}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to ensure dump directory exists: {e}")
+        return False
 
 def _prepare_restore_params(params: Dict[str, Any], db_type: str, restore_password: str,
                            local_database_name: Optional[str] = None, restore_username: Optional[str] = None,
@@ -77,24 +88,24 @@ def run_restore(db_type: str, params: Dict[str, Any], config_name: str, restore_
         if not validate_db_type(db_type):
             return format_error_response(f"Unsupported database type: {db_type}")
         
+        # Ensure dump directory exists
+        if not ensure_dump_directory_exists():
+            return format_error_response("Failed to create or access dump directory")
+        
         # Prepare parameters for restore
         params = _prepare_restore_params(params, db_type, restore_password, local_database_name,
                                        restore_username, restore_host, restore_port)
         
         # Generate path to look for the dump file
         path = get_consistent_path(config_name, db_type, dump_file_name)
-        host_tmp_path = '/tmp/' + os.path.basename(path)
         
-        logger.info(f"Starting {db_type} restore operation for config '{config_name}' from path: {host_tmp_path}")
+        logger.info(f"Starting {db_type} restore operation for config '{config_name}' from path: {path}")
         
         # Check if restore file exists
-        if not os.path.exists(host_tmp_path):
+        if not os.path.exists(path):
             return format_error_response(
-                f"Restore file not found: {host_tmp_path}. Please ensure the dump file exists before attempting restore."
+                f"Restore file not found: {path}. Please ensure the dump file exists before attempting restore."
             )
-        
-        # Use the host path for the restore operation
-        path = host_tmp_path
         
         # Log final connection parameters
         logger.info(f"Restore connection - Host: {params.get('host')}, Port: {params.get('port')}, "
@@ -154,11 +165,12 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str]
         logger.info(f"Database '{database}' created successfully")
         
         # Step 3: Perform the actual restore
+        dump_dir = get_dump_directory()
         client.containers.run(
             postgres_image,
             command=f'psql -h {host} -p {port} -U {username} -d {database} -f /restore/{filename}',
             environment={'PGPASSWORD': password},
-            volumes={'/tmp': {'bind': '/restore', 'mode': 'rw'}},
+            volumes={dump_dir: {'bind': '/restore', 'mode': 'rw'}},
             working_dir=run_path or '/',
             remove=True,
             detach=False
@@ -180,10 +192,11 @@ def _restore_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = 
                       f"-P {params.get('port', 3306)} -u {params['username']} "
                       f"-p{params['password']} {params['database']} < /restore/{filename}")
         
+        dump_dir = get_dump_directory()
         client.containers.run(
             get_db_image('mysql'),
             command=f'sh -c "{restore_cmd}"',
-            volumes={'/tmp': {'bind': '/restore', 'mode': 'rw'}},
+            volumes={dump_dir: {'bind': '/restore', 'mode': 'rw'}},
             working_dir=run_path or '/',
             remove=True,
             detach=False
@@ -200,10 +213,11 @@ def _restore_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] 
         
         restore_cmd = f"mongorestore --uri '{params['uri']}' --db {params['database']} /restore/{params['database']}"
         
+        dump_dir = get_dump_directory()
         client.containers.run(
             get_db_image('mongodb'),
             command=f'sh -c "{restore_cmd}"',
-            volumes={'/tmp': {'bind': '/restore', 'mode': 'rw'}},
+            volumes={dump_dir: {'bind': '/restore', 'mode': 'rw'}},
             working_dir=run_path or '/',
             remove=True,
             detach=False
@@ -222,11 +236,12 @@ def _restore_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = 
         # Copy the RDB file to Redis data directory
         redis_cmd = f"cp /restore/{filename} /data/dump.rdb"
         
+        dump_dir = get_dump_directory()
         client.containers.run(
             get_db_image('redis'),
             command=f'sh -c "{redis_cmd}"',
             volumes={
-                '/tmp': {'bind': '/restore', 'mode': 'rw'},
+                dump_dir: {'bind': '/restore', 'mode': 'rw'},
                 '/var/lib/redis': {'bind': '/data', 'mode': 'rw'}
             },
             working_dir=run_path or '/',
