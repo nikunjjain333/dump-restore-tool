@@ -6,7 +6,7 @@ class Settings:
     """Application settings from environment variables"""
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/dump_restore")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5433/dump_restore")
     
     # API
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")

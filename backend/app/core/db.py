@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5432/dump_restore")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5433/dump_restore")
 
 # Create engine with connection pooling and retry logic
 engine = create_engine(
