@@ -29,7 +29,7 @@ def ensure_dump_directory_exists():
         return False
 
 def run_dump(db_type: str, params: Dict[str, Any], config_name: str, 
-             run_path: Optional[str] = None, dump_file_name: Optional[str] = None) -> Dict[str, Any]:
+            dump_file_name: Optional[str] = None) -> Dict[str, Any]:
     """Run database dump operation with consistent file path"""
     try:
         if not validate_db_type(db_type):
@@ -52,12 +52,12 @@ def run_dump(db_type: str, params: Dict[str, Any], config_name: str,
             'sqlite': _dump_sqlite
         }
         
-        return dump_functions[db_type](params, path, run_path)
+        return dump_functions[db_type](params, path)
     except Exception as e:
         logger.error(f"Dump operation failed: {e}")
         return format_error_response(f"Dump operation failed: {str(e)}")
 
-def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optional[str] = None) -> subprocess.CompletedProcess:
+def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None) -> subprocess.CompletedProcess:
     """Run a command on the host system"""
     try:
         # Parse command safely
@@ -72,7 +72,6 @@ def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optio
         result = subprocess.run(
             args,
             env=process_env,
-            cwd=cwd,
             capture_output=True,
             text=True,
         )
@@ -87,7 +86,7 @@ def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optio
         logger.error(f"Failed to run command: {e}")
         raise
 
-def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+def _dump_postgres(params: Dict[str, Any], path: str) -> Dict[str, Any]:
     """Dump PostgreSQL database using host pg_dump"""
     try:
         host = params.get('host', 'localhost')
@@ -124,7 +123,7 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = 
         env = {'PGPASSWORD': password}
         
         # Run the command and redirect output to file
-        result = _run_host_command(cmd, env=env, cwd=run_path)
+        result = _run_host_command(cmd, env=env)
         
         if result.returncode == 0:
             # Write output to file
@@ -142,7 +141,7 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = 
         logger.error(f"PostgreSQL dump failed: {str(e)}")
         return format_error_response(f"PostgreSQL dump failed: {str(e)}")
 
-def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+def _dump_mysql(params: Dict[str, Any], path: str) -> Dict[str, Any]:
     """Dump MySQL database using host mysqldump"""
     try:
         host = params.get('host', 'localhost')
@@ -172,7 +171,7 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
         env = {}
         
         # Run the command and redirect output to file
-        result = _run_host_command(cmd, env=env, cwd=run_path)
+        result = _run_host_command(cmd, env=env)
         
         if result.returncode == 0:
             # Write output to file
@@ -190,7 +189,7 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
         logger.error(f"MySQL dump failed: {str(e)}")
         return format_error_response(f"MySQL dump failed: {str(e)}")
 
-def _dump_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+def _dump_mongodb(params: Dict[str, Any], path: str) -> Dict[str, Any]:
     """Dump MongoDB database using host mongodump"""
     try:
         uri = params.get('uri')
@@ -219,7 +218,7 @@ def _dump_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = N
         cmd = f'mongodump --uri "{uri}" --db {database} --out {output_dir}'
         
         # Run the command
-        result = _run_host_command(cmd, cwd=run_path)
+        result = _run_host_command(cmd)
         
         if result.returncode == 0:
             logger.info(f"MongoDB dump completed: {output_dir}")
@@ -233,7 +232,7 @@ def _dump_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = N
         logger.error(f"MongoDB dump failed: {str(e)}")
         return format_error_response(f"MongoDB dump failed: {str(e)}")
 
-def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+def _dump_redis(params: Dict[str, Any], path: str) -> Dict[str, Any]:
     """Dump Redis database using host redis-cli"""
     try:
         host = params.get('host', 'localhost')
@@ -249,7 +248,7 @@ def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
         cmd += f" --rdb {path}"
         
         # Run the command
-        result = _run_host_command(cmd, cwd=run_path)
+        result = _run_host_command(cmd)
         
         if result.returncode == 0:
             logger.info(f"Redis dump completed: {path}")
@@ -263,7 +262,7 @@ def _dump_redis(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
         logger.error(f"Redis dump failed: {str(e)}")
         return format_error_response(f"Redis dump failed: {str(e)}")
 
-def _dump_sqlite(params: Dict[str, Any], path: str, run_path: Optional[str] = None) -> Dict[str, Any]:
+def _dump_sqlite(params: Dict[str, Any], path: str) -> Dict[str, Any]:
     """Dump SQLite database by copying the file"""
     try:
         import shutil

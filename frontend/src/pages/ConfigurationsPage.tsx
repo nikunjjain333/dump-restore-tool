@@ -124,7 +124,6 @@ const ConfigurationsPage: React.FC = () => {
         db_type: config.db_type,
         params: config.params,
         config_name: config.name,
-        run_path: config.run_path,
         dump_file_name: config.dump_file_name
       };
       

@@ -101,7 +101,6 @@ describe('API Client Unit Tests', () => {
         db_type: 'postgres',
         params: { host: 'localhost', port: 5432 },
         config_name: 'test-config',
-        run_path: '/app',
       };
       const mockResponse = {
         success: true,
@@ -117,7 +116,6 @@ describe('API Client Unit Tests', () => {
         db_type: 'postgres',
         params: { host: 'invalid', port: 5432 },
         config_name: 'test-config',
-        run_path: '/app',
       };
       const errorResponse = {
         response: {
@@ -136,7 +134,6 @@ describe('API Client Unit Tests', () => {
         db_type: 'postgres',
         params: { host: 'localhost', port: 5432 },
         config_name: 'test-config',
-        run_path: '/app',
         restore_password: 'password',
         local_database_name: 'testdb',
         dump_file_name: 'dump.sql',
@@ -158,7 +155,6 @@ describe('API Client Unit Tests', () => {
         db_type: 'postgres',
         params: { host: 'localhost', port: 5432 },
         config_name: 'test-config',
-        run_path: '/app',
         restore_password: 'password',
         local_database_name: 'testdb',
         dump_file_name: 'nonexistent.sql',

@@ -21,7 +21,6 @@ class DumpRequest(BaseModel):
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
     params: Dict[str, Any] = Field(..., description="Database connection parameters (database is optional)")
     config_name: str = Field(..., description="Configuration name for consistent file paths")
-    run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     dump_file_name: Optional[str] = Field(default=None, description="Custom filename for dump file (without extension)")
     
     _validate_db_type = validator('db_type', allow_reuse=True)(validate_db_type)
@@ -33,13 +32,13 @@ class RestoreRequest(BaseModel):
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
     params: Dict[str, Any] = Field(..., description="Database connection parameters (database is optional)")
     config_name: str = Field(..., description="Configuration name for consistent file paths")
-    run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     restore_password: Optional[str] = Field(default=None, description="Optional password for restore operations")
     local_database_name: Optional[str] = Field(default=None, description="Optional local database name for restore operations")
     dump_file_name: Optional[str] = Field(default=None, description="Custom filename for dump file (without extension)")
     restore_username: Optional[str] = Field(default=None, description="Optional restore username for restore operations")
     restore_host: Optional[str] = Field(default=None, description="Optional restore host for restore operations")
     restore_port: Optional[str] = Field(default=None, description="Optional restore port for restore operations")
+    stack_name: Optional[str] = Field(default=None, description="Optional Docker Compose stack name for containerized restore operations")
 
     _validate_db_type = validator('db_type', allow_reuse=True)(validate_db_type)
     _validate_config_name = validator('config_name', allow_reuse=True)(validate_config_name) 

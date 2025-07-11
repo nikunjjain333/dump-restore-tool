@@ -91,9 +91,6 @@ const AddConfigurationPage: React.FC = () => {
       
       // Set path fields from dedicated database columns
       setTimeout(() => {
-        if (config.run_path) {
-          setValue('runPath', config.run_path);
-        }
         if (config.restore_password) {
           setValue('restore_password', config.restore_password);
         }
@@ -180,7 +177,6 @@ const AddConfigurationPage: React.FC = () => {
         name: data.configName,
         db_type: data.dbType,
         params: dbParams,
-        run_path: data.runPath || undefined,
         restore_password: data.restore_password,
         local_database_name: data.local_database_name || undefined,
         dump_file_name: data.dump_file_name || undefined,
@@ -219,9 +215,6 @@ const AddConfigurationPage: React.FC = () => {
     
     // Set path fields from dedicated database columns
     setTimeout(() => {
-      if (config.run_path) {
-        setValue('runPath', config.run_path);
-      }
       if (config.restore_password) {
         setValue('restore_password', config.restore_password);
       }
@@ -253,8 +246,6 @@ const AddConfigurationPage: React.FC = () => {
         db_type: config.db_type,
         params: config.params,
         config_name: config.name,
-        run_path: config.run_path,
-        dump_file_name: config.dump_file_name
       };
       
       let result;

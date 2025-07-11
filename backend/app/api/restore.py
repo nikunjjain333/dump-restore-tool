@@ -12,12 +12,12 @@ def run_restore_endpoint(request: RestoreRequest):
         request.params,
         request.config_name,
         request.restore_password,
-        request.run_path,
         request.local_database_name,
         request.dump_file_name,
         request.restore_username,
         request.restore_host,
-        request.restore_port
+        request.restore_port,
+        request.stack_name
     )
     
     if result["success"]:

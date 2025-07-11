@@ -64,7 +64,8 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({
       { name: 'restore_port', label: 'Restore Port (Optional)', type: 'number', icon: Key, section: 'restore' },
       { name: 'local_database_name', label: 'Local Database Name (Optional)', type: 'text', icon: Database, section: 'restore' },
       { name: 'restore_username', label: 'Restore Username (Optional)', type: 'text', icon: User, section: 'restore' },
-      { name: 'restore_password', label: 'Restore Password (Optional)', type: 'password', icon: Lock, section: 'restore' }
+      { name: 'restore_password', label: 'Restore Password (Optional)', type: 'password', icon: Lock, section: 'restore' },
+      { name: 'stack_name', label: 'Stack Name (Optional)', type: 'text', icon: Server, section: 'restore' }
     );
     
     return baseFields;
