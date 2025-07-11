@@ -11,6 +11,7 @@ class ConfigBase(BaseModel):
     restore_username: Optional[str] = Field(None, description="Optional restore username for restore operations")
     restore_host: Optional[str] = Field(None, description="Optional restore host for restore operations")
     restore_port: Optional[str] = Field(None, description="Optional restore port for restore operations")
+    stack_name: Optional[str] = Field(None, description="Optional Docker Compose stack name for containerized restore operations")
 
 
 class ConfigCreate(ConfigBase):

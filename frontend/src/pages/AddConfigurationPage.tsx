@@ -29,6 +29,7 @@ interface FormData {
   restore_username?: string;
   restore_host?: string;
   restore_port?: string;
+  stack_name?: string; // Added stack_name to FormData
 
   [key: string]: any;
 }
@@ -111,6 +112,12 @@ const AddConfigurationPage: React.FC = () => {
         if (config.restore_port) {
           setValue('restore_port', config.restore_port);
         }
+        // Prefill stack_name if present (either as top-level or in params)
+        if (config.stack_name) {
+          setValue('stack_name', config.stack_name);
+        } else if (config.params && config.params.stack_name) {
+          setValue('stack_name', config.params.stack_name);
+        }
       }, 100);
       toast.success(`Configuration "${config.name}" loaded!`);
       configLoadedFromNavigation.current = true;
@@ -183,7 +190,8 @@ const AddConfigurationPage: React.FC = () => {
         dump_file_name: data.dump_file_name || undefined,
         restore_username: data.restore_username || undefined,
         restore_host: data.restore_host || undefined,
-        restore_port: data.restore_port || undefined
+        restore_port: data.restore_port || undefined,
+        stack_name: data.stack_name || undefined // Add stack_name to payload
       };
 
       // If duplicating, always create new config

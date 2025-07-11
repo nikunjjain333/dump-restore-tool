@@ -43,6 +43,7 @@ export interface Config {
   restore_username?: string;
   restore_host?: string;
   restore_port?: string;
+  stack_name?: string;
 }
 
 export interface ConfigCreate {
@@ -55,6 +56,7 @@ export interface ConfigCreate {
   restore_username?: string;
   restore_host?: string;
   restore_port?: string;
+  stack_name?: string;
 }
 
 export interface DumpRequest {
@@ -152,4 +154,4 @@ export const api = {
     apiClient.post<DockerComposeOperationResponse>(`/docker-compose/${id}/operate`, operation),
   getDockerComposeServices: (id: number): Promise<AxiosResponse<{success: boolean, services?: Record<string, any>[], message?: string}>> => 
     apiClient.get(`/docker-compose/${id}/services`),
-}; 
+};
