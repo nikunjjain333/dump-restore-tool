@@ -16,9 +16,10 @@ def validate_config_name(v: str) -> str:
     return v
 
 class DumpRequest(BaseModel):
-    """Request schema for database dump operation"""
+    """Request schema for database dump operation
+    Note: The 'database' field in params is now optional for all db types."""
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
-    params: Dict[str, Any] = Field(..., description="Database connection parameters")
+    params: Dict[str, Any] = Field(..., description="Database connection parameters (database is optional)")
     config_name: str = Field(..., description="Configuration name for consistent file paths")
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     dump_file_name: Optional[str] = Field(default=None, description="Custom filename for dump file (without extension)")
@@ -27,9 +28,10 @@ class DumpRequest(BaseModel):
     _validate_config_name = validator('config_name', allow_reuse=True)(validate_config_name)
 
 class RestoreRequest(BaseModel):
-    """Request schema for database restore operation"""
+    """Request schema for database restore operation
+    Note: The 'database' field in params is now optional for all db types."""
     db_type: str = Field(..., description="Database type (postgres, mysql, mongodb, redis, sqlite)")
-    params: Dict[str, Any] = Field(..., description="Database connection parameters")
+    params: Dict[str, Any] = Field(..., description="Database connection parameters (database is optional)")
     config_name: str = Field(..., description="Configuration name for consistent file paths")
     run_path: Optional[str] = Field(default=None, description="Working directory for the operation (optional)")
     restore_password: Optional[str] = Field(default=None, description="Optional password for restore operations")

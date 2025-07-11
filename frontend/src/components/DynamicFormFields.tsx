@@ -32,7 +32,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({
         baseFields.push(
           { name: 'host', label: 'Host', type: 'text', icon: Server, defaultValue: 'localhost', section: 'connection' },
           { name: 'port', label: 'Port', type: 'number', icon: Key, defaultValue: dbType === 'postgres' ? '5432' : '3306', section: 'connection' },
-          { name: 'database', label: 'Database', type: 'text', icon: Database, required: true, section: 'connection' },
+          { name: 'database', label: 'Database', type: 'text', icon: Database, required: false, section: 'connection' },
           { name: 'username', label: 'Username', type: 'text', icon: User, required: true, section: 'connection' },
           { name: 'password', label: 'Password', type: 'password', icon: Lock, required: true, section: 'connection' }
         );
@@ -40,7 +40,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({
       case 'mongodb':
         baseFields.push(
           { name: 'uri', label: 'Connection URI', type: 'text', icon: Globe, required: true, section: 'connection' },
-          { name: 'database', label: 'Database', type: 'text', icon: Database, required: true, section: 'connection' }
+          { name: 'database', label: 'Database', type: 'text', icon: Database, required: false, section: 'connection' }
         );
         break;
       case 'redis':
@@ -53,7 +53,7 @@ const DynamicFormFields: React.FC<DynamicFormFieldsProps> = React.memo(({
         break;
       case 'sqlite':
         baseFields.push(
-          { name: 'database', label: 'Database File Path', type: 'text', icon: Database, required: true, section: 'connection' }
+          { name: 'database', label: 'Database File Path', type: 'text', icon: Database, required: false, section: 'connection' }
         );
         break;
     }

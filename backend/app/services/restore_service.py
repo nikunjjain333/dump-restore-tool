@@ -168,9 +168,18 @@ def _restore_postgres(params: Dict[str, Any], path: str, run_path: Optional[str]
     try:
         host = params.get('host', 'localhost')
         port = str(params.get('port', 5432))
-        database = params['database']
-        username = params['username']
-        password = params['password']
+        database = params.get('database')
+        username = params.get('username')
+        password = params.get('password')
+
+        if not database:
+            error_msg = "Database name is required for PostgreSQL restore."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+        if not username or not password:
+            error_msg = "Username and password are required for PostgreSQL restore."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
         
         # Clean up host parameter - remove port if it's included in the host
         if ':' in host:
@@ -227,9 +236,18 @@ def _restore_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = 
     try:
         host = params.get('host', 'localhost')
         port = str(params.get('port', 3306))
-        database = params['database']
-        username = params['username']
-        password = params['password']
+        database = params.get('database')
+        username = params.get('username')
+        password = params.get('password')
+
+        if not database:
+            error_msg = "Database name is required for MySQL restore."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+        if not username or not password:
+            error_msg = "Username and password are required for MySQL restore."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
         
         # Clean up host parameter - remove port if it's included in the host
         if ':' in host:
@@ -263,10 +281,11 @@ def _restore_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] 
     """Restore MongoDB database using host mongorestore"""
     try:
         uri = params.get('uri')
-        database = params['database']
-        
+        database = params.get('database')
+
         if not uri:
             return format_error_response("MongoDB URI is required")
+        # database is optional for MongoDB
         
         logger.info(f"MongoDB restore: database: {database}")
         

@@ -96,9 +96,18 @@ def _dump_postgres(params: Dict[str, Any], path: str, run_path: Optional[str] = 
     try:
         host = params.get('host', 'localhost')
         port = str(params.get('port', 5432))
-        database = params['database']
-        username = params['username']
-        password = params['password']
+        database = params.get('database')
+        username = params.get('username')
+        password = params.get('password')
+
+        if not database:
+            error_msg = "Database name is required for PostgreSQL dump."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+        if not username or not password:
+            error_msg = "Username and password are required for PostgreSQL dump."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
         
         logger.info(f"PostgreSQL dump: {host}:{port}, database: {database}, user: {username}")
         
@@ -142,9 +151,18 @@ def _dump_mysql(params: Dict[str, Any], path: str, run_path: Optional[str] = Non
     try:
         host = params.get('host', 'localhost')
         port = str(params.get('port', 3306))
-        database = params['database']
-        username = params['username']
-        password = params['password']
+        database = params.get('database')
+        username = params.get('username')
+        password = params.get('password')
+
+        if not database:
+            error_msg = "Database name is required for MySQL dump."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
+        if not username or not password:
+            error_msg = "Username and password are required for MySQL dump."
+            logger.error(error_msg)
+            return format_error_response(error_msg)
         
         logger.info(f"MySQL dump: {host}:{port}, database: {database}, user: {username}")
         
@@ -180,10 +198,14 @@ def _dump_mongodb(params: Dict[str, Any], path: str, run_path: Optional[str] = N
     """Dump MongoDB database using host mongodump"""
     try:
         uri = params.get('uri')
-        database = params['database']
-        
+        database = params.get('database')
+
         if not uri:
             return format_error_response("MongoDB URI is required")
+        # database is optional for MongoDB
+        
+        if not database:
+            return format_error_response("Database name is required for MongoDB dump.")
         
         logger.info(f"MongoDB dump: database: {database}")
         
