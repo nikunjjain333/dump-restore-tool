@@ -56,6 +56,7 @@ const AddConfigurationPage: React.FC = () => {
     type: 'info'
   });
   
+  const isDuplicate = location.state?.isDuplicate;
   const { setOperationStatus } = useOperationStatus();
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
@@ -79,17 +80,18 @@ const AddConfigurationPage: React.FC = () => {
   useEffect(() => {
     if (location.state?.selectedConfig && !configLoadedFromNavigation.current) {
       const config = location.state.selectedConfig;
-      
-      setSelectedConfig(config);
+      // If duplicating, do not treat as edit mode
+      if (isDuplicate) {
+        setSelectedConfig(null); // Not edit mode
+      } else {
+        setSelectedConfig(config);
+      }
       setValue('dbType', config.db_type);
       setValue('configName', config.name);
-      
       // Set database parameters from config.params
       Object.entries(config.params).forEach(([key, value]) => {
         setValue(key, value);
       });
-      
-      // Set path fields from dedicated database columns
       setTimeout(() => {
         if (config.restore_password) {
           setValue('restore_password', config.restore_password);
@@ -110,11 +112,10 @@ const AddConfigurationPage: React.FC = () => {
           setValue('restore_port', config.restore_port);
         }
       }, 100);
-      
       toast.success(`Configuration "${config.name}" loaded!`);
       configLoadedFromNavigation.current = true;
     }
-  }, [location.state, setValue]);
+  }, [location.state, setValue, isDuplicate]);
 
   const loadSavedConfigs = useCallback(async () => {
     // Prevent multiple simultaneous calls
@@ -185,14 +186,14 @@ const AddConfigurationPage: React.FC = () => {
         restore_port: data.restore_port || undefined
       };
 
-      if (selectedConfig) {
+      // If duplicating, always create new config
+      if (isDuplicate || !selectedConfig) {
+        await api.createConfig(configData);
+        toast.success('Configuration created successfully');
+      } else {
         // Update existing config
         await api.updateConfig(selectedConfig.id, configData);
         toast.success('Configuration updated successfully');
-      } else {
-        // Create new config
-        await api.createConfig(configData);
-        toast.success('Configuration created successfully');
       }
       
       navigate('/configurations');
@@ -201,7 +202,7 @@ const AddConfigurationPage: React.FC = () => {
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to save configuration';
       toast.error(errorMessage);
     }
-  }, [selectedConfig, navigate]);
+  }, [selectedConfig, navigate, isDuplicate]);
 
   const handleConfigSelect = useCallback((config: Config) => {
     setSelectedConfig(config);
@@ -314,12 +315,14 @@ const AddConfigurationPage: React.FC = () => {
   }, []);
 
   const pageTitle = useMemo(() => {
+    if (isDuplicate) return 'Duplicate Configuration';
     return selectedConfig ? 'Edit Configuration' : 'Add New Configuration';
-  }, [selectedConfig]);
+  }, [selectedConfig, isDuplicate]);
 
   const submitButtonText = useMemo(() => {
+    if (isDuplicate) return 'Create Configuration';
     return selectedConfig ? 'Update Configuration' : 'Create Configuration';
-  }, [selectedConfig]);
+  }, [selectedConfig, isDuplicate]);
 
   return (
     <div className="add-configuration-page">

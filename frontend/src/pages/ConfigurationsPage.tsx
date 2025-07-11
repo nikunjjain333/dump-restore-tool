@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  Loader2
+  Loader2,
+  Copy
 } from 'lucide-react';
 import './ConfigurationsPage.scss';
 import { api, Config, OperationResponse } from '../api/client';
@@ -83,6 +84,16 @@ const ConfigurationsPage: React.FC = () => {
 
   const handleConfigSelect = useCallback((config: Config) => {
     navigate('/add-configuration', { state: { selectedConfig: config } });
+  }, [navigate]);
+
+  const handleConfigDuplicate = useCallback((config: Config) => {
+    // Remove id and optionally modify name
+    const duplicatedConfig = {
+      ...config,
+      id: undefined,
+      name: config.name + ' Copy',
+    };
+    navigate('/add-configuration', { state: { selectedConfig: duplicatedConfig, isDuplicate: true } });
   }, [navigate]);
 
   const handleConfigDelete = useCallback(async (configId: number) => {
@@ -373,6 +384,13 @@ const ConfigurationsPage: React.FC = () => {
                         title="Edit Configuration"
                       >
                         <Edit />
+                      </button>
+                      <button
+                        className="btn btn--secondary btn-sm"
+                        onClick={() => handleConfigDuplicate(config)}
+                        title="Duplicate Configuration"
+                      >
+                        <Copy />
                       </button>
                       <button
                         className="btn btn--primary btn-sm"
