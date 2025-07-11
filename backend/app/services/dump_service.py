@@ -75,7 +75,6 @@ def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optio
             cwd=cwd,
             capture_output=True,
             text=True,
-            timeout=300  # 5 minute timeout
         )
         
         if result.returncode != 0:
@@ -84,9 +83,6 @@ def _run_host_command(cmd: str, env: Optional[Dict[str, str]] = None, cwd: Optio
             logger.error(f"stderr: {result.stderr}")
         
         return result
-    except subprocess.TimeoutExpired:
-        logger.error("Command timed out after 5 minutes")
-        raise Exception("Command timed out after 5 minutes")
     except Exception as e:
         logger.error(f"Failed to run command: {e}")
         raise
