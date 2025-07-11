@@ -352,46 +352,42 @@ const ConfigurationsPage: React.FC = () => {
               const hasStatus = !!operationStatus[config.id];
               return (
                 <div key={config.id} className={`configuration-card${!hasStatus ? ' no-status-indicator' : ''}`}>
-                  <div className="card-header">
-                    <div className="config-icon-wrapper">
-                      {getDatabaseIcon(config.db_type)}
-                    </div>
-                    <div className="config-info">
-                      <h3>{config.name}</h3>
-                      <div className="config-meta">
-                        <span className="db-type">{config.db_type.toUpperCase()}</span>
-                        <div className="operation-badge">
-                          <span>Database Config</span>
+                  <div className="card-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', gap: '0.5rem', padding: '1.5rem', borderBottom: '1px solid var(--border-primary)', position: 'relative' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', gap: '0.7rem', marginBottom: '0.1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
+                        <div className="config-icon-wrapper" style={{ width: '2.2rem', height: '2.2rem' }}>
+                          {getDatabaseIcon(config.db_type)}
+                        </div>
+                        <div className="operation-badge" style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                          Database Config
                         </div>
                       </div>
-                    </div>
-                    {hasStatus && (
-                      <div className="status-indicator">
-                        {operationStatus[config.id] === 'running' && <Loader2 className="status-icon running" />}
-                        {operationStatus[config.id] === 'success' && <span className="status-icon success">✔️</span>}
-                        {operationStatus[config.id] === 'error' && <span className="status-icon error">❌</span>}
-                        <span className="status-text">
-                          {operationStatus[config.id] === 'running' && 'Running...'}
-                          {operationStatus[config.id] === 'success' && 'Completed'}
-                          {operationStatus[config.id] === 'error' && 'Failed'}
-                        </span>
+                      <div className="card-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button 
+                          className="btn btn--secondary btn-sm"
+                          onClick={() => handleConfigSelect(config)}
+                          title="Edit Configuration"
+                        >
+                          <Edit />
+                        </button>
+                        <button
+                          className="btn btn--secondary btn-sm"
+                          onClick={() => handleConfigDuplicate(config)}
+                          title="Duplicate Configuration"
+                        >
+                          <Copy />
+                        </button>
+                        <button 
+                          className="btn btn--danger btn-sm"
+                          onClick={() => handleConfigDelete(config.id)}
+                          title="Delete Configuration"
+                        >
+                          <Trash2 />
+                        </button>
                       </div>
-                    )}
-                    <div className="card-actions">
-                      <button 
-                        className="btn btn--secondary btn-sm"
-                        onClick={() => handleConfigSelect(config)}
-                        title="Edit Configuration"
-                      >
-                        <Edit />
-                      </button>
-                      <button
-                        className="btn btn--secondary btn-sm"
-                        onClick={() => handleConfigDuplicate(config)}
-                        title="Duplicate Configuration"
-                      >
-                        <Copy />
-                      </button>
+                    </div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0.2rem 0 0.5rem 0', textAlign: 'left', letterSpacing: '0.01em' }}>{config.name}</h3>
+                    <div className="card-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'flex-start', marginTop: '0.2rem' }}>
                       <button
                         className="btn btn--primary btn-sm"
                         onClick={() => handleStartOperation(config, 'dump')}
@@ -408,14 +404,19 @@ const ConfigurationsPage: React.FC = () => {
                       >
                         <Upload />
                       </button>
-                      <button 
-                        className="btn btn--danger btn-sm"
-                        onClick={() => handleConfigDelete(config.id)}
-                        title="Delete Configuration"
-                      >
-                        <Trash2 />
-                      </button>
                     </div>
+                    {hasStatus && (
+                      <div className="status-indicator" style={{ position: 'absolute', top: '-0.7rem', right: '1rem' }}>
+                        {operationStatus[config.id] === 'running' && <Loader2 className="status-icon running" />}
+                        {operationStatus[config.id] === 'success' && <span className="status-icon success">✔️</span>}
+                        {operationStatus[config.id] === 'error' && <span className="status-icon error">❌</span>}
+                        <span className="status-text">
+                          {operationStatus[config.id] === 'running' && 'Running...'}
+                          {operationStatus[config.id] === 'success' && 'Completed'}
+                          {operationStatus[config.id] === 'error' && 'Failed'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="card-content">
