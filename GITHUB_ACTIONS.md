@@ -1,6 +1,6 @@
-# GitLab CI/CD Pipeline Documentation
+# GitHub Actions CI/CD Pipeline Documentation
 
-This document describes the complete GitLab CI/CD pipeline for the Database Dump & Restore Tool.
+This document describes the complete GitHub Actions CI/CD pipeline for the Database Dump & Restore Tool.
 
 ## 🚀 Pipeline Overview
 
@@ -12,12 +12,12 @@ The pipeline consists of 4 main stages:
 
 ## 📋 Pipeline Behavior
 
-### On Commit (Any Branch)
+### On Pull Request
 - ✅ **Install Dependencies** (Backend & Frontend)
 - ✅ **Run Tests** (Unit & Integration)
 - ✅ **Code Quality Checks** (Linting, Security)
 
-### On Merge to Main
+### On Push to Main
 - ✅ **Install Dependencies** (Backend, Frontend & Terraform)
 - ✅ **Run Tests** (Unit, Integration & Docker)
 - ✅ **Build Docker Images** (Backend & Frontend)
@@ -26,26 +26,30 @@ The pipeline consists of 4 main stages:
 - ✅ **Security Scans** (Trivy)
 - ✅ **Notifications** (Slack)
 
+### On Push to Develop
+- ✅ **Install Dependencies** (Backend & Frontend)
+- ✅ **Run Tests** (Unit & Integration)
+- ✅ **Deploy to Staging** (Terraform)
+
 ## 🔧 Pipeline Stages
 
 ### 1. Install Stage
 
 #### `install-dependencies`
 - **Purpose**: Install Python dependencies for backend
-- **Image**: `python:3.11-slim`
-- **Artifacts**: `backend/venv/`
-- **Triggers**: Merge requests, main, develop
+- **Runner**: `ubuntu-latest`
+- **Cache**: Python dependencies
+- **Triggers**: Pull requests, main, develop
 
 #### `install-frontend-deps`
 - **Purpose**: Install Node.js dependencies for frontend
-- **Image**: `node:18-alpine`
-- **Artifacts**: `frontend/node_modules/`
-- **Triggers**: Merge requests, main, develop
+- **Runner**: `ubuntu-latest`
+- **Cache**: Node.js dependencies
+- **Triggers**: Pull requests, main, develop
 
 #### `install-terraform`
 - **Purpose**: Initialize Terraform for deployment
-- **Image**: `hashicorp/terraform:1.5.0`
-- **Artifacts**: `terraform/.terraform/`
+- **Runner**: `ubuntu-latest`
 - **Triggers**: main only
 
 ### 2. Test Stage
@@ -55,20 +59,20 @@ The pipeline consists of 4 main stages:
 - **Dependencies**: `install-dependencies`
 - **Tests**: Unit tests, integration tests, linting
 - **Coverage**: Generates coverage reports
-- **Triggers**: Merge requests, main, develop
+- **Triggers**: Pull requests, main, develop
 
 #### `test-frontend`
 - **Purpose**: Run frontend tests and quality checks
 - **Dependencies**: `install-frontend-deps`
 - **Tests**: Unit tests, integration tests, linting
 - **Coverage**: Generates coverage reports
-- **Triggers**: Merge requests, main, develop
+- **Triggers**: Pull requests, main, develop
 
 #### `test-docker`
 - **Purpose**: Test Docker builds
-- **Image**: `docker:20.10.16`
+- **Runner**: `ubuntu-latest`
 - **Tests**: Backend and frontend Docker builds
-- **Triggers**: Merge requests, main
+- **Triggers**: Pull requests, main
 
 #### `security-scan`
 - **Purpose**: Security vulnerability scanning
@@ -81,15 +85,15 @@ The pipeline consists of 4 main stages:
 
 #### `build-backend`
 - **Purpose**: Build and push backend Docker image
-- **Image**: `docker:20.10.16`
-- **Registry**: GitLab Container Registry
+- **Runner**: `ubuntu-latest`
+- **Registry**: Amazon ECR
 - **Tags**: `latest` and commit SHA
 - **Triggers**: main only
 
 #### `build-frontend`
 - **Purpose**: Build and push frontend Docker image
-- **Image**: `docker:20.10.16`
-- **Registry**: GitLab Container Registry
+- **Runner**: `ubuntu-latest`
+- **Registry**: Amazon ECR
 - **Tags**: `latest` and commit SHA
 - **Triggers**: main only
 
@@ -97,7 +101,7 @@ The pipeline consists of 4 main stages:
 
 #### `deploy-infrastructure`
 - **Purpose**: Deploy AWS infrastructure using Terraform
-- **Image**: `hashicorp/terraform:1.5.0`
+- **Runner**: `ubuntu-latest`
 - **Environment**: Production
 - **Triggers**: main only
 
@@ -121,17 +125,22 @@ The pipeline consists of 4 main stages:
 - **Purpose**: Clean up old Docker images
 - **Triggers**: main only (always runs)
 
-## 🔑 Required Variables
+## 🔑 Required Secrets
 
-### GitLab CI/CD Variables
+### GitHub Repository Secrets
 
-Set these in GitLab Project Settings > CI/CD > Variables:
+Set these in GitHub Repository Settings > Secrets and variables > Actions:
 
 #### AWS Configuration
 ```bash
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_DEFAULT_REGION=us-east-1
+```
+
+#### ECR Configuration
+```bash
+ECR_REGISTRY=your_account_id.dkr.ecr.us-east-1.amazonaws.com
 ```
 
 #### Application Configuration
@@ -152,29 +161,20 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
 STAGING_URL=https://staging.your-app-domain.com
 ```
 
-### Protected Variables
-
-Mark these variables as **Protected**:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `SLACK_WEBHOOK_URL`
-
 ## 🏗️ Pipeline Configuration
 
 ### Cache Configuration
 ```yaml
-cache:
-  key: ${CI_COMMIT_REF_SLUG}
-  paths:
-    - backend/venv/
-    - frontend/node_modules/
-    - .terraform/
+- name: Cache Python dependencies
+  uses: actions/cache@v3
+  with:
+    path: backend/venv
+    key: ${{ runner.os }}-python-${{ hashFiles('backend/requirements.txt') }}
 ```
 
 ### Artifacts
-- **Test Results**: JUnit XML reports
-- **Coverage Reports**: HTML and XML coverage
-- **Build Artifacts**: Docker images in registry
+- **Test Results**: Coverage reports and test artifacts
+- **Build Artifacts**: Docker images in ECR
 - **Terraform State**: State files for infrastructure
 
 ## 🔄 Pipeline Flow
@@ -192,7 +192,7 @@ cache:
    git push origin feature/new-feature
    ```
 
-3. **Create Merge Request**
+3. **Create Pull Request**
    - Pipeline runs: Install + Test stages
    - Code review and approval
    - Merge to main
@@ -217,7 +217,7 @@ cache:
 ### Test Coverage
 - **Backend**: Python coverage with pytest-cov
 - **Frontend**: Jest coverage reports
-- **Reports**: Available in GitLab UI
+- **Reports**: Available in GitHub Actions
 
 ### Security Scanning
 - **Tool**: Trivy
@@ -238,7 +238,7 @@ cache:
 #### 1. Dependency Installation Fails
 ```bash
 # Check cache
-gitlab-ci cache clear
+gh run list --repo owner/repo
 
 # Verify requirements.txt
 pip check -r backend/requirements.txt
@@ -278,13 +278,13 @@ aws logs tail /ecs/dev-app --follow
 
 ### Debug Commands
 
-#### Check Pipeline Status
+#### Check Workflow Status
 ```bash
-# View pipeline logs
-gitlab-ci logs --job=test-backend
+# View workflow runs
+gh run list --repo owner/repo
 
-# Download artifacts
-gitlab-ci artifacts download
+# View specific run logs
+gh run view --repo owner/repo --log
 ```
 
 #### Manual Deployment
@@ -324,26 +324,29 @@ aws ecs update-service --cluster dev-cluster --service dev-backend-service --for
 2. **Add Deployment Job**
    ```yaml
    deploy-staging:
-     stage: deploy
-     environment:
-       name: staging
-       url: $STAGING_URL
+     name: Deploy to Staging
+     runs-on: ubuntu-latest
+     environment: staging
    ```
 
 ### Modifying Deployment Strategy
 1. **Blue-Green Deployment**
    ```yaml
    deploy-blue-green:
-     script:
-       - aws ecs update-service --cluster $CLUSTER --service $SERVICE --desired-count 0
-       - aws ecs update-service --cluster $CLUSTER --service $NEW_SERVICE --desired-count 2
+     steps:
+       - name: Deploy Blue
+         run: |
+           aws ecs update-service --cluster $CLUSTER --service $SERVICE --desired-count 0
+           aws ecs update-service --cluster $CLUSTER --service $NEW_SERVICE --desired-count 2
    ```
 
 2. **Rolling Deployment**
    ```yaml
    deploy-rolling:
-     script:
-       - aws ecs update-service --cluster $CLUSTER --service $SERVICE --force-new-deployment
+     steps:
+       - name: Rolling Deploy
+         run: |
+           aws ecs update-service --cluster $CLUSTER --service $SERVICE --force-new-deployment
    ```
 
 ## 📈 Best Practices
@@ -361,16 +364,16 @@ docs: update API documentation
 test: add unit tests for config service
 ```
 
-### 3. Merge Request Process
+### 3. Pull Request Process
 1. Create feature branch
 2. Implement changes
 3. Add tests
-4. Create merge request
+4. Create pull request
 5. Code review
 6. Merge to main
 
 ### 4. Monitoring
-- **Pipeline Metrics**: GitLab Analytics
+- **Pipeline Metrics**: GitHub Actions Analytics
 - **Application Metrics**: CloudWatch
 - **Error Tracking**: Application logs
 
@@ -381,34 +384,56 @@ test: add unit tests for config service
 # Rollback to previous version
 aws ecs update-service --cluster dev-cluster --service dev-backend-service --task-definition dev-backend:previous
 
-# Or use GitLab UI
-# Go to Deployments > Environments > Production > Rollback
+# Or use GitHub UI
+# Go to Actions > Deploy Application > Re-run jobs
 ```
 
-### Stop Pipeline
+### Stop Workflow
 ```bash
-# Cancel running pipeline
-gitlab-ci cancel --pipeline-id $PIPELINE_ID
+# Cancel running workflow
+gh run cancel --repo owner/repo <run-id>
 ```
 
 ### Manual Deployment
 ```bash
 # Deploy specific version
-docker pull $CI_REGISTRY_IMAGE/backend:$VERSION
+docker pull $ECR_REGISTRY/backend:$VERSION
 aws ecs update-service --cluster dev-cluster --service dev-backend-service --force-new-deployment
 ```
 
 ## 📞 Support
 
 For pipeline issues:
-1. Check GitLab CI/CD logs
+1. Check GitHub Actions logs
 2. Review test results and coverage
 3. Verify AWS credentials and permissions
 4. Check Terraform state and logs
 5. Monitor ECS service health
 
 ### Useful Links
-- [GitLab CI/CD Documentation](https://docs.gitlab.com/ee/ci/)
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Terraform Documentation](https://www.terraform.io/docs)
 - [AWS ECS Documentation](https://docs.aws.amazon.com/ecs/)
-- [Docker Documentation](https://docs.docker.com/) 
+- [Docker Documentation](https://docs.docker.com/)
+
+## 🎯 Key Differences from GitLab
+
+### GitHub Actions Features
+- **Native GitHub Integration**: Seamless integration with GitHub repositories
+- **Matrix Builds**: Run jobs on multiple configurations
+- **Reusable Workflows**: Share workflows across repositories
+- **Environment Protection**: Protect production deployments
+- **Manual Triggers**: Manual workflow execution
+- **Self-hosted Runners**: Use your own infrastructure
+
+### ECR vs GitLab Container Registry
+- **Amazon ECR**: AWS-native container registry
+- **Better Integration**: Seamless AWS service integration
+- **Cost Optimization**: Pay only for storage and data transfer
+- **Security**: IAM integration for access control
+
+### Security Features
+- **GitHub Security Tab**: Integrated security scanning
+- **Dependabot**: Automated dependency updates
+- **Code Scanning**: Advanced code analysis
+- **Secret Scanning**: Automatic secret detection 

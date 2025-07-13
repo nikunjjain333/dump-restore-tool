@@ -1,40 +1,40 @@
-# GitLab Pipeline Quick Reference
+# GitHub Actions Quick Reference
 
 ## 🚀 Quick Start
 
-### 1. Setup Variables
+### 1. Setup Secrets
 ```bash
-./setup-gitlab-variables.sh
+./setup-github-secrets.sh
 ```
 
-### 2. Push to GitLab
+### 2. Push to GitHub
 ```bash
 git add .
-git commit -m "Add GitLab CI/CD pipeline"
+git commit -m "Add GitHub Actions CI/CD pipeline"
 git push origin main
 ```
 
-### 3. Monitor Pipeline
-- Go to GitLab > CI/CD > Pipelines
+### 3. Monitor Workflow
+- Go to GitHub > Actions tab
 - Check job status and logs
 
-## 📋 Pipeline Stages
+## 📋 Workflow Stages
 
 | Stage | Jobs | Trigger |
 |-------|------|---------|
-| **Install** | `install-dependencies`, `install-frontend-deps`, `install-terraform` | MR, main, develop |
-| **Test** | `test-backend`, `test-frontend`, `test-docker`, `security-scan` | MR, main, develop |
+| **Install** | `install-dependencies`, `install-frontend-deps`, `install-terraform` | PR, main, develop |
+| **Test** | `test-backend`, `test-frontend`, `test-docker`, `security-scan` | PR, main, develop |
 | **Build** | `build-backend`, `build-frontend` | main only |
 | **Deploy** | `deploy-infrastructure`, `deploy-application`, `notify-deployment` | main only |
 
-## 🔄 Pipeline Behavior
+## 🔄 Workflow Behavior
 
-### On Commit (Any Branch)
+### On Pull Request
 - ✅ Install dependencies
 - ✅ Run tests
 - ✅ Code quality checks
 
-### On Merge to Main
+### On Push to Main
 - ✅ Install dependencies
 - ✅ Run tests
 - ✅ Build Docker images
@@ -43,13 +43,23 @@ git push origin main
 - ✅ Security scans
 - ✅ Notifications
 
-## 🔑 Required Variables
+### On Push to Develop
+- ✅ Install dependencies
+- ✅ Run tests
+- ✅ Deploy to staging
+
+## 🔑 Required Secrets
 
 ### AWS Configuration
 ```bash
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_DEFAULT_REGION=us-east-1
+```
+
+### ECR Configuration
+```bash
+ECR_REGISTRY=your_account_id.dkr.ecr.us-east-1.amazonaws.com
 ```
 
 ### Application Configuration
@@ -68,13 +78,16 @@ STAGING_URL=https://staging.your-app-domain.com
 
 ## 🛠️ Common Commands
 
-### Check Pipeline Status
+### Check Workflow Status
 ```bash
-# View pipeline logs
-gitlab-ci logs --job=test-backend
+# View workflow runs
+gh run list --repo owner/repo
+
+# View specific run logs
+gh run view --repo owner/repo --log
 
 # Download artifacts
-gitlab-ci artifacts download
+gh run download --repo owner/repo <run-id>
 ```
 
 ### Manual Deployment
@@ -100,8 +113,8 @@ aws elbv2 describe-target-health --target-group-arn $(terraform output -raw back
 
 ## 📊 Monitoring
 
-### GitLab Analytics
-- Pipeline success rate
+### GitHub Actions Analytics
+- Workflow success rate
 - Job duration
 - Test coverage
 
@@ -123,16 +136,16 @@ aws elbv2 describe-target-health --target-group-arn $(terraform output -raw back
 aws ecs update-service --cluster dev-cluster --service dev-backend-service --task-definition dev-backend:previous
 ```
 
-### Stop Pipeline
+### Stop Workflow
 ```bash
-# Cancel running pipeline
-gitlab-ci cancel --pipeline-id $PIPELINE_ID
+# Cancel running workflow
+gh run cancel --repo owner/repo <run-id>
 ```
 
 ### Manual Rollback
 ```bash
 # Deploy specific version
-docker pull $CI_REGISTRY_IMAGE/backend:$VERSION
+docker pull $ECR_REGISTRY/backend:$VERSION
 aws ecs update-service --cluster dev-cluster --service dev-backend-service --force-new-deployment
 ```
 
@@ -151,11 +164,11 @@ docs: update API documentation
 test: add unit tests for config service
 ```
 
-### 3. Merge Request Process
+### 3. Pull Request Process
 1. Create feature branch
 2. Implement changes
 3. Add tests
-4. Create merge request
+4. Create pull request
 5. Code review
 6. Merge to main
 
@@ -178,36 +191,37 @@ test('new feature', () => {
 ### Add New Environment
 ```yaml
 deploy-staging:
-  stage: deploy
-  environment:
-    name: staging
-    url: $STAGING_URL
+  name: Deploy to Staging
+  runs-on: ubuntu-latest
+  environment: staging
 ```
 
 ### Modify Deployment Strategy
 ```yaml
 deploy-blue-green:
-  script:
-    - aws ecs update-service --cluster $CLUSTER --service $SERVICE --desired-count 0
-    - aws ecs update-service --cluster $CLUSTER --service $NEW_SERVICE --desired-count 2
+  steps:
+    - name: Deploy Blue
+      run: |
+        aws ecs update-service --cluster $CLUSTER --service $SERVICE --desired-count 0
+        aws ecs update-service --cluster $CLUSTER --service $NEW_SERVICE --desired-count 2
 ```
 
 ## 📞 Support
 
-### Pipeline Issues
-1. Check GitLab CI/CD logs
+### Workflow Issues
+1. Check GitHub Actions logs
 2. Review test results and coverage
 3. Verify AWS credentials and permissions
 4. Check Terraform state and logs
 5. Monitor ECS service health
 
 ### Useful Links
-- [GitLab CI/CD Documentation](https://docs.gitlab.com/ee/ci/)
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Terraform Documentation](https://www.terraform.io/docs)
 - [AWS ECS Documentation](https://docs.aws.amazon.com/ecs/)
 - [Docker Documentation](https://docs.docker.com/)
 
-## 🎯 Pipeline Flow Diagram
+## 🎯 Workflow Flow Diagram
 
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -226,11 +240,12 @@ Infrastructure  App  Security     Slack  ECS         Terraform  Docker   AWS
 ## 📋 Checklist
 
 ### Before First Deployment
-- [ ] Set up GitLab variables
+- [ ] Set up GitHub secrets
 - [ ] Configure AWS credentials
+- [ ] Set up ECR repositories
 - [ ] Set up application URLs
 - [ ] Configure notifications (optional)
-- [ ] Test pipeline on feature branch
+- [ ] Test workflow on feature branch
 
 ### Before Production Deployment
 - [ ] All tests passing
@@ -244,4 +259,25 @@ Infrastructure  App  Security     Slack  ECS         Terraform  Docker   AWS
 - [ ] Check ECS service health
 - [ ] Monitor application logs
 - [ ] Test core functionality
-- [ ] Update documentation 
+- [ ] Update documentation
+
+## 🔄 Key Differences from GitLab
+
+### GitHub Actions Advantages
+- **Native GitHub Integration**: Seamless with GitHub repositories
+- **Better UI**: More intuitive workflow visualization
+- **Matrix Builds**: Run jobs on multiple configurations
+- **Reusable Workflows**: Share across repositories
+- **Environment Protection**: Protect production deployments
+
+### ECR vs GitLab Container Registry
+- **AWS Native**: Better AWS service integration
+- **Cost Effective**: Pay only for storage and transfer
+- **Security**: IAM integration for access control
+- **Scalability**: Enterprise-grade container registry
+
+### Security Features
+- **GitHub Security Tab**: Integrated security scanning
+- **Dependabot**: Automated dependency updates
+- **Code Scanning**: Advanced code analysis
+- **Secret Scanning**: Automatic secret detection 

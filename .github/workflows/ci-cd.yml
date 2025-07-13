@@ -1,0 +1,487 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  # Docker configuration
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  
+  # AWS configuration
+  AWS_DEFAULT_REGION: us-east-1
+  
+  # Application configuration
+  BACKEND_IMAGE: ${{ secrets.ECR_REGISTRY }}/backend
+  FRONTEND_IMAGE: ${{ secrets.ECR_REGISTRY }}/frontend
+  APP_VERSION: ${{ github.sha }}
+  
+  # Terraform configuration
+  TF_VERSION: "1.5.0"
+  TF_ROOT: terraform
+
+jobs:
+  # =============================================================================
+  # INSTALL STAGE
+  # =============================================================================
+  
+  install-dependencies:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Install Python dependencies
+        working-directory: ./backend
+        run: |
+          echo "Installing Python dependencies..."
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov black flake8
+          echo "Python dependencies installed successfully"
+          
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: backend/venv
+          key: ${{ runner.os }}-python-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
+  install-frontend-deps:
+    name: Install Frontend Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: Install Node.js dependencies
+        working-directory: ./frontend
+        run: |
+          echo "Installing Node.js dependencies..."
+          npm ci --cache .npm --prefer-offline
+          echo "Node.js dependencies installed successfully"
+          
+      - name: Cache Node.js dependencies
+        uses: actions/cache@v3
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+  install-terraform:
+    name: Install Terraform
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Initialize Terraform
+        working-directory: ./terraform
+        run: |
+          echo "Installing Terraform..."
+          terraform init
+          echo "Terraform initialized successfully"
+
+  # =============================================================================
+  # TEST STAGE
+  # =============================================================================
+  
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    needs: install-dependencies
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: Restore Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: backend/venv
+          key: ${{ runner.os }}-python-${{ hashFiles('backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+            
+      - name: Run backend tests
+        working-directory: ./backend
+        run: |
+          echo "Running backend tests..."
+          source venv/bin/activate
+          echo "Running unit tests..."
+          python -m pytest tests/unit/ -v --cov=app --cov-report=xml --cov-report=html
+          echo "Running integration tests..."
+          python -m pytest tests/integration/ -v
+          echo "Running linting..."
+          black --check app/
+          flake8 app/ --max-line-length=88
+          echo "Backend tests completed successfully"
+          
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          name: backend-coverage
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-test-results
+          path: backend/htmlcov/
+          retention-days: 7
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    needs: install-frontend-deps
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: Restore Node.js dependencies
+        uses: actions/cache@v3
+        with:
+          path: frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+            
+      - name: Run frontend tests
+        working-directory: ./frontend
+        run: |
+          echo "Running frontend tests..."
+          echo "Running unit tests..."
+          npm run test:unit -- --coverage --watchAll=false
+          echo "Running integration tests..."
+          npm run test:integration -- --watchAll=false
+          echo "Running linting..."
+          npm run lint
+          echo "Frontend tests completed successfully"
+          
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-test-results
+          path: frontend/coverage/
+          retention-days: 7
+
+  test-docker:
+    name: Test Docker Builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Test backend Docker build
+        run: |
+          echo "Testing Docker builds..."
+          echo "Testing backend Docker build..."
+          docker build -t test-backend backend/
+          echo "Testing frontend Docker build..."
+          docker build -t test-frontend frontend/
+          echo "Docker builds tested successfully"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'backend:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # =============================================================================
+  # BUILD STAGE
+  # =============================================================================
+  
+  build-backend:
+    name: Build Backend
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-docker]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        
+      - name: Build, tag, and push backend image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: backend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building backend Docker image..."
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG backend/
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest backend/
+          echo "Pushing backend image to registry..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "Backend image built and pushed successfully"
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-build
+          path: backend/build/
+          retention-days: 7
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-docker]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        
+      - name: Build, tag, and push frontend image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building frontend Docker image..."
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG frontend/
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest frontend/
+          echo "Pushing frontend image to registry..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "Frontend image built and pushed successfully"
+          
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/build/
+          retention-days: 7
+
+  # =============================================================================
+  # DEPLOY STAGE
+  # =============================================================================
+  
+  deploy-infrastructure:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [install-terraform, test-backend, test-frontend]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Terraform Init
+        working-directory: ./terraform
+        run: terraform init
+        
+      - name: Terraform Plan
+        working-directory: ./terraform
+        run: terraform plan -out=tfplan
+        
+      - name: Terraform Apply
+        working-directory: ./terraform
+        run: terraform apply -auto-approve tfplan
+        
+      - name: Upload Terraform state
+        uses: actions/upload-artifact@v3
+        with:
+          name: terraform-state
+          path: terraform/terraform.tfstate
+          retention-days: 30
+
+  deploy-application:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend, deploy-infrastructure]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Deploy to ECS
+        run: |
+          echo "Deploying application to ECS..."
+          echo "Updating ECS services with new images..."
+          aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER_NAME }} --service ${{ secrets.BACKEND_SERVICE_NAME }} --force-new-deployment
+          aws ecs update-service --cluster ${{ secrets.ECS_CLUSTER_NAME }} --service ${{ secrets.FRONTEND_SERVICE_NAME }} --force-new-deployment
+          echo "Waiting for deployment to complete..."
+          aws ecs wait services-stable --cluster ${{ secrets.ECS_CLUSTER_NAME }} --services ${{ secrets.BACKEND_SERVICE_NAME }} ${{ secrets.FRONTEND_SERVICE_NAME }}
+          echo "Application deployed successfully"
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Deploy to staging
+        working-directory: ./terraform
+        run: |
+          echo "Deploying to staging environment..."
+          terraform init
+          terraform workspace select staging || terraform workspace new staging
+          terraform apply -auto-approve -var="environment=staging"
+          echo "Staging deployment completed"
+
+  # =============================================================================
+  # UTILITY JOBS
+  # =============================================================================
+  
+  notify-deployment:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-application]
+    if: github.ref == 'refs/heads/main' && success()
+    steps:
+      - name: Send Slack notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: success
+          text: |
+            🚀 Deployment completed successfully!
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.ref_name }}
+            Commit: ${{ github.sha }}
+            Environment: Production
+            URL: ${{ secrets.APPLICATION_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  cleanup-old-images:
+    name: Cleanup Old Images
+    runs-on: ubuntu-latest
+    needs: [deploy-application]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Cleanup old ECR images
+        run: |
+          echo "Cleaning up old Docker images..."
+          # Keep only the last 5 images for each repository
+          aws ecr describe-images --repository-name backend --query 'imageDetails[?imagePushedAt>`date -d "7 days ago" --iso-8601=seconds`].imageDigest' --output text | head -n -5 | xargs -I {} aws ecr batch-delete-image --repository-name backend --image-ids imageDigest={} || true
+          aws ecr describe-images --repository-name frontend --query 'imageDetails[?imagePushedAt>`date -d "7 days ago" --iso-8601=seconds`].imageDigest' --output text | head -n -5 | xargs -I {} aws ecr batch-delete-image --repository-name frontend --image-ids imageDigest={} || true
+          echo "Cleanup completed" 
