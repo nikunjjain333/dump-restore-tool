@@ -23,8 +23,9 @@ git push origin main
 | Stage | Jobs | Trigger |
 |-------|------|---------|
 | **Install** | `install-dependencies`, `install-frontend-deps`, `install-terraform` | PR, main, develop |
-| **Test** | `test-backend`, `test-frontend`, `test-docker`, `security-scan` | PR, main, develop |
+| **Test** | `test-backend`, `test-frontend`, `test-docker` | PR, main, develop |
 | **Build** | `build-backend`, `build-frontend` | main only |
+| **Security** | `security-scan` | main only |
 | **Deploy** | `deploy-infrastructure`, `deploy-application`, `notify-deployment` | main only |
 
 ## 🔄 Workflow Behavior
@@ -38,9 +39,9 @@ git push origin main
 - ✅ Install dependencies
 - ✅ Run tests
 - ✅ Build Docker images
+- ✅ Security scans
 - ✅ Deploy infrastructure
 - ✅ Deploy application
-- ✅ Security scans
 - ✅ Notifications
 
 ### On Push to Develop

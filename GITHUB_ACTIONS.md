@@ -76,8 +76,9 @@ The pipeline consists of 4 main stages:
 
 #### `security-scan`
 - **Purpose**: Security vulnerability scanning
+- **Dependencies**: `build-backend`, `build-frontend`
 - **Tool**: Trivy
-- **Scans**: Docker images for vulnerabilities
+- **Scans**: Docker images in ECR for vulnerabilities
 - **Triggers**: main only
 - **Failure**: Allowed (non-blocking)
 
