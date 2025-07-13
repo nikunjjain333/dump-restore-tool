@@ -50,4 +50,14 @@ module.exports = {
   verbose: true,
   clearMocks: true,
   restoreMocks: true,
+  // Memory leak prevention settings
+  maxWorkers: 1, // Run tests sequentially to prevent memory issues
+  maxConcurrency: 1,
+  // Force garbage collection between tests
+  forceExit: true,
+  // Clear cache between tests
+  clearCache: true,
+  // Detect memory leaks
+  detectLeaks: true,
+  detectOpenHandles: true,
 }; 

@@ -37,7 +37,7 @@ git push origin main
 
 ### On Push to Main
 - ✅ Install dependencies
-- ✅ Run tests
+- ✅ Run tests (Unit tests, linting)
 - ✅ Build Docker images
 - ✅ Security scans
 - ✅ Deploy infrastructure

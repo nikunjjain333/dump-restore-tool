@@ -89,4 +89,35 @@ jest.mock('react-router-dom', () => ({
     hash: '',
     state: null,
   }),
-})); 
+}));
+
+// Global cleanup after each test
+afterEach(() => {
+  // Clear all timers
+  jest.clearAllTimers();
+  
+  // Clear all mocks
+  jest.clearAllMocks();
+  
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc();
+  }
+});
+
+// Mock fetch to prevent network calls
+global.fetch = jest.fn();
+
+// Mock AbortController
+global.AbortController = class AbortController {
+  signal = { aborted: false };
+  abort() {
+    this.signal.aborted = true;
+  }
+} as any;
+
+// Mock URL.createObjectURL
+global.URL.createObjectURL = jest.fn(() => 'mocked-url');
+
+// Mock URL.revokeObjectURL
+global.URL.revokeObjectURL = jest.fn(); 

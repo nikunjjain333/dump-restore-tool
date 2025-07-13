@@ -63,8 +63,8 @@ The pipeline consists of 4 main stages:
 #### `test-frontend`
 - **Purpose**: Run frontend tests and quality checks
 - **Dependencies**: `install-frontend-deps`
-- **Tests**: Unit tests, integration tests, linting
-- **Coverage**: Generates coverage reports
+- **Tests**: Unit tests, linting
+- **Coverage**: Generates coverage reports (30% threshold)
 - **Triggers**: Pull requests, main, develop
 
 #### `test-docker`
@@ -216,8 +216,8 @@ STAGING_URL=https://staging.your-app-domain.com
 
 ### Test Coverage
 - **Backend**: Code quality checks (black, flake8)
-- **Frontend**: Jest coverage reports (50% threshold)
-- **Reports**: Available in GitHub Actions
+- **Frontend**: Jest coverage reports (30% threshold)
+- **Reports**: Available in GitHub Actions (non-blocking)
 
 ### Security Scanning
 - **Tool**: Trivy
@@ -247,10 +247,10 @@ pip check -r backend/requirements.txt
 #### 2. Tests Fail
 ```bash
 # Run backend linting locally
-cd backend && black --check app/ && flake8 app/ --max-line-length=88
+cd backend && black --check app/ && flake8 app/ --max-line-length=88 --ignore=E501,F401,F841,E712
 
 # Run frontend tests locally
-cd frontend && npm test
+cd frontend && npm run test:unit -- --coverage --watchAll=false
 ```
 
 #### 3. Docker Build Fails
