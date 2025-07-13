@@ -4,11 +4,12 @@ from app.services.restore_service import run_restore
 
 router = APIRouter()
 
+
 @router.post("/")
 def run_restore_endpoint(request: RestoreRequest):
     """Start database restore operation"""
     result = run_restore(
-        request.db_type, 
+        request.db_type,
         request.params,
         request.config_name,
         request.restore_password,
@@ -17,14 +18,14 @@ def run_restore_endpoint(request: RestoreRequest):
         request.restore_username,
         request.restore_host,
         request.restore_port,
-        request.stack_name
+        request.stack_name,
     )
-    
+
     if result["success"]:
         return {
             "success": True,
             "message": result["message"],
-            "path": result.get("path")
+            "path": result.get("path"),
         }
     else:
-        raise HTTPException(status_code=500, detail=result["message"]) 
+        raise HTTPException(status_code=500, detail=result["message"])

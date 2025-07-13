@@ -8,14 +8,13 @@ import asyncio
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 app = FastAPI(
     title="Database Dump & Restore Tool API",
     description="A comprehensive API for database dump and restore operations",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Add CORS middleware
@@ -26,6 +25,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 async def wait_for_db(max_retries=30, delay=2):
     """Wait for database to be ready with retry mechanism"""
@@ -43,17 +43,18 @@ async def wait_for_db(max_retries=30, delay=2):
                 logging.error("Max retries reached, database connection failed")
                 return False
 
+
 @app.on_event("startup")
 async def on_startup():
     """Initialize database tables on startup with retry mechanism"""
     logging.info("Starting application...")
-    
+
     # Wait for database to be ready
     db_ready = await wait_for_db()
     if not db_ready:
         logging.error("Database is not available, but continuing startup...")
         return
-    
+
     # Create database tables
     try:
         Base.metadata.create_all(bind=engine)
@@ -61,14 +62,16 @@ async def on_startup():
     except Exception as e:
         logging.error(f"Failed to create database tables: {e}")
 
+
 @app.get("/")
 def root():
     """Root endpoint with API information"""
     return {
         "message": "Database Dump & Restore Tool API",
         "version": "1.0.0",
-        "docs": "/docs"
+        "docs": "/docs",
     }
+
 
 @app.get("/health")
 def health_check():
@@ -81,9 +84,12 @@ def health_check():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
+
 # Include routers
 app.include_router(configs.router, prefix="/configs", tags=["configs"])
 app.include_router(dump.router, prefix="/dump", tags=["dump"])
 app.include_router(restore.router, prefix="/restore", tags=["restore"])
 app.include_router(docker.router, prefix="/docker", tags=["docker"])
-app.include_router(docker_compose.router, prefix="/docker-compose", tags=["docker-compose"])
+app.include_router(
+    docker_compose.router, prefix="/docker-compose", tags=["docker-compose"]
+)

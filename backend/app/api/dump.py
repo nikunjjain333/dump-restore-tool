@@ -4,16 +4,19 @@ from app.services.dump_service import run_dump
 
 router = APIRouter()
 
+
 @router.post("/")
 def run_dump_endpoint(request: DumpRequest):
     """Start database dump operation"""
-    result = run_dump(request.db_type, request.params, request.config_name, request.dump_file_name)
-    
+    result = run_dump(
+        request.db_type, request.params, request.config_name, request.dump_file_name
+    )
+
     if result["success"]:
         return {
             "success": True,
             "message": result["message"],
-            "path": result.get("path")
+            "path": result.get("path"),
         }
     else:
-        raise HTTPException(status_code=500, detail=result["message"]) 
+        raise HTTPException(status_code=500, detail=result["message"])

@@ -6,7 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@db:5433/dump_restore")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:postgres@db:5433/dump_restore"
+)
 
 # Create engine with connection pooling and retry logic
 engine = create_engine(
@@ -16,11 +18,12 @@ engine = create_engine(
     max_overflow=20,
     pool_pre_ping=True,
     pool_recycle=3600,
-    echo=False  # Set to True for SQL query logging
+    echo=False,  # Set to True for SQL query logging
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 def get_db():
     """Dependency to get database session"""
@@ -34,6 +37,7 @@ def get_db():
     finally:
         db.close()
 
+
 def test_db_connection():
     """Test database connection"""
     try:
@@ -42,4 +46,4 @@ def test_db_connection():
         return True
     except Exception as e:
         logger.error(f"Database connection test failed: {e}")
-        return False 
+        return False

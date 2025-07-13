@@ -55,10 +55,9 @@ The pipeline consists of 4 main stages:
 ### 2. Test Stage
 
 #### `test-backend`
-- **Purpose**: Run backend tests and quality checks
+- **Purpose**: Run backend quality checks
 - **Dependencies**: `install-dependencies`
-- **Tests**: Unit tests, integration tests, linting
-- **Coverage**: Generates coverage reports
+- **Tests**: Code linting (black, flake8)
 - **Triggers**: Pull requests, main, develop
 
 #### `test-frontend`
@@ -216,8 +215,8 @@ STAGING_URL=https://staging.your-app-domain.com
 ## 📊 Monitoring & Reporting
 
 ### Test Coverage
-- **Backend**: Python coverage with pytest-cov
-- **Frontend**: Jest coverage reports
+- **Backend**: Code quality checks (black, flake8)
+- **Frontend**: Jest coverage reports (50% threshold)
 - **Reports**: Available in GitHub Actions
 
 ### Security Scanning
@@ -247,8 +246,10 @@ pip check -r backend/requirements.txt
 
 #### 2. Tests Fail
 ```bash
-# Run tests locally
-cd backend && python -m pytest
+# Run backend linting locally
+cd backend && black --check app/ && flake8 app/ --max-line-length=88
+
+# Run frontend tests locally
 cd frontend && npm test
 ```
 

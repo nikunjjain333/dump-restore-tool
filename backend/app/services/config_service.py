@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def get_configs(db: Session):
     """Get all configurations from database"""
     try:
@@ -13,6 +14,7 @@ def get_configs(db: Session):
     except Exception as e:
         logger.error(f"Failed to fetch configurations: {e}")
         raise
+
 
 def create_config(db: Session, config: ConfigCreate):
     """Create a new configuration in database"""
@@ -31,22 +33,27 @@ def create_config(db: Session, config: ConfigCreate):
         logger.error(f"Failed to create configuration: {e}")
         raise
 
+
 def update_config(db: Session, config_id: int, config: ConfigCreate):
     """Update an existing configuration in database"""
     try:
         db_config = db.query(Config).filter(Config.id == config_id).first()
         if not db_config:
             return None
-        
+
         # Check for name conflict (other than self)
-        existing = db.query(Config).filter(Config.name == config.name, Config.id != config_id).first()
+        existing = (
+            db.query(Config)
+            .filter(Config.name == config.name, Config.id != config_id)
+            .first()
+        )
         if existing:
             raise ValueError(f"Configuration with name '{config.name}' already exists")
-        
+
         # Update all fields
         for field, value in config.dict().items():
             setattr(db_config, field, value)
-        
+
         db.commit()
         db.refresh(db_config)
         return db_config
@@ -57,6 +64,7 @@ def update_config(db: Session, config_id: int, config: ConfigCreate):
         db.rollback()
         logger.error(f"Failed to update configuration: {e}")
         raise
+
 
 def delete_config(db: Session, config_id: int):
     """Delete a configuration by ID"""
@@ -70,4 +78,4 @@ def delete_config(db: Session, config_id: int):
     except Exception as e:
         db.rollback()
         logger.error(f"Failed to delete configuration: {e}")
-        raise 
+        raise
