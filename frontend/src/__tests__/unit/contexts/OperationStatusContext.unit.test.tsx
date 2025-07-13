@@ -89,6 +89,7 @@ describe('OperationStatusContext', () => {
 
   it('throws error when used outside provider', () => {
     // Suppress console.error for this test
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     
     expect(() => {

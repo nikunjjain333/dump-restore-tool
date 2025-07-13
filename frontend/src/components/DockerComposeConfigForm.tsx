@@ -290,7 +290,7 @@ const DockerComposeConfigForm: React.FC<DockerComposeConfigFormProps> = ({
                     onBlur={field.onBlur}
                     disabled={loading}
                   />
-                  <span>Don't recreate containers</span>
+                  <span>Don&apos;t recreate containers</span>
                 </label>
               )}
             />
@@ -307,7 +307,7 @@ const DockerComposeConfigForm: React.FC<DockerComposeConfigFormProps> = ({
                     onBlur={field.onBlur}
                     disabled={loading}
                   />
-                  <span>Don't build images</span>
+                  <span>Don&apos;t build images</span>
                 </label>
               )}
             />
@@ -324,7 +324,7 @@ const DockerComposeConfigForm: React.FC<DockerComposeConfigFormProps> = ({
                     onBlur={field.onBlur}
                     disabled={loading}
                   />
-                  <span>Don't start linked services</span>
+                  <span>Don&apos;t start linked services</span>
                 </label>
               )}
             />

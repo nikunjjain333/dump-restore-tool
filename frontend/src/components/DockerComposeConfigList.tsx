@@ -74,7 +74,7 @@ const DockerComposeConfigList: React.FC<DockerComposeConfigListProps> = ({ onRef
     }
   }, [isFetching]);
 
-  const fetchServiceStatuses = useCallback(async (configsToCheck: DockerComposeConfig[], showRefreshing: boolean = false) => {
+  const fetchServiceStatuses = useCallback(async (configsToCheck: DockerComposeConfig[], showRefreshing = false) => {
     console.log(`Fetching service statuses for ${configsToCheck.length} configs, showRefreshing: ${showRefreshing}`);
     
     const statusMap = new Map<number, { 

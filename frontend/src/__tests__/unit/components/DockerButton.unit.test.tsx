@@ -1,14 +1,19 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DockerButton from '../../../components/DockerButton';
+import toast from 'react-hot-toast';
 
-jest.mock('react-hot-toast', () => ({
-  __esModule: true,
-  default: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+jest.mock('react-hot-toast', () => {
+  const actual = jest.requireActual('react-hot-toast');
+  return {
+    __esModule: true,
+    ...actual,
+    default: {
+      success: jest.fn(),
+      error: jest.fn(),
+    },
+  };
+});
 
 const baseStatus = {
   isRunning: false,
@@ -112,7 +117,6 @@ describe('DockerButton', () => {
   });
 
   it('shows toast success if running after check', async () => {
-    const toast = require('react-hot-toast').default;
     const checkDockerStatus = jest.fn().mockResolvedValue(undefined);
     const status = { isRunning: true, status: 'running' };
     render(
@@ -129,7 +133,6 @@ describe('DockerButton', () => {
   });
 
   it('shows toast error if not accessible after check', async () => {
-    const toast = require('react-hot-toast').default;
     const checkDockerStatus = jest.fn().mockResolvedValue(undefined);
     const status = { isRunning: false, status: 'not_accessible' };
     render(
@@ -145,7 +148,6 @@ describe('DockerButton', () => {
   });
 
   it('shows toast error if check throws', async () => {
-    const toast = require('react-hot-toast').default;
     const checkDockerStatus = jest.fn().mockRejectedValue(new Error('fail'));
     render(
       <DockerButton
