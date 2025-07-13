@@ -53,7 +53,7 @@ jobs:
           echo "Python dependencies installed successfully"
           
       - name: Cache Python dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: backend/venv
           key: ${{ runner.os }}-python-${{ hashFiles('backend/requirements.txt') }}
@@ -82,7 +82,7 @@ jobs:
           echo "Node.js dependencies installed successfully"
           
       - name: Cache Node.js dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: frontend/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
@@ -128,7 +128,7 @@ jobs:
           cache: 'pip'
           
       - name: Restore Python dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: backend/venv
           key: ${{ runner.os }}-python-${{ hashFiles('backend/requirements.txt') }}
@@ -157,7 +157,7 @@ jobs:
           name: backend-coverage
           
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-test-results
           path: backend/htmlcov/
@@ -179,7 +179,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
           
       - name: Restore Node.js dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: frontend/node_modules
           key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
@@ -206,7 +206,7 @@ jobs:
           name: frontend-coverage
           
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-test-results
           path: frontend/coverage/
@@ -316,7 +316,7 @@ jobs:
           echo "Backend image built and pushed successfully"
           
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-build
           path: backend/build/
@@ -357,7 +357,7 @@ jobs:
           echo "Frontend image built and pushed successfully"
           
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: frontend/build/
@@ -402,7 +402,7 @@ jobs:
         run: terraform apply -auto-approve tfplan
         
       - name: Upload Terraform state
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: terraform-state
           path: terraform/terraform.tfstate
