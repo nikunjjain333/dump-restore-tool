@@ -60,7 +60,7 @@ const AddConfigurationPage: React.FC = () => {
   const isDuplicate = location.state?.isDuplicate;
   const { setOperationStatus } = useOperationStatus();
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>();
+  const { register, handleSubmit, watch, setValue, formState: { errors }, trigger, reset } = useForm<FormData>();
 
   const dbType = watch('dbType') || '';
 
@@ -81,48 +81,25 @@ const AddConfigurationPage: React.FC = () => {
   useEffect(() => {
     if (location.state?.selectedConfig && !configLoadedFromNavigation.current) {
       const config = location.state.selectedConfig;
-      // If duplicating, do not treat as edit mode
-      if (isDuplicate) {
-        setSelectedConfig(null); // Not edit mode
-      } else {
-        setSelectedConfig(config);
-      }
-      setValue('dbType', config.db_type);
-      setValue('configName', config.name);
-      // Set database parameters from config.params
-      Object.entries(config.params).forEach(([key, value]) => {
-        setValue(key, value);
-      });
-      setTimeout(() => {
-        if (config.restore_password) {
-          setValue('restore_password', config.restore_password);
-        }
-        if (config.local_database_name) {
-          setValue('local_database_name', config.local_database_name);
-        }
-        if (config.dump_file_name) {
-          setValue('dump_file_name', config.dump_file_name);
-        }
-        if (config.restore_username) {
-          setValue('restore_username', config.restore_username);
-        }
-        if (config.restore_host) {
-          setValue('restore_host', config.restore_host);
-        }
-        if (config.restore_port) {
-          setValue('restore_port', config.restore_port);
-        }
-        // Prefill stack_name if present (either as top-level or in params)
-        if (config.stack_name) {
-          setValue('stack_name', config.stack_name);
-        } else if (config.params && config.params.stack_name) {
-          setValue('stack_name', config.params.stack_name);
-        }
-      }, 100);
+      const baseValues = {
+        configName: isDuplicate ? '' : config.name,
+        dbType: config.db_type,
+        ...config.params,
+        restore_password: config.restore_password || '',
+        local_database_name: config.local_database_name || '',
+        dump_file_name: config.dump_file_name || '',
+        restore_username: config.restore_username || '',
+        restore_host: config.restore_host || '',
+        restore_port: config.restore_port || '',
+        stack_name: config.stack_name || (config.params && config.params.stack_name) || ''
+      };
+      reset(baseValues);
+      if (!isDuplicate) setSelectedConfig(config);
+      else setSelectedConfig(null);
       toast.success(`Configuration "${config.name}" loaded!`);
       configLoadedFromNavigation.current = true;
     }
-  }, [location.state, setValue, isDuplicate]);
+  }, [location.state, isDuplicate, reset]);
 
   const loadSavedConfigs = useCallback(async () => {
     // Prevent multiple simultaneous calls

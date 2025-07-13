@@ -4,6 +4,7 @@ describe('API Client Unit Tests', () => {
   let mockApiClient: any;
 
   beforeEach(() => {
+    jest.resetAllMocks();
     jest.clearAllMocks();
     mockApiClient = {
       get: jest.fn(),

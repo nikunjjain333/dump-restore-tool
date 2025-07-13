@@ -114,7 +114,7 @@ const HomePage: React.FC<HomePageProps> = React.memo(({ dockerStatus, checkDocke
   }), []);
 
   return (
-    <div className="home-page">
+    <div className="home-page" data-testid="home-page">
       <div className="container">
         {/* Hero Section */}
         <div className="hero-section">
