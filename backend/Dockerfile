@@ -7,7 +7,12 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Docker Compose v2
+RUN curl -SL https://github.com/docker/compose/releases/download/v2.29.2/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose \
+    && chmod +x /usr/local/bin/docker-compose
 
 # Copy requirements first for better caching
 COPY requirements.txt .
@@ -20,7 +25,7 @@ COPY . .
 
 # Create non-root user
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
+# USER appuser
 
 # Expose port
 EXPOSE 8000

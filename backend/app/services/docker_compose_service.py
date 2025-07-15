@@ -255,15 +255,18 @@ def get_docker_compose_services(config_path: str) -> Dict[str, Any]:
         )
 
         if result.returncode == 0:
-            # Parse the output to get service information
             services = []
             try:
-                # Handle empty output
                 if not result.stdout.strip():
                     return {"success": True, "services": []}
 
-                # The output is a JSON array
-                service_infos = json.loads(result.stdout)
+                try:
+                    # Try parsing as a JSON array (Compose v2+)
+                    service_infos = json.loads(result.stdout)
+                except json.JSONDecodeError:
+                    # Fallback: parse as NDJSON (Compose v1)
+                    service_infos = [json.loads(line) for line in result.stdout.strip().splitlines() if line.strip()]
+
                 for service_info in service_infos:
                     services.append(
                         {
