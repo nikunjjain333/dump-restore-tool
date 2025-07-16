@@ -90,7 +90,7 @@ dump-restore-tool/
    ```
 
 3. **Access the application**
-   - **Frontend**: http://localhost:3000
+   - **Frontend**: http://localhost:3001
    - **Backend API**: http://localhost:8000
    - **API Documentation**: http://localhost:8000/docs
 
@@ -392,8 +392,8 @@ REACT_APP_ENV=development
 
 3. **Port conflicts**
    ```bash
-   # Check what's using port 3000 or 8000
-   lsof -i :3000
+   # Check what's using port 3001 or 8000
+   lsof -i :3001
    lsof -i :8000
    
    # Kill process if needed

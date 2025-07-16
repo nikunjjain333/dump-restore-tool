@@ -103,7 +103,7 @@ resource "aws_ecs_task_definition" "frontend" {
 
       portMappings = [
         {
-          containerPort = 3000
+          containerPort = 3001
           protocol      = "tcp"
         }
       ]
@@ -183,7 +183,7 @@ resource "aws_ecs_service" "frontend" {
   load_balancer {
     target_group_arn = aws_lb_target_group.frontend.arn
     container_name   = "frontend"
-    container_port   = 3000
+    container_port   = 3001
   }
 
   depends_on = [aws_lb_listener.frontend]
@@ -223,7 +223,7 @@ resource "aws_lb_target_group" "backend" {
 # Target Group for Frontend
 resource "aws_lb_target_group" "frontend" {
   name        = "${var.environment}-frontend-tg"
-  port        = 3000
+  port        = 3001
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"

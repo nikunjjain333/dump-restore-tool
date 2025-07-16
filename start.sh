@@ -26,7 +26,7 @@ docker-compose ps
 
 echo ""
 echo "✅ Application is starting up!"
-echo "📱 Frontend: http://localhost:3000"
+echo "📱 Frontend: http://localhost:3001"
 echo "🔧 Backend API: http://localhost:8000"
 echo "📚 API Documentation: http://localhost:8000/docs"
 echo ""

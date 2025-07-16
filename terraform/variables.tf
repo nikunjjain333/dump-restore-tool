@@ -57,5 +57,5 @@ variable "container_port" {
 variable "frontend_port" {
   description = "Frontend port"
   type        = number
-  default     = 3000
+  default     = 3001
 } 
