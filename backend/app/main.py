@@ -5,6 +5,9 @@ from app.core.db import engine, Base
 from sqlalchemy import text
 import logging
 import asyncio
+from app.core.config import Settings
+
+settings = Settings()
 
 # Configure logging
 logging.basicConfig(
@@ -20,7 +23,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
