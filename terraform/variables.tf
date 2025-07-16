@@ -51,7 +51,7 @@ variable "app_version" {
 variable "container_port" {
   description = "Container port"
   type        = number
-  default     = 8000
+  default     = 8001
 }
 
 variable "frontend_port" {

@@ -115,8 +115,8 @@ docker-compose up --build -d
 ### 3. Access Application
 
 - **Frontend**: http://localhost:3001
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
+- **Backend API**: http://localhost:8001
+- **API Docs**: http://localhost:8001/docs
 
 ## AWS Deployment
 

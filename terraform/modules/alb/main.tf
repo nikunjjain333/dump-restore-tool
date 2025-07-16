@@ -14,7 +14,7 @@ resource "aws_lb" "main" {
   }
 }
 
-# Listener for Backend (Port 80 -> 8000)
+# Listener for Backend (Port 80 -> 8001)
 resource "aws_lb_listener" "backend" {
   load_balancer_arn = aws_lb.main.arn
   port              = "80"

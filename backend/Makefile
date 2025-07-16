@@ -34,7 +34,7 @@ make_migration:
 	source venv/bin/activate && alembic revision --autogenerate -m "$(msg)"
 
 run:
-	source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 
 test:
 	source venv/bin/activate && python -m pytest tests/ -v

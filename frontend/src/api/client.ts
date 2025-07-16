@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 
-const API_BASE_URL = (process.env.REACT_APP_API_URL as string) || 'http://localhost:8000';
+const API_BASE_URL = (process.env.REACT_APP_API_URL as string) || 'http://localhost:8001';
 
 // Export apiClient as a variable for testability
 export let apiClient = axios.create({

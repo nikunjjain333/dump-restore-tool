@@ -41,7 +41,7 @@ locals {
 
   # Application configuration
   app_config = {
-    backend_port = 8000
+    backend_port = 8001
     frontend_port = 3001
     health_check_path = "/health"
   }

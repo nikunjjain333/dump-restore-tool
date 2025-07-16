@@ -91,8 +91,8 @@ dump-restore-tool/
 
 3. **Access the application**
    - **Frontend**: http://localhost:3001
-   - **Backend API**: http://localhost:8000
-   - **API Documentation**: http://localhost:8000/docs
+   - **Backend API**: http://localhost:8001
+   - **API Documentation**: http://localhost:8001/docs
 
 4. **Stop the application**
    ```bash
@@ -252,7 +252,7 @@ The application supports Docker Compose operations through the UI:
 
 ### Base URL
 ```
-http://localhost:8000
+http://localhost:8001
 ```
 
 ### Authentication
@@ -349,7 +349,7 @@ DATABASE_URL=postgresql://postgres:postgres@db:5432/dump_restore
 
 # API
 API_HOST=0.0.0.0
-API_PORT=8000
+API_PORT=8001
 
 # Docker
 DOCKER_HOST=unix:///var/run/docker.sock
@@ -361,7 +361,7 @@ LOG_LEVEL=INFO
 ### Frontend
 ```bash
 # API Configuration
-REACT_APP_API_URL=http://localhost:8000
+REACT_APP_API_URL=http://localhost:8001
 
 # Development Configuration
 REACT_APP_ENV=development
@@ -392,9 +392,9 @@ REACT_APP_ENV=development
 
 3. **Port conflicts**
    ```bash
-   # Check what's using port 3001 or 8000
+   # Check what's using port 3001 or 8001
    lsof -i :3001
-   lsof -i :8000
+   lsof -i :8001
    
    # Kill process if needed
    kill -9 <PID>
