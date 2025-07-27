@@ -1,15 +1,14 @@
 import os
 import platform
 from typing import List
+from app.core.secrets import secrets_manager
 
 
 class Settings:
     """Application settings from environment variables"""
 
-    # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:postgres@db:5433/dump_restore"
-    )
+    # Database - using secrets manager
+    DATABASE_URL: str = secrets_manager.get_database_url()
 
     # API
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")
@@ -39,8 +38,9 @@ class Settings:
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
 
-    # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    # Security - using secrets manager
+    SECRET_KEY: str = secrets_manager.get_secret("SECRET_KEY", "your-secret-key-change-in-production") or "your-secret-key-change-in-production"
+    JWT_SECRET_KEY: str = secrets_manager.get_secret("JWT_SECRET_KEY", "your-jwt-secret-change-in-production") or "your-jwt-secret-change-in-production"
 
     # File paths for dump and restore operations
     DUMP_BASE_PATH: str = os.getenv("DUMP_BASE_PATH", "/home/Downloads/Database-dumps")
