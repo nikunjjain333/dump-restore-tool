@@ -36,8 +36,8 @@ resource "aws_db_instance" "main" {
 
   # Free Tier Configuration (db.t3.micro = 750 hours/month free)
   instance_class = "db.t3.micro"
-  engine         = "postgres" 
-  engine_version = "16.1"
+  engine         = "postgres"
+  engine_version = "16.9"
 
   # Storage (20GB free with free tier)
   allocated_storage     = 20    # Free tier limit
