@@ -158,7 +158,7 @@ resource "aws_ecs_service" "backend" {
     container_port   = 8001
   }
 
-  depends_on = [aws_lb_listener.backend]
+  # ALB listener dependencies handled by Terraform automatically through target_group_arn
 
   tags = {
     Name        = "${var.environment}-backend-service"
@@ -186,7 +186,7 @@ resource "aws_ecs_service" "frontend" {
     container_port   = 3001
   }
 
-  depends_on = [aws_lb_listener.frontend]
+  # ALB listener dependencies handled by Terraform automatically through target_group_arn
 
   tags = {
     Name        = "${var.environment}-frontend-service"

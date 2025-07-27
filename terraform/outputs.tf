@@ -99,15 +99,15 @@ output "rds_security_group_id" {
   value       = module.security_groups.rds_security_group_id
 }
 
-# CloudWatch Information
-output "cloudwatch_dashboard_name" {
-  description = "CloudWatch dashboard name"
-  value       = module.cloudwatch.dashboard_name
+# CloudWatch Information (Dashboard removed to stay within free tier)
+output "ecs_cpu_alarm_name" {
+  description = "ECS CPU alarm name"
+  value       = module.cloudwatch.ecs_cpu_alarm_name
 }
 
-output "cloudwatch_dashboard_arn" {
-  description = "CloudWatch dashboard ARN"
-  value       = module.cloudwatch.dashboard_arn
+output "rds_cpu_alarm_name" {
+  description = "RDS CPU alarm name"
+  value       = module.cloudwatch.rds_cpu_alarm_name
 }
 
 # Deployment Information
