@@ -13,10 +13,10 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-# CloudWatch Log Group
+# CloudWatch Log Group (Free Tier: 5GB log ingestion/month)
 resource "aws_cloudwatch_log_group" "app" {
   name              = "/ecs/${var.environment}-app"
-  retention_in_days = 7
+  retention_in_days = 7  # Keep logs for 7 days to manage storage
 
   tags = {
     Name        = "${var.environment}-app-logs"

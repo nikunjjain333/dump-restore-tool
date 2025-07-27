@@ -1,66 +1,6 @@
-# CloudWatch Dashboard
-resource "aws_cloudwatch_dashboard" "main" {
-  dashboard_name = "${var.environment}-dashboard"
-
-  dashboard_body = jsonencode({
-    widgets = [
-      {
-        type   = "metric"
-        x      = 0
-        y      = 0
-        width  = 12
-        height = 6
-
-        properties = {
-          metrics = [
-            ["AWS/ECS", "CPUUtilization", "ClusterName", var.ecs_cluster_name],
-            [".", "MemoryUtilization", ".", "."]
-          ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "ECS Cluster Metrics"
-        }
-      },
-      {
-        type   = "metric"
-        x      = 12
-        y      = 0
-        width  = 12
-        height = 6
-
-        properties = {
-          metrics = [
-            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", var.alb_name],
-            [".", "TargetResponseTime", ".", "."]
-          ]
-          period = 300
-          stat   = "Sum"
-          region = data.aws_region.current.name
-          title  = "ALB Metrics"
-        }
-      },
-      {
-        type   = "metric"
-        x      = 0
-        y      = 6
-        width  = 12
-        height = 6
-
-        properties = {
-          metrics = [
-            ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", var.rds_identifier],
-            [".", "DatabaseConnections", ".", "."]
-          ]
-          period = 300
-          stat   = "Average"
-          region = data.aws_region.current.name
-          title  = "RDS Metrics"
-        }
-      }
-    ]
-  })
-}
+# CloudWatch Dashboard - REMOVED to stay completely free
+# (Only 3 dashboards free, then $3/month per dashboard)
+# Use AWS Console CloudWatch for monitoring instead
 
 # CloudWatch Alarm for High CPU Usage
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
@@ -85,28 +25,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu" {
   }
 }
 
-# CloudWatch Alarm for High Memory Usage
-resource "aws_cloudwatch_metric_alarm" "ecs_memory" {
-  alarm_name          = "${var.environment}-ecs-memory-high"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = "2"
-  metric_name         = "MemoryUtilization"
-  namespace           = "AWS/ECS"
-  period              = "300"
-  statistic           = "Average"
-  threshold           = "80"
-  alarm_description   = "This metric monitors ECS memory utilization"
-  alarm_actions       = []
-
-  dimensions = {
-    ClusterName = var.ecs_cluster_name
-  }
-
-  tags = {
-    Name        = "${var.environment}-ecs-memory-alarm"
-    Environment = var.environment
-  }
-}
+# CloudWatch Memory Alarm - REMOVED to save alarm quota
+# (Free tier: 10 alarms total, keep only essential ones)
 
 # CloudWatch Alarm for RDS CPU
 resource "aws_cloudwatch_metric_alarm" "rds_cpu" {

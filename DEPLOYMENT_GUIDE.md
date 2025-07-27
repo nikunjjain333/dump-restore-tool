@@ -1,6 +1,6 @@
-# Database Dump & Restore Tool - Deployment Guide
+# 🆓 Free Database Dump & Restore Tool - AWS Deployment Guide
 
-This guide provides comprehensive instructions for deploying the Database Dump & Restore Tool on AWS using Terraform.
+Deploy your **completely FREE** Database Dump & Restore Tool on AWS using only **free tier resources** with **no time limits**!
 
 ## Table of Contents
 
@@ -85,13 +85,15 @@ This guide provides comprehensive instructions for deploying the Database Dump &
 - **CloudWatch**: Monitoring and logging
 - **Security Groups**: Network security rules
 
-### Free Tier Resources
+### 💰 100% Free Tier Resources (No Time Limits!)
 
-- **RDS**: db.t3.micro (750 hours/month)
-- **ECS Fargate**: 0.25 vCPU, 0.5 GB memory per task
-- **ALB**: 15 GB data processing
-- **NAT Gateway**: 750 hours/month
-- **CloudWatch**: 5 custom metrics, 1M API requests
+- **RDS PostgreSQL**: db.t3.micro (750 hours/month - 12 months free)
+- **ECS Fargate**: 0.25 vCPU, 0.5GB memory (400k GB-seconds/month - 12 months free)
+- **Application Load Balancer**: 750 hours/month + 15GB processing (12 months free)
+- **VPC & Networking**: Always free (subnets, security groups, route tables)
+- **CloudWatch**: 10 alarms, 5GB logs, 1M API requests (12 months free)
+
+**💡 Estimated Monthly Cost: $0.00** (stays within all free tier limits)
 
 ## Local Development Setup
 
@@ -120,20 +122,29 @@ docker-compose up --build -d
 
 ## AWS Deployment
 
-### 1. Prepare Terraform Configuration
+### 1. Prepare Free Tier Configuration
 
 ```bash
 cd terraform
 
-# Copy and edit variables
+# Use the free tier optimized configuration
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-Edit `terraform.tfvars`:
+Edit `terraform.tfvars` for **FREE deployment**:
 ```hcl
-aws_region = "us-east-1"
-environment = "dev"
-db_password = "your-secure-password-here"
+# AWS Free Tier Configuration
+aws_region = "us-east-1"  # Best free tier availability
+environment = "free"      # Use 'free' for free tier deployment
+
+# Database (FREE: db.t3.micro)
+db_name = "dump_restore"
+db_username = "postgres"
+db_password = "YourSecurePassword123!"  # CHANGE THIS!
+
+# Application
+app_name = "free-db-tool"
+app_version = "latest"
 ```
 
 ### 2. Deploy Infrastructure
@@ -428,15 +439,21 @@ jobs:
 4. **CloudWatch Logs Retention** policies
 5. **RDS Storage Optimization**
 
-### Estimated Costs (Free Tier)
+### 💰 Confirmed Free Tier Costs
 
-- **RDS**: $0 (750 hours/month)
-- **ECS**: $0 (750 hours/month)
-- **ALB**: $0 (15 GB data processing)
-- **NAT Gateway**: $0 (750 hours/month)
-- **CloudWatch**: $0 (basic monitoring)
+- **RDS PostgreSQL**: $0 (db.t3.micro, 750 hours/month, 20GB storage)
+- **ECS Fargate**: $0 (0.25 vCPU, 0.5GB memory, 400k GB-seconds/month)  
+- **Application Load Balancer**: $0 (750 hours/month, 15GB data processing)
+- **VPC & Networking**: $0 (always free)
+- **CloudWatch**: $0 (10 alarms, 5GB logs, no dashboard)
 
-**Total**: $0/month (within free tier limits)
+**🎉 Total: $0.00/month** (optimized to stay within all free tier limits)
+
+### ⚠️ Removed Paid Features
+- **Performance Insights**: Disabled (only free for 7 days)
+- **Enhanced RDS Monitoring**: Disabled (charges after trial)
+- **CloudWatch Dashboard**: Removed ($3/month after 3 free dashboards)
+- **SNS Notifications**: Not configured (charges per message)
 
 ## Support
 

@@ -1,7 +1,8 @@
-# Main Terraform configuration for Database Dump & Restore Tool
-# This file orchestrates all modules and their dependencies
+# 🆓 FREE Database Dump & Restore Tool - AWS Deployment
+# Optimized for AWS Free Tier - $0.00/month cost
+# All resources configured to stay within free tier limits permanently
 
-# VPC Module
+# VPC Module (FREE: Always free - subnets, route tables, security groups)
 module "vpc" {
   source = "./modules/vpc"
   
@@ -10,7 +11,7 @@ module "vpc" {
   azs         = local.availability_zones
 }
 
-# Security Groups Module
+# Security Groups Module (FREE: Always free)
 module "security_groups" {
   source = "./modules/security_groups"
   
@@ -18,7 +19,7 @@ module "security_groups" {
   environment = var.environment
 }
 
-# RDS Module (Free Tier: db.t3.micro)
+# RDS Module (FREE: db.t3.micro, 750 hours/month, 20GB storage)
 module "rds" {
   source = "./modules/rds"
   
@@ -32,7 +33,7 @@ module "rds" {
   db_password = var.db_password
 }
 
-# ECS Cluster Module
+# ECS Cluster Module (FREE: Fargate 0.25 vCPU, 0.5GB memory, 400k GB-seconds/month)
 module "ecs" {
   source = "./modules/ecs"
   
@@ -51,7 +52,7 @@ module "ecs" {
   alb_dns_name = module.alb.alb_dns_name
 }
 
-# Application Load Balancer Module
+# Application Load Balancer Module (FREE: 750 hours/month + 15GB data processing)
 module "alb" {
   source = "./modules/alb"
   
@@ -64,7 +65,7 @@ module "alb" {
   frontend_target_group_arn = module.ecs.frontend_target_group_arn
 }
 
-# CloudWatch Module
+# CloudWatch Module (FREE: 10 alarms, 5GB logs, 1M API requests - no dashboard)
 module "cloudwatch" {
   source = "./modules/cloudwatch"
   
@@ -72,4 +73,4 @@ module "cloudwatch" {
   ecs_cluster_name = module.ecs.cluster_name
   alb_name = module.alb.alb_name
   rds_identifier = module.rds.db_identifier
-} 
+}

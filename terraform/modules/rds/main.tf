@@ -34,16 +34,16 @@ resource "aws_db_parameter_group" "main" {
 resource "aws_db_instance" "main" {
   identifier = "${var.environment}-db"
 
-  # Free Tier Configuration
+  # Free Tier Configuration (db.t3.micro = 750 hours/month free)
   instance_class = "db.t3.micro"
-  engine         = "postgres"
+  engine         = "postgres" 
   engine_version = "16.1"
 
-  # Storage
-  allocated_storage     = 20
-  max_allocated_storage = 100
-  storage_type         = "gp2"
-  storage_encrypted    = true
+  # Storage (20GB free with free tier)
+  allocated_storage     = 20    # Free tier limit
+  max_allocated_storage = 20    # Keep at free tier limit
+  storage_type         = "gp2"  # General Purpose SSD (free tier)
+  storage_encrypted    = true   # Free encryption
 
   # Database Configuration
   db_name  = var.db_name
@@ -56,18 +56,16 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name   = aws_db_subnet_group.main.name
   parameter_group_name   = aws_db_parameter_group.main.name
 
-  # Backup Configuration
-  backup_retention_period = 7
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "sun:04:00-sun:05:00"
+  # Backup Configuration (Free: automated backups included)
+  backup_retention_period = 7                    # Minimum for production
+  backup_window          = "03:00-04:00"        # Low traffic time
+  maintenance_window     = "sun:04:00-sun:05:00" # Low traffic time
 
-  # Performance Insights (Free Tier: 2 months)
-  performance_insights_enabled = true
-  performance_insights_retention_period = 7
+  # Performance Insights - DISABLED (only free for 7 days, then charges)
+  performance_insights_enabled          = false
 
-  # Monitoring
-  monitoring_interval = 60
-  monitoring_role_arn = aws_iam_role.rds_monitoring.arn
+  # Enhanced Monitoring - DISABLED (charges after free period)
+  monitoring_interval = 0
 
   # Deletion Protection
   deletion_protection = false
@@ -79,25 +77,4 @@ resource "aws_db_instance" "main" {
   }
 }
 
-# IAM Role for RDS Monitoring
-resource "aws_iam_role" "rds_monitoring" {
-  name = "${var.environment}-rds-monitoring-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "monitoring.rds.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "rds_monitoring" {
-  role       = aws_iam_role.rds_monitoring.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
-} 
+# IAM Role for RDS Monitoring - REMOVED (not needed without enhanced monitoring) 
